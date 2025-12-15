@@ -116,6 +116,10 @@ interface EditorState {
 	addCheckpoint: (checkpoint: Checkpoint) => void
 	setCurrentCheckpointIdx: (idx: number) => void
 	clearCheckpoints: () => void
+
+	// Session management
+	currentSessionId: string | null
+	setCurrentSessionId: (id: string | null) => void
 }
 
 export const useStore = create<EditorState>((set) => ({
@@ -147,6 +151,7 @@ export const useStore = create<EditorState>((set) => ({
 	checkpoints: [],
 	currentCheckpointIdx: -1,
 	activeSidePanel: 'explorer',
+	currentSessionId: null,
 
 	// File explorer actions
 	setWorkspacePath: (path) => set({ workspacePath: path }),
@@ -274,4 +279,7 @@ export const useStore = create<EditorState>((set) => ({
 	})),
 	setCurrentCheckpointIdx: (idx) => set({ currentCheckpointIdx: idx }),
 	clearCheckpoints: () => set({ checkpoints: [], currentCheckpointIdx: -1 }),
+
+	// Session management
+	setCurrentSessionId: (id) => set({ currentSessionId: id }),
 }))

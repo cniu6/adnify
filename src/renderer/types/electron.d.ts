@@ -1,7 +1,40 @@
+/**
+ * Electron API 类型定义
+ */
+
 export interface FileItem {
 	name: string
 	path: string
 	isDirectory: boolean
+}
+
+export interface LLMStreamChunk {
+	type: 'text' | 'reasoning' | 'error'
+	content?: string
+	error?: string
+}
+
+export interface LLMToolCall {
+	id: string
+	name: string
+	arguments: Record<string, any>
+}
+
+export interface LLMResult {
+	content: string
+	reasoning?: string
+	toolCalls?: LLMToolCall[]
+	usage?: {
+		promptTokens: number
+		completionTokens: number
+		totalTokens: number
+	}
+}
+
+export interface LLMError {
+	message: string
+	code: string
+	retryable: boolean
 }
 
 export interface ElectronAPI {
@@ -28,9 +61,10 @@ export interface ElectronAPI {
 	// LLM
 	sendMessage: (params: any) => Promise<void>
 	abortMessage: () => void
-	onLLMStream: (callback: (data: any) => void) => () => void
-	onLLMError: (callback: (error: string) => void) => () => void
-	onLLMDone: (callback: (data: any) => void) => () => void
+	onLLMStream: (callback: (chunk: LLMStreamChunk) => void) => () => void
+	onLLMToolCall: (callback: (toolCall: LLMToolCall) => void) => () => void
+	onLLMError: (callback: (error: LLMError) => void) => () => void
+	onLLMDone: (callback: (result: LLMResult) => void) => () => void
 
 	// Terminal
 	executeCommand: (command: string, cwd?: string) => Promise<{ output: string; errorOutput: string; exitCode: number }>
@@ -43,3 +77,5 @@ declare global {
 		electronAPI: ElectronAPI
 	}
 }
+
+export {}

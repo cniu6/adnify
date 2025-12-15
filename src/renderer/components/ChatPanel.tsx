@@ -1,18 +1,21 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
-  Send, Bot, User, Sparkles, Zap, MessageSquare,
+  Send, Bot, User, Sparkles, MessageSquare,
   Trash2, StopCircle, Terminal, FileEdit, Search,
   FolderOpen, FileText, Check, X, AlertTriangle,
-  FolderTree, History, ChevronRight, ChevronDown
+  FolderTree, History, ChevronRight
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useStore, Message, ToolCall } from '../store'
 import { useAgent } from '../hooks/useAgent'
-import { t } from '../i18n'
+
 import CheckpointPanel from './CheckpointPanel'
 import ToolResultViewer from './ToolResultViewer'
+import SessionList from './SessionList'
+import FileMentionPopup from './FileMentionPopup'
+import { sessionService } from '../agent/sessionService'
 
 const ToolIcon = ({ name }: { name: string }) => {
   const icons: Record<string, typeof Terminal> = {
@@ -119,7 +122,6 @@ function ToolCallDisplay({
 }
 
 function ChatMessage({ message }: { message: Message }) {
-  const { language } = useStore()
   const isUser = message.role === 'user'
 
   return (
@@ -187,8 +189,8 @@ function ChatMessage({ message }: { message: Message }) {
 export default function ChatPanel() {
   const {
     chatMode, setChatMode, messages, isStreaming, currentToolCalls,
-    clearMessages, llmConfig, language, pendingToolCall, checkpoints,
-    setTerminalVisible, terminalVisible
+    clearMessages, llmConfig, pendingToolCall, checkpoints,
+    setCurrentSessionId, addMessage
   } = useStore()
   const {
     sendMessage,
@@ -198,7 +200,65 @@ export default function ChatPanel() {
   } = useAgent()
   const [input, setInput] = useState('')
   const [showCheckpoints, setShowCheckpoints] = useState(false)
+  const [showSessions, setShowSessions] = useState(false)
+  const [showFileMention, setShowFileMention] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [mentionPosition, setMentionPosition] = useState({ x: 0, y: 0 })
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const inputContainerRef = useRef<HTMLDivElement>(null)
+
+  // 检测输入中的 @file 引用
+  const fileRefs = useMemo(() => {
+    const refs: string[] = []
+    const regex = /@(?:file:)?([^\s@]+\.[a-zA-Z0-9]+)/g
+    let match
+    while ((match = regex.exec(input)) !== null) {
+      refs.push(match[1])
+    }
+    return refs
+  }, [input])
+
+  // 检测 @ 触发
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    const cursorPos = e.target.selectionStart || 0
+    setInput(value)
+
+    // 检查光标前是否有未完成的 @ 引用
+    const textBeforeCursor = value.slice(0, cursorPos)
+    const atMatch = textBeforeCursor.match(/@([^\s@]*)$/)
+
+    if (atMatch) {
+      setMentionQuery(atMatch[1])
+      if (inputContainerRef.current) {
+        const rect = inputContainerRef.current.getBoundingClientRect()
+        setMentionPosition({ x: rect.left + 16, y: rect.top })
+      }
+      setShowFileMention(true)
+    } else {
+      setShowFileMention(false)
+      setMentionQuery('')
+    }
+  }, [])
+
+  // 选择文件引用
+  const handleSelectFile = useCallback((filePath: string) => {
+    const cursorPos = textareaRef.current?.selectionStart || input.length
+    const textBeforeCursor = input.slice(0, cursorPos)
+    const textAfterCursor = input.slice(cursorPos)
+    
+    // 找到 @ 的位置并替换
+    const atIndex = textBeforeCursor.lastIndexOf('@')
+    if (atIndex !== -1) {
+      const newInput = textBeforeCursor.slice(0, atIndex) + '@' + filePath + ' ' + textAfterCursor
+      setInput(newInput)
+    }
+    
+    setShowFileMention(false)
+    setMentionQuery('')
+    textareaRef.current?.focus()
+  }, [input])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -210,6 +270,24 @@ export default function ChatPanel() {
     setInput('')
     await sendMessage(userMessage)
   }, [input, isStreaming, sendMessage])
+
+  const handleLoadSession = useCallback(async (sessionId: string) => {
+    const session = await sessionService.getSession(sessionId)
+    if (session) {
+      clearMessages()
+      setChatMode(session.mode)
+      session.messages.forEach(msg => {
+        addMessage({
+          role: msg.role,
+          content: msg.content,
+          toolCallId: msg.toolCallId,
+          toolName: msg.toolName,
+        })
+      })
+      setCurrentSessionId(sessionId)
+      setShowSessions(false)
+    }
+  }, [clearMessages, setChatMode, addMessage, setCurrentSessionId])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -250,6 +328,13 @@ export default function ChatPanel() {
         </div>
         
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowSessions(!showSessions)}
+            className={`p-1.5 rounded hover:bg-surface-hover transition-colors ${showSessions ? 'text-accent' : 'text-text-muted'}`}
+            title="Sessions"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+          </button>
           {chatMode === 'agent' && checkpoints.length > 0 && (
             <button
               onClick={() => setShowCheckpoints(!showCheckpoints)}
@@ -262,12 +347,22 @@ export default function ChatPanel() {
            <button
             onClick={clearMessages}
             className="p-1.5 rounded hover:bg-surface-hover hover:text-status-error transition-colors"
-            title={t('clearChat', language)}
+            title="Clear chat"
           >
             <Trash2 className="w-3.5 h-3.5 text-text-muted" />
           </button>
         </div>
       </div>
+
+      {/* Session List Overlay */}
+      {showSessions && (
+        <div className="absolute top-10 right-0 left-0 bottom-0 bg-background/95 backdrop-blur-md z-30 overflow-hidden animate-slide-in">
+          <SessionList 
+            onClose={() => setShowSessions(false)} 
+            onLoadSession={handleLoadSession}
+          />
+        </div>
+      )}
 
       {/* Checkpoint Panel Overlay */}
       {showCheckpoints && (
@@ -321,14 +416,28 @@ export default function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* File Mention Popup */}
+      {showFileMention && (
+        <FileMentionPopup
+          position={mentionPosition}
+          searchQuery={mentionQuery}
+          onSelect={handleSelectFile}
+          onClose={() => {
+            setShowFileMention(false)
+            setMentionQuery('')
+          }}
+        />
+      )}
+
       {/* Input Area */}
-      <div className="p-4 bg-background border-t border-border-subtle">
+      <div ref={inputContainerRef} className="p-4 bg-background border-t border-border-subtle">
         <div className="relative group">
           <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={hasApiKey ? (chatMode === 'agent' ? "Instruct the agent..." : "Type a message...") : "Configure API Key..."}
+            placeholder={hasApiKey ? (chatMode === 'agent' ? "Instruct the agent... (use @file.ts to reference)" : "Type a message...") : "Configure API Key..."}
             disabled={!hasApiKey || !!pendingToolCall}
             className="w-full bg-surface border border-border-subtle rounded-xl px-4 py-3 pr-10
                      text-sm text-text-primary placeholder-text-muted resize-none
@@ -356,9 +465,24 @@ export default function ChatPanel() {
           </div>
         </div>
         
+        {/* 显示检测到的文件引用 */}
+        {fileRefs.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1 px-1">
+            {fileRefs.map((ref, i) => (
+              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent/10 text-accent text-[10px] rounded-full border border-accent/20">
+                <FileText className="w-3 h-3" />
+                {ref}
+              </span>
+            ))}
+          </div>
+        )}
+        
         <div className="mt-2 flex items-center justify-between text-[10px] text-text-muted px-1">
-            <span>{chatMode === 'agent' ? "Agent Mode: Can read/write files & run commands" : "Chat Mode: Conversation only"}</span>
-            <span className="opacity-50">↵ to send, ⇧↵ for new line</span>
+            <span className="flex items-center gap-1">
+              {chatMode === 'agent' ? "Agent Mode" : "Chat Mode"}
+              <span className="opacity-50">• Use @file.ts to reference files</span>
+            </span>
+            <span className="opacity-50">↵ send, ⇧↵ newline, Ctrl+K edit</span>
         </div>
       </div>
     </div>

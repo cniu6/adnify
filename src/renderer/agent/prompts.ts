@@ -158,7 +158,7 @@ export function buildSystemPrompt(
 	// 系统信息
 	const systemInfo = `## System Information
 
-- Operating System: ${typeof navigator !== 'undefined' ? navigator.platform : 'Unknown'}
+- Operating System: ${typeof navigator !== 'undefined' ? (navigator.userAgentData?.platform || navigator.platform || 'Unknown') : 'Unknown'}
 - Workspace: ${workspacePath || 'No workspace open'}
 - Active File: ${activeFile || 'None'}
 - Open Files: ${openFiles.length > 0 ? openFiles.join(', ') : 'None'}

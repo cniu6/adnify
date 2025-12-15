@@ -1,8 +1,13 @@
+/**
+ * LLM 服务
+ * 统一管理 LLM Provider，处理消息发送和事件分发
+ */
+
 import { BrowserWindow } from 'electron'
 import { OpenAIProvider } from './providers/openai'
 import { AnthropicProvider } from './providers/anthropic'
 import { GeminiProvider } from './providers/gemini'
-import { LLMProvider, LLMMessage, LLMConfig, ToolDefinition } from './types'
+import { LLMProvider, LLMMessage, LLMConfig, ToolDefinition, LLMError, LLMErrorCode } from './types'
 
 export class LLMService {
 	private window: BrowserWindow
@@ -13,11 +18,16 @@ export class LLMService {
 		this.window = window
 	}
 
+	/**
+	 * 获取或创建 Provider 实例
+	 * 使用 provider + apiKey + baseUrl 作为缓存 key
+	 */
 	private getProvider(config: LLMConfig): LLMProvider {
-		// 包含 baseUrl 在缓存 key 中，避免切换 endpoint 时使用旧实例
 		const key = `${config.provider}-${config.apiKey}-${config.baseUrl || 'default'}`
 
 		if (!this.providers.has(key)) {
+			console.log('[LLMService] Creating new provider:', config.provider)
+
 			switch (config.provider) {
 				case 'openai':
 				case 'custom':
@@ -30,13 +40,19 @@ export class LLMService {
 					this.providers.set(key, new GeminiProvider(config.apiKey))
 					break
 				default:
-					throw new Error(`Unknown provider: ${config.provider}`)
+					throw new LLMError(
+						`Unknown provider: ${config.provider}`,
+						LLMErrorCode.INVALID_REQUEST
+					)
 			}
 		}
 
 		return this.providers.get(key)!
 	}
 
+	/**
+	 * 发送消息到 LLM
+	 */
 	async sendMessage(params: {
 		config: LLMConfig
 		messages: LLMMessage[]
@@ -45,38 +61,84 @@ export class LLMService {
 	}) {
 		const { config, messages, tools, systemPrompt } = params
 
+		console.log('[LLMService] sendMessage', {
+			provider: config.provider,
+			model: config.model,
+			messageCount: messages.length,
+			hasTools: !!tools?.length
+		})
+
+		// 创建新的 AbortController
 		this.currentAbortController = new AbortController()
-		const provider = this.getProvider(config)
 
 		try {
+			const provider = this.getProvider(config)
+
 			await provider.chat({
 				model: config.model,
 				messages,
 				tools,
 				systemPrompt,
 				signal: this.currentAbortController.signal,
+
 				onStream: (chunk) => {
 					this.window.webContents.send('llm:stream', chunk)
 				},
+
 				onToolCall: (toolCall) => {
-					this.window.webContents.send('llm:stream', { type: 'tool_call', ...toolCall })
+					this.window.webContents.send('llm:toolCall', toolCall)
 				},
+
 				onComplete: (result) => {
+					console.log('[LLMService] Complete', {
+						contentLength: result.content.length,
+						toolCallCount: result.toolCalls?.length || 0
+					})
 					this.window.webContents.send('llm:done', result)
 				},
+
 				onError: (error) => {
-					this.window.webContents.send('llm:error', error.message)
+					console.error('[LLMService] Error', {
+						code: error.code,
+						message: error.message,
+						retryable: error.retryable
+					})
+					this.window.webContents.send('llm:error', {
+						message: error.message,
+						code: error.code,
+						retryable: error.retryable
+					})
 				}
 			})
+
 		} catch (error: any) {
+			// 处理未捕获的错误
 			if (error.name !== 'AbortError') {
-				this.window.webContents.send('llm:error', error.message)
+				console.error('[LLMService] Uncaught error:', error)
+				this.window.webContents.send('llm:error', {
+					message: error.message || 'Unknown error',
+					code: LLMErrorCode.UNKNOWN,
+					retryable: false
+				})
 			}
 		}
 	}
 
+	/**
+	 * 中止当前请求
+	 */
 	abort() {
-		this.currentAbortController?.abort()
-		this.currentAbortController = null
+		if (this.currentAbortController) {
+			console.log('[LLMService] Aborting request')
+			this.currentAbortController.abort()
+			this.currentAbortController = null
+		}
+	}
+
+	/**
+	 * 清除 Provider 缓存
+	 */
+	clearProviders() {
+		this.providers.clear()
 	}
 }

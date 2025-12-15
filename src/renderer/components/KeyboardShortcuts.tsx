@@ -33,8 +33,10 @@ const shortcuts: ShortcutItem[] = [
   { keys: ['Ctrl', 'Tab'], description: 'Switch tab', category: 'Navigation' },
 
   // AI 助手
+  { keys: ['Ctrl', 'K'], description: 'Inline edit with AI', category: 'AI Assistant' },
   { keys: ['Ctrl', 'Enter'], description: 'Send message', category: 'AI Assistant' },
   { keys: ['Escape'], description: 'Stop generation', category: 'AI Assistant' },
+  { keys: ['@'], description: 'Reference file in chat', category: 'AI Assistant' },
 
   // 视图
   { keys: ['Ctrl', '`'], description: 'Toggle terminal', category: 'View' },

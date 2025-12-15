@@ -1,4 +1,45 @@
+/**
+ * Preload Script
+ * 在渲染进程中暴露安全的 API
+ */
+
 import { contextBridge, ipcRenderer } from 'electron'
+
+// 定义 API 类型
+export interface ElectronAPI {
+	// Window controls
+	minimize: () => void
+	maximize: () => void
+	close: () => void
+
+	// File operations
+	openFile: () => Promise<{ path: string; content: string } | null>
+	openFolder: () => Promise<string | null>
+	readDir: (path: string) => Promise<{ name: string; path: string; isDirectory: boolean }[]>
+	readFile: (path: string) => Promise<string | null>
+	writeFile: (path: string, content: string) => Promise<boolean>
+	saveFile: (content: string, path?: string) => Promise<string | null>
+	fileExists: (path: string) => Promise<boolean>
+	mkdir: (path: string) => Promise<boolean>
+	deleteFile: (path: string) => Promise<boolean>
+
+	// Settings
+	getSetting: (key: string) => Promise<any>
+	setSetting: (key: string, value: any) => Promise<boolean>
+
+	// LLM
+	sendMessage: (params: any) => Promise<void>
+	abortMessage: () => void
+	onLLMStream: (callback: (data: any) => void) => () => void
+	onLLMToolCall: (callback: (toolCall: any) => void) => () => void
+	onLLMError: (callback: (error: { message: string; code: string; retryable: boolean }) => void) => () => void
+	onLLMDone: (callback: (data: any) => void) => () => void
+
+	// Terminal
+	executeCommand: (command: string, cwd?: string) => Promise<{ output: string; errorOutput: string; exitCode: number }>
+	killTerminal: () => void
+	onTerminalOutput: (callback: (data: string) => void) => () => void
+}
 
 contextBridge.exposeInMainWorld('electronAPI', {
 	// Window controls
@@ -24,24 +65,38 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	// LLM
 	sendMessage: (params: any) => ipcRenderer.invoke('llm:sendMessage', params),
 	abortMessage: () => ipcRenderer.send('llm:abort'),
+
 	onLLMStream: (callback: (data: any) => void) => {
-		ipcRenderer.on('llm:stream', (_, data) => callback(data))
-		return () => ipcRenderer.removeAllListeners('llm:stream')
+		const handler = (_: any, data: any) => callback(data)
+		ipcRenderer.on('llm:stream', handler)
+		return () => ipcRenderer.removeListener('llm:stream', handler)
 	},
-	onLLMError: (callback: (error: string) => void) => {
-		ipcRenderer.on('llm:error', (_, error) => callback(error))
-		return () => ipcRenderer.removeAllListeners('llm:error')
+
+	onLLMToolCall: (callback: (toolCall: any) => void) => {
+		const handler = (_: any, toolCall: any) => callback(toolCall)
+		ipcRenderer.on('llm:toolCall', handler)
+		return () => ipcRenderer.removeListener('llm:toolCall', handler)
 	},
+
+	onLLMError: (callback: (error: { message: string; code: string; retryable: boolean }) => void) => {
+		const handler = (_: any, error: any) => callback(error)
+		ipcRenderer.on('llm:error', handler)
+		return () => ipcRenderer.removeListener('llm:error', handler)
+	},
+
 	onLLMDone: (callback: (data: any) => void) => {
-		ipcRenderer.on('llm:done', (_, data) => callback(data))
-		return () => ipcRenderer.removeAllListeners('llm:done')
+		const handler = (_: any, data: any) => callback(data)
+		ipcRenderer.on('llm:done', handler)
+		return () => ipcRenderer.removeListener('llm:done', handler)
 	},
 
 	// Terminal
 	executeCommand: (command: string, cwd?: string) => ipcRenderer.invoke('terminal:execute', command, cwd),
 	killTerminal: () => ipcRenderer.send('terminal:kill'),
+
 	onTerminalOutput: (callback: (data: string) => void) => {
-		ipcRenderer.on('terminal:output', (_, data) => callback(data))
-		return () => ipcRenderer.removeAllListeners('terminal:output')
+		const handler = (_: any, data: string) => callback(data)
+		ipcRenderer.on('terminal:output', handler)
+		return () => ipcRenderer.removeListener('terminal:output', handler)
 	},
-})
+} as ElectronAPI)

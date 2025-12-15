@@ -5,6 +5,7 @@ import { X, Circle, AlertTriangle, AlertCircle, RefreshCw, FileCode } from 'luci
 import { useStore } from '../store'
 import { t } from '../i18n'
 import DiffViewer from './DiffViewer'
+import InlineEdit from './InlineEdit'
 import { lintService } from '../agent/lintService'
 import { streamingEditService } from '../agent/streamingEditService'
 import { LintError, StreamingEditState } from '../agent/toolTypes'
@@ -93,6 +94,14 @@ export default function Editor() {
   const [streamingEdit, setStreamingEdit] = useState<StreamingEditState | null>(null)
   const [showDiffPreview, setShowDiffPreview] = useState(false)
 
+  // 内联编辑状态 (Cmd+K)
+  const [inlineEditState, setInlineEditState] = useState<{
+    show: boolean
+    position: { x: number; y: number }
+    selectedCode: string
+    lineRange: [number, number]
+  } | null>(null)
+
   const activeFile = openFiles.find(f => f.path === activeFilePath)
   const activeLanguage = activeFile ? getLanguage(activeFile.path) : 'plaintext'
 
@@ -162,6 +171,51 @@ export default function Editor() {
       keybindings: [monaco.KeyCode.F2],
       run: (ed) => {
         ed.getAction('editor.action.rename')?.run()
+      }
+    })
+
+    // Cmd+K / Ctrl+K: 内联编辑
+    editor.addAction({
+      id: 'inline-edit',
+      label: 'Inline Edit with AI',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK],
+      run: (ed) => {
+        const selection = ed.getSelection()
+        if (!selection || selection.isEmpty()) {
+          // 如果没有选中，选择当前行
+          const position = ed.getPosition()
+          if (position) {
+            ed.setSelection({
+              startLineNumber: position.lineNumber,
+              startColumn: 1,
+              endLineNumber: position.lineNumber,
+              endColumn: ed.getModel()?.getLineMaxColumn(position.lineNumber) || 1
+            })
+          }
+        }
+        
+        const newSelection = ed.getSelection()
+        if (newSelection && !newSelection.isEmpty()) {
+          const model = ed.getModel()
+          if (model) {
+            const selectedText = model.getValueInRange(newSelection)
+            const editorDomNode = ed.getDomNode()
+            const coords = ed.getScrolledVisiblePosition(newSelection.getStartPosition())
+            
+            if (editorDomNode && coords) {
+              const rect = editorDomNode.getBoundingClientRect()
+              setInlineEditState({
+                show: true,
+                position: {
+                  x: rect.left + coords.left,
+                  y: rect.top + coords.top + 20
+                },
+                selectedCode: selectedText,
+                lineRange: [newSelection.startLineNumber, newSelection.endLineNumber]
+              })
+            }
+          }
+        }
       }
     })
   }
@@ -365,6 +419,31 @@ export default function Editor() {
             onClose={() => setShowDiffPreview(false)}
           />
         </div>
+      )}
+
+      {/* 内联编辑弹窗 (Cmd+K) */}
+      {inlineEditState?.show && activeFile && (
+        <InlineEdit
+          position={inlineEditState.position}
+          selectedCode={inlineEditState.selectedCode}
+          filePath={activeFile.path}
+          lineRange={inlineEditState.lineRange}
+          onClose={() => setInlineEditState(null)}
+          onApply={(newCode) => {
+            // 替换选中的代码
+            if (editorRef.current) {
+              const selection = editorRef.current.getSelection()
+              if (selection) {
+                editorRef.current.executeEdits('inline-edit', [{
+                  range: selection,
+                  text: newCode,
+                  forceMoveMarkers: true
+                }])
+              }
+            }
+            setInlineEditState(null)
+          }}
+        />
       )}
 
       {/* Editor */}

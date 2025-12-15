@@ -1,14 +1,22 @@
-import { GoogleGenerativeAI, FunctionDeclaration, Tool, SchemaType } from '@google/generative-ai'
-import { LLMProvider, ChatParams, ToolDefinition, ToolCall } from '../types'
+/**
+ * Gemini Provider
+ * 支持 Google Gemini 系列模型
+ */
 
-export class GeminiProvider implements LLMProvider {
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
+import { BaseProvider } from './base'
+import { ChatParams, ToolDefinition, ToolCall } from '../types'
+
+export class GeminiProvider extends BaseProvider {
 	private client: GoogleGenerativeAI
 
 	constructor(apiKey: string) {
+		super('Gemini')
+		this.log('info', 'Initializing')
 		this.client = new GoogleGenerativeAI(apiKey)
 	}
 
-	private convertTools(tools?: ToolDefinition[]): Tool[] | undefined {
+	private convertTools(tools?: ToolDefinition[]) {
 		if (!tools?.length) return undefined
 
 		const functionDeclarations = tools.map(tool => ({
@@ -28,7 +36,7 @@ export class GeminiProvider implements LLMProvider {
 				),
 				required: tool.parameters.required,
 			}
-		})) as FunctionDeclaration[]
+		}))
 
 		return [{ functionDeclarations }]
 	}
@@ -37,12 +45,15 @@ export class GeminiProvider implements LLMProvider {
 		const { model, messages, tools, systemPrompt, onStream, onToolCall, onComplete, onError } = params
 
 		try {
+			this.log('info', 'Starting chat', { model, messageCount: messages.length })
+
 			const genModel = this.client.getGenerativeModel({
 				model,
 				systemInstruction: systemPrompt,
-				tools: this.convertTools(tools),
+				tools: this.convertTools(tools) as any,
 			})
 
+			// 构建历史记录
 			const history: any[] = []
 			let lastUserMessage = ''
 
@@ -79,7 +90,7 @@ export class GeminiProvider implements LLMProvider {
 				}
 			}
 
-			// Remove last user message from history as it will be sent separately
+			// 发起流式请求
 			const chat = genModel.startChat({ history })
 			const result = await chat.sendMessageStream(lastUserMessage)
 
@@ -93,13 +104,13 @@ export class GeminiProvider implements LLMProvider {
 					onStream({ type: 'text', content: text })
 				}
 
-				// Check for function calls
+				// 检查函数调用
 				const candidate = chunk.candidates?.[0]
 				if (candidate?.content?.parts) {
 					for (const part of candidate.content.parts) {
 						if ('functionCall' in part && part.functionCall) {
 							const toolCall: ToolCall = {
-								id: `gemini-${Date.now()}`,
+								id: `gemini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
 								name: part.functionCall.name,
 								arguments: part.functionCall.args as Record<string, any>,
 							}
@@ -110,9 +121,20 @@ export class GeminiProvider implements LLMProvider {
 				}
 			}
 
-			onComplete({ content: fullContent, toolCalls: toolCalls.length > 0 ? toolCalls : undefined })
+			this.log('info', 'Chat complete', {
+				contentLength: fullContent.length,
+				toolCallCount: toolCalls.length
+			})
+
+			onComplete({
+				content: fullContent,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined
+			})
+
 		} catch (error: any) {
-			onError(error)
+			const llmError = this.parseError(error)
+			this.log('error', 'Chat failed', { code: llmError.code, message: llmError.message })
+			onError(llmError)
 		}
 	}
 }
