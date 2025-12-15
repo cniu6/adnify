@@ -3,11 +3,11 @@ import {
   Send, Bot, User, Sparkles, Zap, MessageSquare,
   Trash2, StopCircle, Terminal, FileEdit, Search,
   FolderOpen, FileText, Check, X, AlertTriangle,
-  FolderTree, History
+  FolderTree, History, ChevronRight, ChevronDown
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useStore, Message, ToolCall } from '../store'
 import { useAgent } from '../hooks/useAgent'
 import { t } from '../i18n'
@@ -33,7 +33,7 @@ const ToolIcon = ({ name }: { name: string }) => {
     get_lint_errors: AlertTriangle,
   }
   const Icon = icons[name] || Terminal
-  return <Icon className="w-4 h-4" />
+  return <Icon className="w-3.5 h-3.5" />
 }
 
 function ToolCallDisplay({
@@ -45,76 +45,74 @@ function ToolCallDisplay({
   onApprove?: () => void
   onReject?: () => void
 }) {
+  const [expanded, setExpanded] = useState(false)
+  
   const statusConfig = {
-    pending: { color: 'text-gray-400 bg-gray-400/10', label: 'Pending' },
-    awaiting_user: { color: 'text-yellow-400 bg-yellow-400/10', label: 'Awaiting Approval' },
-    running: { color: 'text-blue-400 bg-blue-400/10', label: 'Running' },
-    success: { color: 'text-green-400 bg-green-400/10', label: 'Success' },
-    error: { color: 'text-red-400 bg-red-400/10', label: 'Error' },
-    rejected: { color: 'text-orange-400 bg-orange-400/10', label: 'Rejected' },
+    pending: { color: 'text-text-muted', bg: 'bg-surface', border: 'border-border-subtle', label: 'Pending' },
+    awaiting_user: { color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20', label: 'Approval Required' },
+    running: { color: 'text-accent', bg: 'bg-accent/10', border: 'border-accent/20', label: 'Running...' },
+    success: { color: 'text-status-success', bg: 'bg-surface', border: 'border-border-subtle', label: 'Completed' },
+    error: { color: 'text-status-error', bg: 'bg-status-error/10', border: 'border-status-error/20', label: 'Failed' },
+    rejected: { color: 'text-status-warning', bg: 'bg-surface', border: 'border-border-subtle', label: 'Rejected' },
   }
 
   const config = statusConfig[toolCall.status] || statusConfig.pending
   const isAwaiting = toolCall.status === 'awaiting_user'
 
   return (
-    <div className={`rounded-xl p-4 ${config.color} border border-current/20`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <ToolIcon name={toolCall.name} />
-          <span className="font-medium">{toolCall.name}</span>
-          {toolCall.approvalType && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-current/20">
-              {toolCall.approvalType}
-            </span>
-          )}
+    <div className={`rounded-lg border ${config.border} ${config.bg} overflow-hidden transition-all duration-200 my-2`}>
+      {/* Header / Summary */}
+      <div 
+        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white/5"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className={`p-1 rounded ${config.color === 'text-accent' ? 'bg-accent/20' : 'bg-surface-active'}`}>
+             <ToolIcon name={toolCall.name} />
+          </div>
+          <span className="font-mono text-xs font-medium text-text-primary truncate">{toolCall.name}</span>
+          <span className="text-xs text-text-muted truncate hidden sm:block">
+            {Object.keys(toolCall.arguments).length > 0 ? '(...)' : ''}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          {toolCall.status === 'running' && (
-            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          )}
-          <span className="text-xs opacity-70">{config.label}</span>
+        
+        <div className="flex items-center gap-2 flex-shrink-0">
+            {toolCall.status === 'running' && <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />}
+            {toolCall.status === 'success' && <Check className="w-3.5 h-3.5 text-status-success" />}
+            {toolCall.status === 'error' && <X className="w-3.5 h-3.5 text-status-error" />}
+            <ChevronRight className={`w-3.5 h-3.5 text-text-muted transition-transform ${expanded ? 'rotate-90' : ''}`} />
         </div>
       </div>
 
-      {/* 参数显示 */}
-      <div className="bg-black/20 rounded-lg p-3 mb-3">
-        <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
-          {JSON.stringify(toolCall.arguments, null, 2)}
-        </pre>
-      </div>
+      {/* Expanded Details */}
+      {expanded && (
+          <div className="border-t border-white/5 bg-black/20 p-3">
+             {/* Arguments */}
+            <div className="mb-3">
+                <span className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-1 block">Input</span>
+                <pre className="text-xs font-mono text-text-secondary bg-black/30 p-2 rounded overflow-x-auto">
+                    {JSON.stringify(toolCall.arguments, null, 2)}
+                </pre>
+            </div>
 
-      {/* 审批按钮 */}
-      {isAwaiting && onApprove && onReject && (
-        <div className="flex items-center gap-2 pt-2 border-t border-current/20">
-          <AlertTriangle className="w-4 h-4 text-yellow-400" />
-          <span className="text-sm flex-1">This action requires your approval</span>
-          <button
-            onClick={onReject}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Reject
-          </button>
-          <button
-            onClick={onApprove}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
-          >
-            <Check className="w-4 h-4" />
-            Approve
-          </button>
-        </div>
-      )}
+            {/* Approval Actions */}
+            {isAwaiting && onApprove && onReject && (
+                <div className="flex items-center gap-2 mb-3 bg-warning/5 p-2 rounded border border-warning/10">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
+                    <span className="text-xs text-warning flex-1">Allow this action?</span>
+                    <button onClick={(e) => { e.stopPropagation(); onReject() }} className="px-2 py-1 rounded bg-surface hover:bg-surface-hover text-text-muted hover:text-text-primary text-xs transition-colors">Deny</button>
+                    <button onClick={(e) => { e.stopPropagation(); onApprove() }} className="px-2 py-1 rounded bg-accent text-white hover:bg-accent-hover text-xs transition-colors shadow-glow">Allow</button>
+                </div>
+            )}
 
-      {/* 结果/错误显示 */}
-      {(toolCall.result || toolCall.error) && (
-        <div className="mt-3 pt-3 border-t border-current/20">
-          <ToolResultViewer
-            toolName={toolCall.name}
-            result={toolCall.result || ''}
-            error={toolCall.error}
-          />
-        </div>
+            {/* Result */}
+            {(toolCall.result || toolCall.error) && (
+                <div>
+                     <span className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-1 block">Output</span>
+                     <ToolResultViewer toolName={toolCall.name} result={toolCall.result || ''} error={toolCall.error} />
+                </div>
+            )}
+          </div>
       )}
     </div>
   )
@@ -125,31 +123,30 @@ function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === 'user'
 
   return (
-    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div className={`group flex gap-4 py-4 px-2 animate-fade-in ${isUser ? '' : ''}`}>
+      {/* Avatar */}
       <div className={`
-        w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-        ${isUser
-          ? 'bg-gradient-to-br from-blue-500 to-purple-500'
-          : 'bg-gradient-to-br from-emerald-500 to-cyan-500'}
+        w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5
+        ${isUser ? 'bg-accent/20 text-accent' : 'bg-purple-500/20 text-purple-400'}
       `}>
-        {isUser ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
+        {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
       </div>
-      <div className={`flex-1 ${isUser ? 'text-right' : ''}`}>
-        <div className={`
-          inline-block max-w-full text-left rounded-2xl px-4 py-3
-          ${isUser
-            ? 'bg-editor-active text-white'
-            : 'bg-editor-hover text-editor-text'}
-        `}>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+         <div className="flex items-center gap-2 mb-1">
+             <span className="text-xs font-medium text-text-primary opacity-90">{isUser ? 'You' : 'Assistant'}</span>
+             <span className="text-[10px] text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                 {new Date(message.timestamp).toLocaleTimeString()}
+             </span>
+         </div>
+
+        <div className={`text-sm leading-relaxed text-text-secondary ${isUser ? 'text-text-primary' : ''}`}>
           {message.role === 'tool' ? (
-            <div className="text-sm">
-              <span className="text-editor-text-muted">{t('toolResult', language)} </span>
-              <span className="font-mono text-editor-accent">{message.toolName}</span>
-              <pre className="mt-2 text-xs bg-black/20 rounded-lg p-3 overflow-x-auto max-h-48 whitespace-pre-wrap">
-                {message.content.slice(0, 1000)}
-                {message.content.length > 1000 && '...'}
-              </pre>
-            </div>
+             <div className="text-xs text-text-muted italic flex items-center gap-2 border-l-2 border-border-subtle pl-2">
+                <ToolIcon name={message.toolName || 'tool'} />
+                <span>Tool output for <span className="font-mono text-accent">{message.toolName}</span></span>
+             </div>
           ) : (
             <ReactMarkdown
               className="prose prose-invert prose-sm max-w-none"
@@ -158,15 +155,16 @@ function ChatMessage({ message }: { message: Message }) {
                   const match = /language-(\w+)/.exec(className || '')
                   const inline = !match
                   return inline ? (
-                    <code className="bg-black/30 px-1.5 py-0.5 rounded text-editor-accent font-mono text-sm" {...props}>
+                    <code className="bg-surface-active px-1 py-0.5 rounded text-accent font-mono text-xs" {...props}>
                       {children}
                     </code>
                   ) : (
                     <SyntaxHighlighter
-                      style={oneDark}
+                      style={vscDarkPlus}
                       language={match[1]}
                       PreTag="div"
-                      className="rounded-lg !bg-black/30 !my-2"
+                      className="!bg-background-secondary !border !border-border-subtle !rounded-lg !my-3 !text-xs"
+                      customStyle={{ background: 'transparent' }}
                     >
                       {String(children).replace(/\n$/, '')}
                     </SyntaxHighlighter>
@@ -178,7 +176,7 @@ function ChatMessage({ message }: { message: Message }) {
             </ReactMarkdown>
           )}
           {message.isStreaming && (
-            <span className="inline-block w-2 h-4 bg-editor-accent animate-pulse ml-1" />
+            <span className="inline-block w-1.5 h-3 bg-accent animate-pulse ml-1 align-middle" />
           )}
         </div>
       </div>
@@ -223,167 +221,145 @@ export default function ChatPanel() {
   const hasApiKey = !!llmConfig.apiKey
 
   return (
-    <div className="w-96 bg-editor-sidebar border-l border-editor-border flex flex-col relative">
+    <div className="w-[400px] bg-background border-l border-border-subtle flex flex-col relative shadow-xl z-10">
       {/* Header */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-editor-border">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-editor-accent" />
-          <span className="font-semibold">{t('aiAssistant', language)}</span>
+      <div className="h-10 flex items-center justify-between px-4 border-b border-border-subtle bg-background/50 backdrop-blur-sm z-20">
+        <div className="flex items-center gap-3">
+            <div className="flex bg-surface rounded-lg p-0.5 border border-border-subtle">
+                <button
+                onClick={() => setChatMode('chat')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    chatMode === 'chat'
+                    ? 'bg-background text-text-primary shadow-sm'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
+                >
+                Chat
+                </button>
+                <button
+                onClick={() => setChatMode('agent')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    chatMode === 'agent'
+                    ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 shadow-sm border border-purple-500/20'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
+                >
+                Agent
+                </button>
+            </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Mode Toggle */}
-          <div className="flex bg-editor-bg rounded-lg p-1">
-            <button
-              onClick={() => setChatMode('chat')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all ${
-                chatMode === 'chat'
-                  ? 'bg-editor-active text-white'
-                  : 'text-editor-text-muted hover:text-editor-text'
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              {t('chat', language)}
-            </button>
-            <button
-              onClick={() => setChatMode('agent')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all ${
-                chatMode === 'agent'
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                  : 'text-editor-text-muted hover:text-editor-text'
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5" />
-              {t('agent', language)}
-            </button>
-          </div>
-          {/* Checkpoints button */}
+        
+        <div className="flex items-center gap-1">
           {chatMode === 'agent' && checkpoints.length > 0 && (
             <button
               onClick={() => setShowCheckpoints(!showCheckpoints)}
-              className={`p-2 rounded-lg transition-colors ${
-                showCheckpoints ? 'bg-editor-accent text-white' : 'hover:bg-editor-hover'
-              }`}
-              title="Checkpoints"
+              className={`p-1.5 rounded hover:bg-surface-hover transition-colors ${showCheckpoints ? 'text-accent' : 'text-text-muted'}`}
+              title="History"
             >
-              <History className="w-4 h-4" />
+              <History className="w-3.5 h-3.5" />
             </button>
           )}
-          {/* Terminal button */}
-          {chatMode === 'agent' && (
-            <button
-              onClick={() => setTerminalVisible(!terminalVisible)}
-              className={`p-2 rounded-lg transition-colors ${
-                terminalVisible ? 'bg-editor-accent text-white' : 'hover:bg-editor-hover'
-              }`}
-              title={t('terminal', language)}
-            >
-              <Terminal className="w-4 h-4" />
-            </button>
-          )}
-          <button
+           <button
             onClick={clearMessages}
-            className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
+            className="p-1.5 rounded hover:bg-surface-hover hover:text-status-error transition-colors"
             title={t('clearChat', language)}
           >
-            <Trash2 className="w-4 h-4 text-editor-text-muted" />
+            <Trash2 className="w-3.5 h-3.5 text-text-muted" />
           </button>
         </div>
       </div>
 
-      {/* Checkpoint Panel (Slide-in) */}
+      {/* Checkpoint Panel Overlay */}
       {showCheckpoints && (
-        <div className="absolute top-14 right-0 w-80 h-[calc(100%-3.5rem)] bg-editor-sidebar border-l border-editor-border z-10 shadow-xl">
-          <CheckpointPanel onClose={() => setShowCheckpoints(false)} />
+        <div className="absolute top-10 right-0 left-0 bottom-0 bg-background/95 backdrop-blur-md z-30 overflow-hidden animate-slide-in">
+             <div className="h-full overflow-y-auto">
+                 <CheckpointPanel onClose={() => setShowCheckpoints(false)} />
+             </div>
         </div>
       )}
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-0 pb-4">
         {!hasApiKey && (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-center">
-            <p className="text-yellow-400 text-sm">
-              {t('apiKeyWarning', language)}
-            </p>
+          <div className="m-4 p-4 border border-warning/20 bg-warning/5 rounded-lg">
+             <div className="flex items-center gap-2 text-warning mb-1">
+                 <AlertTriangle className="w-4 h-4" />
+                 <span className="font-medium text-sm">API Key Missing</span>
+             </div>
+             <p className="text-xs text-text-muted">Please configure your LLM provider settings to start chatting.</p>
           </div>
         )}
 
         {messages.length === 0 && hasApiKey && (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 flex items-center justify-center">
-              {chatMode === 'agent' ? (
-                <Zap className="w-8 h-8 text-purple-400" />
-              ) : (
-                <MessageSquare className="w-8 h-8 text-blue-400" />
-              )}
-            </div>
-            <h3 className="font-medium text-editor-text mb-2">
-              {chatMode === 'agent' ? t('agentMode', language) : t('chatMode', language)}
-            </h3>
-            <p className="text-sm text-editor-text-muted">
-              {chatMode === 'agent' ? t('agentModeDesc', language) : t('chatModeDesc', language)}
-            </p>
+          <div className="h-full flex flex-col items-center justify-center opacity-30 select-none pointer-events-none">
+             <Sparkles className="w-12 h-12 text-text-muted mb-4" />
+             <p className="text-sm font-medium">How can I help you today?</p>
           </div>
         )}
 
-        {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+        <div className="divide-y divide-border-subtle/30">
+            {messages.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+            ))}
+        </div>
 
-        {currentToolCalls.map((toolCall) => (
-          <ToolCallDisplay
-            key={toolCall.id}
-            toolCall={toolCall}
-            onApprove={pendingToolCall?.id === toolCall.id ? approveCurrentTool : undefined}
-            onReject={pendingToolCall?.id === toolCall.id ? rejectCurrentTool : undefined}
-          />
-        ))}
+        {/* Current Tool Calls Area */}
+        {currentToolCalls.length > 0 && (
+            <div className="px-4 py-2 bg-surface/30 border-y border-border-subtle/50 my-2">
+                <span className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-2 block">Active Tools</span>
+                {currentToolCalls.map((toolCall) => (
+                    <ToolCallDisplay
+                    key={toolCall.id}
+                    toolCall={toolCall}
+                    onApprove={pendingToolCall?.id === toolCall.id ? approveCurrentTool : undefined}
+                    onReject={pendingToolCall?.id === toolCall.id ? rejectCurrentTool : undefined}
+                    />
+                ))}
+            </div>
+        )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 border-t border-editor-border">
-        <div className="relative">
+      {/* Input Area */}
+      <div className="p-4 bg-background border-t border-border-subtle">
+        <div className="relative group">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={hasApiKey ? t('askAnything', language) : t('configureApiKey', language)}
+            placeholder={hasApiKey ? (chatMode === 'agent' ? "Instruct the agent..." : "Type a message...") : "Configure API Key..."}
             disabled={!hasApiKey || !!pendingToolCall}
-            className="w-full bg-editor-bg border border-editor-border rounded-xl px-4 py-3 pr-12
-                     text-editor-text placeholder-editor-text-muted resize-none
-                     focus:outline-none focus:border-editor-active focus:ring-1 focus:ring-editor-active
-                     disabled:opacity-50 disabled:cursor-not-allowed"
-            rows={3}
+            className="w-full bg-surface border border-border-subtle rounded-xl px-4 py-3 pr-10
+                     text-sm text-text-primary placeholder-text-muted resize-none
+                     focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent
+                     transition-all shadow-sm group-hover:border-border-highlight"
+            rows={1}
+            style={{ minHeight: '44px', maxHeight: '200px' }}
           />
-          <button
-            onClick={isStreaming ? abort : handleSubmit}
-            disabled={!hasApiKey || (!input.trim() && !isStreaming) || !!pendingToolCall}
-            className={`absolute right-3 bottom-3 p-2 rounded-lg transition-all
-              ${isStreaming
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-editor-active hover:bg-blue-600'}
-              disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {isStreaming ? (
-              <StopCircle className="w-4 h-4 text-white" />
-            ) : (
-              <Send className="w-4 h-4 text-white" />
-            )}
-          </button>
-        </div>
-
-        {/* 等待审批提示 */}
-        {pendingToolCall && (
-          <div className="mt-2 flex items-center gap-2 text-yellow-400 text-xs">
-            <AlertTriangle className="w-3 h-3" />
-            <span>Waiting for tool approval...</span>
+          <div className="absolute right-2 bottom-2">
+            <button
+                onClick={isStreaming ? abort : handleSubmit}
+                disabled={!hasApiKey || (!input.trim() && !isStreaming) || !!pendingToolCall}
+                className={`p-1.5 rounded-lg transition-all
+                ${isStreaming
+                    ? 'bg-status-error/10 text-status-error hover:bg-status-error/20'
+                    : input.trim() ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-text-primary'}
+                `}
+            >
+                {isStreaming ? (
+                <StopCircle className="w-4 h-4" />
+                ) : (
+                <Send className="w-4 h-4" />
+                )}
+            </button>
           </div>
-        )}
-
-        <p className="text-xs text-editor-text-muted mt-2 text-center">
-          {chatMode === 'agent' ? t('agentModeHint', language) : t('chatModeHint', language)}
-        </p>
+        </div>
+        
+        <div className="mt-2 flex items-center justify-between text-[10px] text-text-muted px-1">
+            <span>{chatMode === 'agent' ? "Agent Mode: Can read/write files & run commands" : "Chat Mode: Conversation only"}</span>
+            <span className="opacity-50">↵ to send, ⇧↵ for new line</span>
+        </div>
       </div>
     </div>
   )

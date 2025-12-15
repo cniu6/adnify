@@ -74,6 +74,9 @@ interface EditorState {
 	checkpoints: Checkpoint[]
 	currentCheckpointIdx: number
 
+	// Sidebar
+	activeSidePanel: 'explorer' | 'search' | 'git' | 'settings' | null
+
 	// Actions
 	setWorkspacePath: (path: string | null) => void
 	setFiles: (files: FileItem[]) => void
@@ -83,6 +86,8 @@ interface EditorState {
 	setActiveFile: (path: string | null) => void
 	updateFileContent: (path: string, content: string) => void
 	markFileSaved: (path: string) => void
+	
+	setActiveSidePanel: (panel: 'explorer' | 'search' | 'git' | 'settings' | null) => void
 
 	setChatMode: (mode: ChatMode) => void
 	addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void
@@ -141,6 +146,7 @@ export const useStore = create<EditorState>((set) => ({
 	pendingToolCall: null,
 	checkpoints: [],
 	currentCheckpointIdx: -1,
+	activeSidePanel: 'explorer',
 
 	// File explorer actions
 	setWorkspacePath: (path) => set({ workspacePath: path }),
@@ -154,6 +160,8 @@ export const useStore = create<EditorState>((set) => ({
 		}
 		return { expandedFolders: newExpanded }
 	}),
+	
+	setActiveSidePanel: (panel) => set({ activeSidePanel: panel }),
 
 	// Editor actions
 	openFile: (path, content) => set((state) => {

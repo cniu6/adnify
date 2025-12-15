@@ -9,6 +9,8 @@ import TerminalPanel from './components/TerminalPanel'
 import CommandPalette from './components/CommandPalette'
 import KeyboardShortcuts from './components/KeyboardShortcuts'
 import QuickOpen from './components/QuickOpen'
+import ActivityBar from './components/ActivityBar'
+import StatusBar from './components/StatusBar'
 
 export default function App() {
   const { showSettings, setLLMConfig, setLanguage, setAutoApprove, setShowSettings, setTerminalVisible, terminalVisible } = useStore()
@@ -79,16 +81,32 @@ export default function App() {
   }, [handleGlobalKeyDown])
 
   return (
-    <div className="h-screen flex flex-col bg-editor-bg overflow-hidden">
+    <div className="h-screen flex flex-col bg-background overflow-hidden text-text-primary">
       <TitleBar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 flex overflow-hidden">
-          <Sidebar />
-          <Editor />
+      
+      {/* Main Workspace */}
+      <div className="flex-1 flex overflow-hidden">
+        <ActivityBar />
+        <Sidebar /> {/* Visibility controlled internally via activeSidePanel */}
+        
+        {/* Editor & Chat Area */}
+        <div className="flex-1 flex min-w-0 bg-background relative">
+          
+          {/* Editor Column */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+             <div className="flex-1 flex flex-col relative">
+                <Editor />
+             </div>
+             <TerminalPanel />
+          </div>
+
           <ChatPanel />
         </div>
-        <TerminalPanel />
       </div>
+
+      <StatusBar />
+
+      {/* Overlays */}
       {showSettings && <SettingsModal />}
       {showCommandPalette && (
         <CommandPalette

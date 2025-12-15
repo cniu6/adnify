@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   FolderOpen, File, ChevronRight, ChevronDown,
-  Plus, RefreshCw, FolderPlus, GitBranch, Circle
+  Plus, RefreshCw, FolderPlus, GitBranch, Circle,
+  Search as SearchIcon, MoreHorizontal
 } from 'lucide-react'
 import { useStore } from '../store'
 import { FileItem } from '../types/electron'
@@ -20,15 +21,17 @@ const getFileIcon = (name: string) => {
     md: 'text-gray-400',
     css: 'text-pink-400',
     html: 'text-orange-400',
+    gitignore: 'text-gray-500',
   }
-  return iconColors[ext || ''] || 'text-editor-text-muted'
+  return iconColors[ext || ''] || 'text-text-muted'
 }
 
 function FileTreeItem({ item, depth = 0 }: { item: FileItem; depth?: number }) {
-  const { expandedFolders, toggleFolder, openFile, setActiveFile } = useStore()
+  const { expandedFolders, toggleFolder, openFile, setActiveFile, activeFilePath } = useStore()
   const [children, setChildren] = useState<FileItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const isExpanded = expandedFolders.has(item.path)
+  const isActive = activeFilePath === item.path
 
   useEffect(() => {
     if (item.isDirectory && isExpanded) {
@@ -40,7 +43,8 @@ function FileTreeItem({ item, depth = 0 }: { item: FileItem; depth?: number }) {
     }
   }, [item.path, item.isDirectory, isExpanded])
 
-  const handleClick = async () => {
+  const handleClick = async (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (item.isDirectory) {
       toggleFolder(item.path)
     } else {
@@ -56,30 +60,45 @@ function FileTreeItem({ item, depth = 0 }: { item: FileItem; depth?: number }) {
     <div>
       <div
         onClick={handleClick}
-        className="flex items-center gap-1 py-1 px-2 hover:bg-editor-hover cursor-pointer rounded transition-colors group"
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        className={`
+            group flex items-center gap-1.5 py-1 pr-2 cursor-pointer transition-colors relative
+            ${isActive ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}
+        `}
+        style={{ paddingLeft: `${depth * 12 + 12}px` }}
       >
+        {/* Indent Guide */}
+        {depth > 0 && (
+             <div className="absolute left-0 top-0 bottom-0 border-l border-border-subtle" 
+                  style={{ left: `${depth * 12}px` }} 
+             />
+        )}
+
         {item.isDirectory ? (
           <>
+             <span className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                 <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+             </span>
             {isLoading ? (
-              <div className="w-4 h-4 border-2 border-editor-text-muted border-t-transparent rounded-full animate-spin" />
-            ) : isExpanded ? (
-              <ChevronDown className="w-4 h-4 text-editor-text-muted" />
+                <div className="w-3.5 h-3.5 border-2 border-text-muted border-t-transparent rounded-full animate-spin" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-editor-text-muted" />
+                <FolderOpen className={`w-3.5 h-3.5 ${isExpanded ? 'text-accent' : 'text-text-muted'}`} />
             )}
-            <FolderOpen className={`w-4 h-4 ${isExpanded ? 'text-editor-accent' : 'text-editor-text-muted'}`} />
           </>
         ) : (
           <>
-            <span className="w-4" />
-            <File className={`w-4 h-4 ${getFileIcon(item.name)}`} />
+            <span className="w-3.5" /> {/* Spacer for alignment */}
+            <File className={`w-3.5 h-3.5 ${getFileIcon(item.name)}`} />
           </>
         )}
-        <span className="text-sm text-editor-text truncate">{item.name}</span>
+        <span className="text-[13px] truncate leading-none pt-0.5">{item.name}</span>
       </div>
+      
       {item.isDirectory && isExpanded && (
-        <div>
+        <div className="relative">
+             {/* Vertical line for folder content */}
+             <div className="absolute left-0 top-0 bottom-0 border-l border-border-subtle/50" 
+                  style={{ left: `${(depth + 1) * 12}px` }} 
+             />
           {children
             .sort((a, b) => {
               if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
@@ -94,157 +113,135 @@ function FileTreeItem({ item, depth = 0 }: { item: FileItem; depth?: number }) {
   )
 }
 
+function ExplorerView() {
+    const { workspacePath, files, setWorkspacePath, setFiles, language } = useStore()
+    const [gitStatus, setGitStatus] = useState<GitStatus | null>(null)
+    const [isGitRepo, setIsGitRepo] = useState(false)
+
+    // 更新 Git 状态
+    const updateGitStatus = useCallback(async () => {
+        if (!workspacePath) {
+        setGitStatus(null)
+        setIsGitRepo(false)
+        return
+        }
+
+        gitService.setWorkspace(workspacePath)
+        const isRepo = await gitService.isGitRepo()
+        setIsGitRepo(isRepo)
+
+        if (isRepo) {
+        const status = await gitService.getStatus()
+        setGitStatus(status)
+        }
+    }, [workspacePath])
+
+    // 工作区变化时更新 Git 状态
+    useEffect(() => {
+        updateGitStatus()
+        // 定期刷新 Git 状态
+        const interval = setInterval(updateGitStatus, 5000)
+        return () => clearInterval(interval)
+    }, [updateGitStatus])
+
+    const handleOpenFolder = async () => {
+        const path = await window.electronAPI.openFolder()
+        if (path) {
+        setWorkspacePath(path)
+        const items = await window.electronAPI.readDir(path)
+        setFiles(items)
+        }
+    }
+
+    const refreshFiles = async () => {
+        if (workspacePath) {
+        const items = await window.electronAPI.readDir(workspacePath)
+        setFiles(items)
+        updateGitStatus()
+        }
+    }
+
+    return (
+        <div className="h-full flex flex-col">
+            <div className="h-9 px-3 flex items-center justify-between group">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                    {t('explorer', language)}
+                </span>
+                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                     <button onClick={handleOpenFolder} className="p-1 hover:bg-surface-active rounded transition-colors" title={t('openFolder', language)}>
+                        <FolderPlus className="w-3.5 h-3.5 text-text-muted hover:text-text-primary" />
+                    </button>
+                    <button onClick={refreshFiles} className="p-1 hover:bg-surface-active rounded transition-colors" title={t('refresh', language)}>
+                        <RefreshCw className="w-3.5 h-3.5 text-text-muted hover:text-text-primary" />
+                    </button>
+                </div>
+            </div>
+
+             <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-1">
+                {workspacePath ? (
+                files
+                    .sort((a, b) => {
+                    if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
+                    return a.isDirectory ? -1 : 1
+                    })
+                    .map((item) => (
+                    <FileTreeItem key={item.path} item={item} />
+                    ))
+                ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                    <div className="w-12 h-12 bg-surface-hover rounded-xl flex items-center justify-center mb-4">
+                        <FolderOpen className="w-6 h-6 text-text-muted" />
+                    </div>
+                    <p className="text-sm text-text-muted mb-4 font-medium">No Folder Opened</p>
+                    <button
+                    onClick={handleOpenFolder}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary-hover transition-colors shadow-glow"
+                    >
+                    <Plus className="w-3.5 h-3.5" />
+                    {t('openFolder', language)}
+                    </button>
+                </div>
+                )}
+            </div>
+
+             {/* Git Status Mini-Bar (Pinned to bottom of explorer) */}
+             {isGitRepo && gitStatus && (
+                <div className="px-3 py-2 border-t border-border-subtle bg-surface/50">
+                    <div className="flex items-center gap-2 text-xs text-text-secondary">
+                        <GitBranch className="w-3.5 h-3.5" />
+                        <span>{gitStatus.branch}</span>
+                        {(gitStatus.ahead > 0 || gitStatus.behind > 0) && (
+                            <span className="ml-auto flex items-center gap-1 text-[10px] text-text-muted bg-surface-active px-1.5 py-0.5 rounded">
+                                {gitStatus.ahead > 0 && `↑${gitStatus.ahead}`}
+                                {gitStatus.behind > 0 && `↓${gitStatus.behind}`}
+                            </span>
+                        )}
+                    </div>
+                </div>
+             )}
+        </div>
+    )
+}
+
+function SearchView() {
+    return (
+        <div className="p-4 text-center">
+            <SearchIcon className="w-8 h-8 text-text-muted mx-auto mb-2" />
+            <p className="text-sm text-text-muted">Search functionality coming soon.</p>
+        </div>
+    )
+}
+
 export default function Sidebar() {
-  const { workspacePath, files, setWorkspacePath, setFiles, language } = useStore()
-  const [gitStatus, setGitStatus] = useState<GitStatus | null>(null)
-  const [isGitRepo, setIsGitRepo] = useState(false)
+  const { activeSidePanel } = useStore()
 
-  // 更新 Git 状态
-  const updateGitStatus = useCallback(async () => {
-    if (!workspacePath) {
-      setGitStatus(null)
-      setIsGitRepo(false)
-      return
-    }
-
-    gitService.setWorkspace(workspacePath)
-    const isRepo = await gitService.isGitRepo()
-    setIsGitRepo(isRepo)
-
-    if (isRepo) {
-      const status = await gitService.getStatus()
-      setGitStatus(status)
-    }
-  }, [workspacePath])
-
-  // 工作区变化时更新 Git 状态
-  useEffect(() => {
-    updateGitStatus()
-    // 定期刷新 Git 状态
-    const interval = setInterval(updateGitStatus, 5000)
-    return () => clearInterval(interval)
-  }, [updateGitStatus])
-
-  const handleOpenFolder = async () => {
-    const path = await window.electronAPI.openFolder()
-    if (path) {
-      setWorkspacePath(path)
-      const items = await window.electronAPI.readDir(path)
-      setFiles(items)
-    }
-  }
-
-  const refreshFiles = async () => {
-    if (workspacePath) {
-      const items = await window.electronAPI.readDir(workspacePath)
-      setFiles(items)
-      updateGitStatus()
-    }
-  }
-
-  // 获取文件的 Git 状态颜色
-  const getGitStatusColor = (filePath: string): string | null => {
-    if (!gitStatus) return null
-
-    const relativePath = filePath.replace(workspacePath + '/', '').replace(workspacePath + '\\', '')
-
-    if (gitStatus.untracked.includes(relativePath)) return 'text-green-400'
-    if (gitStatus.staged.some(f => f.path === relativePath)) return 'text-green-400'
-    if (gitStatus.unstaged.some(f => f.path === relativePath)) return 'text-yellow-400'
-
-    return null
-  }
+  if (!activeSidePanel) return null
 
   return (
-    <div className="w-64 bg-editor-sidebar border-r border-editor-border flex flex-col">
-      {/* Header */}
-      <div className="h-10 flex items-center justify-between px-3 border-b border-editor-border">
-        <span className="text-xs font-medium text-editor-text-muted uppercase tracking-wider">
-          {t('explorer', language)}
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleOpenFolder}
-            className="p-1.5 rounded hover:bg-editor-hover transition-colors"
-            title={t('openFolder', language)}
-          >
-            <FolderPlus className="w-4 h-4 text-editor-text-muted" />
-          </button>
-          <button
-            onClick={refreshFiles}
-            className="p-1.5 rounded hover:bg-editor-hover transition-colors"
-            title={t('refresh', language)}
-          >
-            <RefreshCw className="w-4 h-4 text-editor-text-muted" />
-          </button>
-        </div>
-      </div>
-
-      {/* File Tree */}
-      <div className="flex-1 overflow-auto py-2">
-        {workspacePath ? (
-          files
-            .sort((a, b) => {
-              if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
-              return a.isDirectory ? -1 : 1
-            })
-            .map((item) => (
-              <FileTreeItem key={item.path} item={item} />
-            ))
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <FolderOpen className="w-12 h-12 text-editor-text-muted mb-4 opacity-50" />
-            <p className="text-sm text-editor-text-muted mb-4">
-              {t('noFolderOpened', language)}
-            </p>
-            <button
-              onClick={handleOpenFolder}
-              className="flex items-center gap-2 px-4 py-2 bg-editor-active text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              {t('openFolder', language)}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Git Status Bar */}
-      {isGitRepo && gitStatus && (
-        <div className="border-t border-editor-border px-3 py-2">
-          <div className="flex items-center gap-2 text-xs">
-            <GitBranch className="w-3.5 h-3.5 text-editor-accent" />
-            <span className="text-editor-text font-medium">{gitStatus.branch}</span>
-            {(gitStatus.ahead > 0 || gitStatus.behind > 0) && (
-              <span className="text-editor-text-muted">
-                {gitStatus.ahead > 0 && `↑${gitStatus.ahead}`}
-                {gitStatus.behind > 0 && `↓${gitStatus.behind}`}
-              </span>
-            )}
-          </div>
-          {(gitStatus.staged.length > 0 || gitStatus.unstaged.length > 0 || gitStatus.untracked.length > 0) && (
-            <div className="flex items-center gap-3 mt-1.5 text-xs">
-              {gitStatus.staged.length > 0 && (
-                <span className="flex items-center gap-1 text-green-400">
-                  <Circle className="w-2 h-2 fill-current" />
-                  {gitStatus.staged.length} staged
-                </span>
-              )}
-              {gitStatus.unstaged.length > 0 && (
-                <span className="flex items-center gap-1 text-yellow-400">
-                  <Circle className="w-2 h-2 fill-current" />
-                  {gitStatus.unstaged.length} modified
-                </span>
-              )}
-              {gitStatus.untracked.length > 0 && (
-                <span className="flex items-center gap-1 text-editor-text-muted">
-                  <Circle className="w-2 h-2 fill-current" />
-                  {gitStatus.untracked.length} untracked
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+    <div className="w-64 bg-background-secondary border-r border-border-subtle flex flex-col h-full animate-slide-in">
+      {activeSidePanel === 'explorer' && <ExplorerView />}
+      {activeSidePanel === 'search' && <SearchView />}
+      {activeSidePanel === 'git' && <div className="p-4 text-sm text-text-muted">Git Control</div>}
     </div>
   )
 }

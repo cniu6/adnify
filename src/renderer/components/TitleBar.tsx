@@ -1,4 +1,4 @@
-import { Minus, Square, X, Settings, Sparkles } from 'lucide-react'
+import { Minus, Square, X, Settings, Command } from 'lucide-react'
 import { useStore } from '../store'
 import { t } from '../i18n'
 
@@ -6,47 +6,42 @@ export default function TitleBar() {
   const { setShowSettings, language } = useStore()
 
   return (
-    <div className="h-12 bg-editor-sidebar border-b border-editor-border flex items-center justify-between px-4 drag-region">
-      {/* Logo */}
-      <div className="flex items-center gap-3 no-drag">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-semibold text-lg gradient-text">{t('app.name', language)}</span>
+    <div className="h-10 bg-background flex items-center justify-between px-3 drag-region select-none">
+      {/* Window Controls (Mac-like or Windows-like based on preference, keeping right-side for now) */}
+      
+      {/* Left Spacer / Logo */}
+      <div className="flex items-center gap-2 no-drag w-1/3">
+        {/* <div className="w-3 h-3 rounded-full bg-accent/50" /> */}
+        <span className="text-xs font-medium text-text-muted tracking-wide opacity-50 hover:opacity-100 transition-opacity">ADNIFY</span>
       </div>
 
-      {/* Center - can add tabs or breadcrumb here */}
-      <div className="flex-1" />
+      {/* Center - Command Palette / Search Trigger Placeholder */}
+      <div className="flex-1 flex justify-center no-drag">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-surface border border-border-subtle hover:border-border-highlight hover:bg-surface-hover transition-all cursor-pointer group w-64 justify-center">
+            <Command className="w-3 h-3 text-text-muted group-hover:text-text-primary" />
+            <span className="text-xs text-text-muted group-hover:text-text-primary">Search files...</span>
+        </div>
+      </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-2 no-drag">
-        <button
-          onClick={() => setShowSettings(true)}
-          className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
-          title={t('settings', language)}
-        >
-          <Settings className="w-4 h-4 text-editor-text-muted" />
-        </button>
-
-        <div className="w-px h-6 bg-editor-border mx-2" />
-
+      {/* Right Controls */}
+      <div className="flex items-center justify-end gap-1 no-drag w-1/3">
         <button
           onClick={() => window.electronAPI.minimize()}
-          className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
+          className="p-2 rounded-md hover:bg-surface-hover transition-colors text-text-muted hover:text-text-primary"
         >
-          <Minus className="w-4 h-4 text-editor-text-muted" />
+          <Minus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => window.electronAPI.maximize()}
-          className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
+          className="p-2 rounded-md hover:bg-surface-hover transition-colors text-text-muted hover:text-text-primary"
         >
-          <Square className="w-3.5 h-3.5 text-editor-text-muted" />
+          <Square className="w-3 h-3" />
         </button>
         <button
           onClick={() => window.electronAPI.close()}
-          className="p-2 rounded-lg hover:bg-red-500/20 transition-colors group"
+          className="p-2 rounded-md hover:bg-red-500 hover:text-white transition-colors text-text-muted group"
         >
-          <X className="w-4 h-4 text-editor-text-muted group-hover:text-red-400" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

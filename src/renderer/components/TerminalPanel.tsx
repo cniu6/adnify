@@ -26,25 +26,25 @@ const TerminalTab = memo(function TerminalTab({
   return (
     <div
       className={`
-        flex items-center gap-2 px-3 py-1.5 cursor-pointer border-b-2 transition-colors
+        flex items-center gap-2 px-3 py-1.5 cursor-pointer border-t-2 transition-colors min-w-[120px] max-w-[200px] group
         ${isActive
-          ? 'border-editor-accent bg-editor-hover text-editor-text'
-          : 'border-transparent text-editor-text-muted hover:text-editor-text hover:bg-editor-hover/50'
+          ? 'border-accent bg-background text-text-primary'
+          : 'border-transparent bg-background-secondary text-text-muted hover:bg-surface-hover'
         }
       `}
       onClick={onSelect}
     >
       <Terminal className="w-3.5 h-3.5" />
-      <span className="text-sm truncate max-w-24">{terminal.name}</span>
+      <span className="text-xs font-mono truncate flex-1">{terminal.name}</span>
       {terminal.isRunning && (
-        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse" />
       )}
       <button
         onClick={(e) => {
           e.stopPropagation()
           onClose()
         }}
-        className="p-0.5 rounded hover:bg-editor-bg transition-colors"
+        className={`p-0.5 rounded hover:bg-surface-active opacity-0 group-hover:opacity-100 transition-opacity ${isActive ? 'opacity-100' : ''}`}
       >
         <X className="w-3 h-3" />
       </button>
@@ -96,16 +96,16 @@ const TerminalOutput = memo(function TerminalOutput({ terminal }: TerminalOutput
   return (
     <div
       ref={outputRef}
-      className="flex-1 overflow-auto bg-editor-bg p-3 font-mono text-sm"
+      className="flex-1 overflow-auto bg-background p-3 font-mono text-xs custom-scrollbar"
       onScroll={handleScroll}
     >
       {output.length === 0 ? (
-        <div className="text-editor-text-muted">
-          Terminal ready. Run commands using run_in_terminal tool.
+        <div className="text-text-muted opacity-50 select-none">
+          $ Terminal ready
         </div>
       ) : (
         output.map((line, idx) => (
-          <div key={idx} className="whitespace-pre-wrap text-editor-text leading-5">
+          <div key={idx} className="whitespace-pre-wrap text-text-primary leading-relaxed break-all">
             {line}
           </div>
         ))
@@ -167,90 +167,87 @@ export default function TerminalPanel() {
   const activeTerminal = terminals.find(t => t.id === activeTerminalId)
 
   return (
-    <div className="flex flex-col border-t border-editor-border bg-editor-sidebar">
+    <div className={`flex flex-col border-t border-border-subtle bg-background-secondary transition-all duration-300 ${isCollapsed ? 'h-10' : 'h-64'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-editor-border">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-editor-accent" />
-          <span className="text-sm font-medium text-editor-text">
-            {t('terminal', language)}
-          </span>
-          <span className="text-xs text-editor-text-muted">
-            ({terminals.length})
-          </span>
+      <div className="flex items-center justify-between px-3 h-10 border-b border-border-subtle select-none">
+        <div className="flex items-center gap-4">
+           <div className="flex items-center gap-2 text-text-muted hover:text-text-primary transition-colors cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
+                <Terminal className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium uppercase tracking-wider">
+                    {t('terminal', language)}
+                </span>
+           </div>
+           
+           {/* Terminal Tabs in Header if space permits, or below */}
+            {!isCollapsed && terminals.length > 0 && (
+                <div className="flex items-center gap-1 h-full pt-1">
+                    {terminals.map(terminal => (
+                        <TerminalTab
+                        key={terminal.id}
+                        terminal={terminal}
+                        isActive={terminal.id === activeTerminalId}
+                        onSelect={() => setActiveTerminalId(terminal.id)}
+                        onClose={() => closeTerminal(terminal.id)}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
+
         <div className="flex items-center gap-1">
           <button
             onClick={createTerminal}
-            className="p-1.5 rounded hover:bg-editor-hover transition-colors"
+            className="p-1.5 rounded hover:bg-surface-hover transition-colors text-text-muted hover:text-text-primary"
             title="New Terminal"
           >
-            <Plus className="w-4 h-4 text-editor-text-muted" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={clearCurrentOutput}
-            className="p-1.5 rounded hover:bg-editor-hover transition-colors"
+            className="p-1.5 rounded hover:bg-surface-hover transition-colors text-text-muted hover:text-text-primary"
             title="Clear Output"
             disabled={!activeTerminal}
           >
-            <Trash2 className="w-4 h-4 text-editor-text-muted" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 rounded hover:bg-editor-hover transition-colors"
+            className="p-1.5 rounded hover:bg-surface-hover transition-colors text-text-muted hover:text-text-primary"
           >
             {isCollapsed ? (
-              <ChevronUp className="w-4 h-4 text-editor-text-muted" />
+              <ChevronUp className="w-3.5 h-3.5" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-editor-text-muted" />
+              <ChevronDown className="w-3.5 h-3.5" />
             )}
           </button>
           <button
             onClick={() => setTerminalVisible(false)}
-            className="p-1.5 rounded hover:bg-editor-hover transition-colors"
+            className="p-1.5 rounded hover:bg-surface-hover transition-colors text-text-muted hover:text-text-primary"
           >
-            <X className="w-4 h-4 text-editor-text-muted" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
       {!isCollapsed && (
-        <>
-          {/* Tabs */}
-          {terminals.length > 0 && (
-            <div className="flex items-center gap-1 px-2 py-1 border-b border-editor-border overflow-x-auto">
-              {terminals.map(terminal => (
-                <TerminalTab
-                  key={terminal.id}
-                  terminal={terminal}
-                  isActive={terminal.id === activeTerminalId}
-                  onSelect={() => setActiveTerminalId(terminal.id)}
-                  onClose={() => closeTerminal(terminal.id)}
-                />
-              ))}
+        <div className="flex-1 flex flex-col min-h-0">
+          {activeTerminal ? (
+            <TerminalOutput terminal={activeTerminal} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-text-muted bg-background">
+              <div className="text-center">
+                <Terminal className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                <p className="text-xs mb-3">No active terminal</p>
+                <button
+                  onClick={createTerminal}
+                  className="px-3 py-1.5 text-xs bg-surface border border-border-subtle hover:border-text-muted rounded transition-colors"
+                >
+                  Create New
+                </button>
+              </div>
             </div>
           )}
-
-          {/* Content */}
-          <div className="h-48 flex flex-col">
-            {activeTerminal ? (
-              <TerminalOutput terminal={activeTerminal} />
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-editor-text-muted">
-                <div className="text-center">
-                  <Terminal className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No terminals open</p>
-                  <button
-                    onClick={createTerminal}
-                    className="mt-2 px-3 py-1.5 text-sm bg-editor-accent text-white rounded hover:bg-editor-accent/80 transition-colors"
-                  >
-                    Create Terminal
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </>
+        </div>
       )}
     </div>
   )
