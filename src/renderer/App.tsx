@@ -13,13 +13,16 @@ import ActivityBar from './components/ActivityBar'
 import StatusBar from './components/StatusBar'
 
 export default function App() {
-  const { showSettings, setLLMConfig, setLanguage, setAutoApprove, setShowSettings, setTerminalVisible, terminalVisible } = useStore()
+  const { 
+    showSettings, setLLMConfig, setLanguage, setAutoApprove, setShowSettings, 
+    setTerminalVisible, terminalVisible, setWorkspacePath, setFiles 
+  } = useStore()
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [showQuickOpen, setShowQuickOpen] = useState(false)
 
   useEffect(() => {
-    // Load saved settings
+    // Load saved settings & restore workspace
     const loadSettings = async () => {
       const savedConfig = await window.electronAPI.getSetting('llmConfig')
       if (savedConfig) {
@@ -33,9 +36,17 @@ export default function App() {
       if (savedAutoApprove) {
         setAutoApprove(savedAutoApprove)
       }
+      
+      // Auto-restore workspace
+      const lastWorkspace = await window.electronAPI.restoreWorkspace()
+      if (lastWorkspace) {
+        setWorkspacePath(lastWorkspace)
+        const items = await window.electronAPI.readDir(lastWorkspace)
+        setFiles(items)
+      }
     }
     loadSettings()
-  }, [setLLMConfig, setLanguage, setAutoApprove])
+  }, [setLLMConfig, setLanguage, setAutoApprove, setWorkspacePath, setFiles])
 
   // 全局快捷键
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {

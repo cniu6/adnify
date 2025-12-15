@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 import MonacoEditor, { OnMount, loader } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
-import { X, Circle, AlertTriangle, AlertCircle, RefreshCw, FileCode } from 'lucide-react'
+import { X, Circle, AlertTriangle, AlertCircle, RefreshCw, FileCode, ChevronRight, Home } from 'lucide-react'
 import { useStore } from '../store'
 import { t } from '../i18n'
 import DiffViewer from './DiffViewer'
@@ -306,6 +306,15 @@ export default function Editor() {
     }
   }, [handleSave])
 
+  // Breadcrumb path generation
+  const getBreadcrumbs = (path: string) => {
+      // Very simple: just split path. 
+      // In a real app, you'd make this relative to workspace root.
+      const parts = path.split(/[/\\]/)
+      // Show last 3 parts max to avoid clutter
+      return parts.slice(-4)
+  }
+
   if (openFiles.length === 0) {
     return (
       <div className="flex-1 flex flex-col bg-background relative overflow-hidden">
@@ -321,8 +330,8 @@ export default function Editor() {
             <p className="text-text-muted text-sm">{t('welcomeDesc', language)}</p>
             
             <div className="mt-8 flex flex-col gap-2 text-xs text-text-muted opacity-60">
-                 <p>Press <kbd className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border-subtle">Ctrl+P</kbd> to open files</p>
-                 <p>Press <kbd className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border-subtle">Ctrl+Shift+P</kbd> for commands</p>
+                 <p>Press <kbd className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border-subtle">Ctrl+P</kbd> {t('searchFile', language)}</p>
+                 <p>Press <kbd className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border-subtle">Ctrl+Shift+P</kbd> Command Palette</p>
             </div>
           </div>
         </div>
@@ -333,8 +342,8 @@ export default function Editor() {
   return (
     <div className="flex-1 flex flex-col bg-background" onKeyDown={handleKeyDown}>
       {/* Tabs */}
-      <div className="h-9 flex items-center bg-background-secondary border-b border-border-subtle overflow-hidden">
-        <div className="flex items-center flex-1 overflow-x-auto no-scrollbar">
+      <div className="h-10 flex items-center bg-background-secondary border-b border-border-subtle overflow-hidden select-none">
+        <div className="flex items-center flex-1 overflow-x-auto no-scrollbar h-full">
           {openFiles.map((file) => {
             const fileName = file.path.split(/[/\\]/).pop()
             const isActive = file.path === activeFilePath
@@ -343,8 +352,8 @@ export default function Editor() {
                 key={file.path}
                 onClick={() => setActiveFile(file.path)}
                 className={`
-                  flex items-center gap-2 px-3 h-full cursor-pointer
-                  transition-all group min-w-[120px] max-w-[200px] border-r border-border-subtle/50
+                  flex items-center gap-2 px-4 h-full cursor-pointer
+                  transition-all group min-w-[120px] max-w-[200px] border-r border-border-subtle/30
                   ${isActive 
                     ? 'bg-background text-text-primary border-t-2 border-t-accent' 
                     : 'bg-transparent text-text-muted hover:bg-surface-hover hover:text-text-primary border-t-2 border-t-transparent'}
@@ -352,10 +361,10 @@ export default function Editor() {
               >
                 <FileCode className={`w-3.5 h-3.5 opacity-70 ${isActive ? 'text-accent' : ''}`} />
                 <span className="truncate text-xs flex-1">{fileName}</span>
-                {file.isDirty ? (
-                   <Circle className="w-2 h-2 fill-text-muted text-transparent" />
-                ) : (
-                  <button
+                {file.isDirty && (
+                   <Circle className="w-2 h-2 fill-accent text-transparent mr-1" />
+                )}
+                <button
                     onClick={(e) => {
                       e.stopPropagation()
                       closeFile(file.path)
@@ -363,8 +372,7 @@ export default function Editor() {
                     className={`p-0.5 rounded hover:bg-surface-active opacity-0 group-hover:opacity-100 transition-opacity ${isActive ? 'opacity-100' : ''}`}
                   >
                     <X className="w-3 h-3 text-text-muted" />
-                  </button>
-                )}
+                </button>
               </div>
             )
           })}
@@ -372,17 +380,17 @@ export default function Editor() {
 
         {/* Lint 状态和按钮 */}
         {activeFile && (
-          <div className="flex items-center gap-2 px-2 flex-shrink-0 bg-background-secondary h-full border-l border-border-subtle">
+          <div className="flex items-center gap-2 px-3 flex-shrink-0 bg-background-secondary h-full border-l border-border-subtle">
             {lintErrors.length > 0 && (
               <div className="flex items-center gap-2 text-xs mr-2">
                 {lintErrors.filter(e => e.severity === 'error').length > 0 && (
-                  <span className="flex items-center gap-1 text-status-error">
+                  <span className="flex items-center gap-1 text-status-error" title="Errors">
                     <AlertCircle className="w-3.5 h-3.5" />
                     {lintErrors.filter(e => e.severity === 'error').length}
                   </span>
                 )}
                 {lintErrors.filter(e => e.severity === 'warning').length > 0 && (
-                  <span className="flex items-center gap-1 text-status-warning">
+                  <span className="flex items-center gap-1 text-status-warning" title="Warnings">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     {lintErrors.filter(e => e.severity === 'warning').length}
                   </span>
@@ -400,6 +408,22 @@ export default function Editor() {
           </div>
         )}
       </div>
+
+      {/* Breadcrumbs */}
+      {activeFile && (
+          <div className="h-6 flex items-center px-4 bg-background border-b border-border-subtle/50 text-[11px] text-text-muted select-none">
+              <div className="flex items-center gap-1 opacity-70">
+                  <Home className="w-3 h-3" />
+                  <span className="mx-1 opacity-30">/</span>
+                  {getBreadcrumbs(activeFile.path).map((part, i, arr) => (
+                      <div key={i} className="flex items-center">
+                          <span className={i === arr.length - 1 ? 'text-text-primary font-medium' : ''}>{part}</span>
+                          {i < arr.length - 1 && <ChevronRight className="w-3 h-3 mx-1 opacity-30" />}
+                      </div>
+                  ))}
+              </div>
+          </div>
+      )}
 
       {/* 流式编辑预览 */}
       {showDiffPreview && streamingEdit && activeFile && (
@@ -462,7 +486,7 @@ export default function Editor() {
             }}
             loading={
               <div className="flex items-center justify-center h-full">
-                <div className="text-text-muted text-sm">Initializing editor...</div>
+                <div className="text-text-muted text-sm">{t('loading', language)}</div>
               </div>
             }
             options={{

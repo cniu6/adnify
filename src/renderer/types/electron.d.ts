@@ -46,6 +46,7 @@ export interface ElectronAPI {
 	// File operations
 	openFile: () => Promise<{ path: string; content: string } | null>
 	openFolder: () => Promise<string | null>
+    restoreWorkspace: () => Promise<string | null>
 	readDir: (path: string) => Promise<FileItem[]>
 	readFile: (path: string) => Promise<string | null>
 	writeFile: (path: string, content: string) => Promise<boolean>
@@ -53,6 +54,8 @@ export interface ElectronAPI {
 	fileExists: (path: string) => Promise<boolean>
 	mkdir: (path: string) => Promise<boolean>
 	deleteFile: (path: string) => Promise<boolean>
+	renameFile: (oldPath: string, newPath: string) => Promise<boolean>
+	searchFiles: (query: string, rootPath: string, options?: { isRegex: boolean; isCaseSensitive: boolean; isWholeWord: boolean; exclude?: string }) => Promise<{ path: string; line: number; text: string }[]>
 
 	// Settings
 	getSetting: (key: string) => Promise<any>
@@ -67,9 +70,11 @@ export interface ElectronAPI {
 	onLLMDone: (callback: (result: LLMResult) => void) => () => void
 
 	// Terminal
-	executeCommand: (command: string, cwd?: string) => Promise<{ output: string; errorOutput: string; exitCode: number }>
+    createTerminal: (options?: { cwd?: string }) => Promise<boolean>
+    writeTerminal: (data: string) => Promise<void>
+    resizeTerminal: (cols: number, rows: number) => Promise<void>
 	killTerminal: () => void
-	onTerminalOutput: (callback: (data: string) => void) => () => void
+	onTerminalData: (callback: (data: string) => void) => () => void
 }
 
 declare global {

@@ -78,9 +78,15 @@ ipcMain.handle('file:openFolder', async () => {
 		properties: ['openDirectory']
 	})
 	if (!result.canceled && result.filePaths.length > 0) {
-		return result.filePaths[0]
+        const path = result.filePaths[0]
+        store.set('lastWorkspacePath', path)
+		return path
 	}
 	return null
+})
+
+ipcMain.handle('workspace:restore', () => {
+    return store.get('lastWorkspacePath')
 })
 
 ipcMain.handle('file:readDir', async (_, dirPath: string) => {
@@ -155,6 +161,109 @@ ipcMain.handle('file:delete', async (_, filePath: string) => {
 	}
 })
 
+ipcMain.handle('file:rename', async (_, oldPath: string, newPath: string) => {
+	try {
+		fs.renameSync(oldPath, newPath)
+		return true
+	} catch (error) {
+		console.error('Rename error:', error)
+		return false
+	}
+})
+
+interface SearchOptions {
+    isRegex: boolean
+    isCaseSensitive: boolean
+    isWholeWord: boolean
+    include?: string
+    exclude?: string
+}
+
+ipcMain.handle('file:search', async (_, query: string, rootPath: string, options: SearchOptions = { isRegex: false, isCaseSensitive: false, isWholeWord: false }) => {
+	if (!query || !rootPath) return []
+
+	const MAX_RESULTS = 2000 // Increased limit
+	const results: { path: string; line: number; text: string }[] = []
+    
+    // Default ignores
+	const DEFAULT_IGNORED = new Set(['node_modules', '.git', 'dist', 'build', '.vscode', '.idea', 'coverage'])
+    const IGNORED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.pdf', '.exe', '.dll', '.bin', '.node', '.lock'])
+
+    // Prepare search logic
+    let searchRegex: RegExp
+    try {
+        let pattern = query
+        let flags = options.isCaseSensitive ? 'g' : 'gi'
+        
+        if (!options.isRegex) {
+            // Escape special chars for literal search
+            pattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        }
+        
+        if (options.isWholeWord) {
+            pattern = `\\b${pattern}\\b`
+        }
+        
+        searchRegex = new RegExp(pattern, flags)
+    } catch (e) {
+        return [] // Invalid regex
+    }
+
+    // Prepare exclude logic (simple string contains for now)
+    const excludeTerms = options.exclude ? options.exclude.split(',').map(s => s.trim()).filter(Boolean) : []
+
+	function searchRecursive(dir: string) {
+		if (results.length >= MAX_RESULTS) return
+
+		try {
+			const items = fs.readdirSync(dir, { withFileTypes: true })
+
+			for (const item of items) {
+				if (results.length >= MAX_RESULTS) break
+                
+				const fullPath = path.join(dir, item.name)
+                
+                // Check user excludes
+                if (excludeTerms.some(term => fullPath.includes(term))) continue
+
+				if (item.isDirectory()) {
+					if (!DEFAULT_IGNORED.has(item.name)) {
+						searchRecursive(fullPath)
+					}
+				} else if (item.isFile()) {
+                    const ext = path.extname(item.name).toLowerCase()
+                    if (IGNORED_EXTS.has(ext)) continue
+
+					try {
+						const content = fs.readFileSync(fullPath, 'utf-8')
+						const lines = content.split('\n')
+						
+                        for (let i = 0; i < lines.length; i++) {
+                            // Reset regex state for each line
+                            searchRegex.lastIndex = 0
+                            if (searchRegex.test(lines[i])) {
+								results.push({
+									path: fullPath,
+									line: i + 1,
+									text: lines[i].trim().substring(0, 150)
+								})
+								if (results.length >= MAX_RESULTS) break
+							}
+						}
+					} catch (e) {
+						// Ignore read errors
+					}
+				}
+			}
+		} catch (e) {
+			console.error('Search error in dir:', dir, e)
+		}
+	}
+
+	searchRecursive(rootPath)
+	return results
+})
+
 // Settings
 ipcMain.handle('settings:get', (_, key: string) => store.get(key))
 ipcMain.handle('settings:set', (_, key: string, value: any) => {
@@ -180,44 +289,66 @@ ipcMain.on('llm:abort', () => {
 })
 
 // Terminal
-ipcMain.handle('terminal:execute', async (_, command: string, cwd?: string) => {
-	return new Promise((resolve) => {
-		const isWindows = process.platform === 'win32'
-		const shell = isWindows ? 'cmd.exe' : '/bin/bash'
-		const shellArgs = isWindows ? ['/c', command] : ['-c', command]
+ipcMain.handle('terminal:create', async (_, options?: { cwd?: string }) => {
+    console.log('[Main] Received terminal:create request', options)
+    // Kill existing if any (single terminal mode for MVP)
+    if (terminalProcess) {
+        console.log('[Main] Killing existing terminal process')
+        try {
+            terminalProcess.kill()
+        } catch (e) {
+            console.error('[Main] Failed to kill existing terminal:', e)
+        }
+        terminalProcess = null
+    }
 
-		const workingDir = cwd || process.cwd()
+	const isWindows = process.platform === 'win32'
+	const shell = isWindows ? 'powershell.exe' : (process.env.SHELL || '/bin/bash')
+	
+    const workingDir = options?.cwd || process.cwd()
+    console.log(`[Main] Spawning shell: ${shell} in ${workingDir}`)
 
-		terminalProcess = spawn(shell, shellArgs, {
-			cwd: workingDir,
-			env: process.env,
-		})
+	try {
+        terminalProcess = spawn(shell, [], {
+            cwd: workingDir,
+            env: process.env,
+            stdio: ['pipe', 'pipe', 'pipe'] // stdin, stdout, stderr
+        })
+        
+        console.log(`[Main] Terminal spawned, PID: ${terminalProcess.pid}`)
 
-		let output = ''
-		let errorOutput = ''
+        terminalProcess.stdout?.on('data', (data) => {
+            mainWindow?.webContents.send('terminal:data', data.toString())
+        })
 
-		terminalProcess.stdout?.on('data', (data) => {
-			const text = data.toString()
-			output += text
-			mainWindow?.webContents.send('terminal:output', text)
-		})
+        terminalProcess.stderr?.on('data', (data) => {
+            mainWindow?.webContents.send('terminal:data', data.toString())
+        })
 
-		terminalProcess.stderr?.on('data', (data) => {
-			const text = data.toString()
-			errorOutput += text
-			mainWindow?.webContents.send('terminal:output', text)
-		})
+        terminalProcess.on('exit', (code) => {
+             console.log(`[Main] Terminal exited with code ${code}`)
+             mainWindow?.webContents.send('terminal:exit', code)
+             if (terminalProcess?.pid === terminalProcess?.pid) {
+                 terminalProcess = null
+             }
+        })
 
-		terminalProcess.on('close', (code) => {
-			resolve({ output, errorOutput, exitCode: code })
-			terminalProcess = null
-		})
+        return true
+    } catch (e) {
+        console.error('[Main] Failed to spawn terminal:', e)
+        throw e // Throw so frontend receives the error
+    }
+})
 
-		terminalProcess.on('error', (err) => {
-			resolve({ output: '', errorOutput: err.message, exitCode: 1 })
-			terminalProcess = null
-		})
-	})
+ipcMain.handle('terminal:input', (_, data: string) => {
+    if (terminalProcess && terminalProcess.stdin) {
+        terminalProcess.stdin.write(data)
+    }
+})
+
+ipcMain.handle('terminal:resize', (_, cols: number, rows: number) => {
+    // node-pty supports this, but raw spawn does not easily without native modules.
+    // We ignore resize for spawn-based implementation.
 })
 
 ipcMain.on('terminal:kill', () => {

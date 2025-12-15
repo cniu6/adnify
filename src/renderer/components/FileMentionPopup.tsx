@@ -114,30 +114,35 @@ export default function FileMentionPopup({
 		return a.relativePath.localeCompare(b.relativePath)
 	})
 
-	// 键盘导航
+	// 键盘导航 - 使用 capture 阶段来优先处理
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			switch (e.key) {
 				case 'ArrowDown':
 					e.preventDefault()
+					e.stopPropagation()
 					setSelectedIndex(i => Math.min(i + 1, sortedFiles.length - 1))
 					break
 				case 'ArrowUp':
 					e.preventDefault()
+					e.stopPropagation()
 					setSelectedIndex(i => Math.max(i - 1, 0))
 					break
 				case 'Enter':
 					e.preventDefault()
+					e.stopPropagation()
 					if (sortedFiles[selectedIndex]) {
 						onSelect(sortedFiles[selectedIndex].relativePath)
 					}
 					break
 				case 'Escape':
 					e.preventDefault()
+					e.stopPropagation()
 					onClose()
 					break
 				case 'Tab':
 					e.preventDefault()
+					e.stopPropagation()
 					if (sortedFiles[selectedIndex]) {
 						onSelect(sortedFiles[selectedIndex].relativePath)
 					}
@@ -145,8 +150,9 @@ export default function FileMentionPopup({
 			}
 		}
 
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
+		// 使用 capture: true 来在冒泡阶段之前捕获事件
+		window.addEventListener('keydown', handleKeyDown, true)
+		return () => window.removeEventListener('keydown', handleKeyDown, true)
 	}, [sortedFiles, selectedIndex, onSelect, onClose])
 
 	// 滚动到选中项

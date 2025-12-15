@@ -81,6 +81,31 @@ export const translations = {
 		'error': 'Error',
 		'success': 'Success',
 		'saving': 'Saving...',
+
+		// Search
+		'search': 'Search',
+		'replace': 'Replace',
+		'matchCase': 'Match Case',
+		'matchWholeWord': 'Match Whole Word',
+		'useRegex': 'Use Regular Expression',
+		'filesToInclude': 'Files to include',
+		'filesToExclude': 'Files to exclude',
+		'noResults': 'No results found',
+		'textResults': 'Text Results',
+		'askAiSearch': 'Ask AI to find',
+		'searchPlaceholder': 'Search',
+		'replacePlaceholder': 'Replace',
+		'excludePlaceholder': 'e.g. *.test.ts, node_modules',
+
+		// File Management
+		'newFile': 'New File',
+		'newFolder': 'New Folder',
+		'rename': 'Rename',
+		'delete': 'Delete',
+		'confirmDelete': 'Are you sure you want to delete {name}?',
+		'create': 'Create',
+		'searchFile': 'Search files (Ctrl+P)',
+		'gitControl': 'Git Control',
 	},
 	zh: {
 		// Title bar
@@ -162,6 +187,31 @@ export const translations = {
 		'error': '错误',
 		'success': '成功',
 		'saving': '保存中...',
+
+		// Search
+		'search': '搜索',
+		'replace': '替换',
+		'matchCase': '区分大小写',
+		'matchWholeWord': '全字匹配',
+		'useRegex': '使用正则表达式',
+		'filesToInclude': '包含的文件',
+		'filesToExclude': '排除的文件',
+		'noResults': '未找到结果',
+		'textResults': '文本搜索结果',
+		'askAiSearch': '让 AI 查找',
+		'searchPlaceholder': '搜索',
+		'replacePlaceholder': '替换',
+		'excludePlaceholder': '例如 *.test.ts, node_modules',
+
+		// File Management
+		'newFile': '新建文件',
+		'newFolder': '新建文件夹',
+		'rename': '重命名',
+		'delete': '删除',
+		'confirmDelete': '确定要删除 {name} 吗？',
+		'create': '创建',
+		'searchFile': '搜索文件 (Ctrl+P)',
+		'gitControl': 'Git 控制',
 	}
 } as const
 

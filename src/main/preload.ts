@@ -15,6 +15,7 @@ export interface ElectronAPI {
 	// File operations
 	openFile: () => Promise<{ path: string; content: string } | null>
 	openFolder: () => Promise<string | null>
+	restoreWorkspace: () => Promise<string | null>
 	readDir: (path: string) => Promise<{ name: string; path: string; isDirectory: boolean }[]>
 	readFile: (path: string) => Promise<string | null>
 	writeFile: (path: string, content: string) => Promise<boolean>
@@ -22,6 +23,8 @@ export interface ElectronAPI {
 	fileExists: (path: string) => Promise<boolean>
 	mkdir: (path: string) => Promise<boolean>
 	deleteFile: (path: string) => Promise<boolean>
+	renameFile: (oldPath: string, newPath: string) => Promise<boolean>
+	searchFiles: (query: string, rootPath: string, options?: any) => Promise<any>
 
 	// Settings
 	getSetting: (key: string) => Promise<any>
@@ -36,9 +39,11 @@ export interface ElectronAPI {
 	onLLMDone: (callback: (data: any) => void) => () => void
 
 	// Terminal
-	executeCommand: (command: string, cwd?: string) => Promise<{ output: string; errorOutput: string; exitCode: number }>
+	createTerminal: (options?: { cwd?: string }) => Promise<void>
+	writeTerminal: (data: string) => Promise<void>
+	resizeTerminal: (cols: number, rows: number) => Promise<void>
 	killTerminal: () => void
-	onTerminalOutput: (callback: (data: string) => void) => () => void
+	onTerminalData: (callback: (data: string) => void) => () => void
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -50,6 +55,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	// File operations
 	openFile: () => ipcRenderer.invoke('file:open'),
 	openFolder: () => ipcRenderer.invoke('file:openFolder'),
+    restoreWorkspace: () => ipcRenderer.invoke('workspace:restore'),
 	readDir: (path: string) => ipcRenderer.invoke('file:readDir', path),
 	readFile: (path: string) => ipcRenderer.invoke('file:read', path),
 	writeFile: (path: string, content: string) => ipcRenderer.invoke('file:write', path, content),
@@ -57,6 +63,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	fileExists: (path: string) => ipcRenderer.invoke('file:exists', path),
 	mkdir: (path: string) => ipcRenderer.invoke('file:mkdir', path),
 	deleteFile: (path: string) => ipcRenderer.invoke('file:delete', path),
+	renameFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('file:rename', oldPath, newPath),
+	searchFiles: (query: string, rootPath: string, options?: any) => ipcRenderer.invoke('file:search', query, rootPath, options),
 
 	// Settings
 	getSetting: (key: string) => ipcRenderer.invoke('settings:get', key),
@@ -91,12 +99,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	},
 
 	// Terminal
-	executeCommand: (command: string, cwd?: string) => ipcRenderer.invoke('terminal:execute', command, cwd),
+    createTerminal: (options?: { cwd?: string }) => ipcRenderer.invoke('terminal:create', options),
+    writeTerminal: (data: string) => ipcRenderer.invoke('terminal:input', data),
+    resizeTerminal: (cols: number, rows: number) => ipcRenderer.invoke('terminal:resize', cols, rows),
 	killTerminal: () => ipcRenderer.send('terminal:kill'),
-
-	onTerminalOutput: (callback: (data: string) => void) => {
+	onTerminalData: (callback: (data: string) => void) => {
 		const handler = (_: any, data: string) => callback(data)
-		ipcRenderer.on('terminal:output', handler)
-		return () => ipcRenderer.removeListener('terminal:output', handler)
+		ipcRenderer.on('terminal:data', handler)
+		return () => ipcRenderer.removeListener('terminal:data', handler)
 	},
 } as ElectronAPI)
