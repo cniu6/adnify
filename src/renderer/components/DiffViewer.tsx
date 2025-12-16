@@ -10,6 +10,7 @@ import { useState, useMemo, useCallback, useRef, useEffect, memo } from 'react'
 import { X, Check, ChevronDown, ChevronUp, Copy, FileEdit, Columns, AlignJustify } from 'lucide-react'
 import { useStore } from '../store'
 import { t } from '../i18n'
+import { getFileName } from '../utils/pathUtils'
 
 // ===== 类型定义 =====
 interface DiffLine {
@@ -381,7 +382,7 @@ export default function DiffViewer({
     }
   }, [isStreaming, modifiedContent])
 
-  const fileName = filePath.split(/[/\\]/).pop() || filePath
+  const fileName = getFileName(filePath) || filePath
 
   const copyToClipboard = useCallback(() => {
     navigator.clipboard.writeText(modifiedContent)

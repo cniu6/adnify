@@ -8,6 +8,7 @@ import {
 import { useStore } from '../store'
 import { FileItem } from '../types/electron'
 import { t } from '../i18n'
+import { getFileName, getDirPath, joinPath } from '../utils/pathUtils'
 import { gitService, GitStatus, GitCommit } from '../agent/gitService'
 import { getEditorConfig } from '../config/editorConfig'
 import { toast } from './Toast'
@@ -101,8 +102,7 @@ function FileTreeItem({
           setIsRenaming(false)
           return
       }
-      const separator = item.path.includes('\\') ? '\\' : '/'
-      const newPath = item.path.substring(0, item.path.lastIndexOf(separator) + 1) + renameValue
+      const newPath = joinPath(getDirPath(item.path), renameValue)
 
       const success = await window.electronAPI.renameFile(item.path, newPath)
       if (success) {
@@ -308,7 +308,7 @@ function ExplorerView() {
             return
         }
         
-        const fullPath = workspacePath + (workspacePath.includes('\\') ? '\\' : '/') + newItemName
+        const fullPath = joinPath(workspacePath, newItemName)
         
         let success = false
         if (isCreating === 'file') {
@@ -721,7 +721,7 @@ function SearchView() {
                         </div>
                         
                         {Object.entries(resultsByFile).map(([filePath, results]) => {
-                            const fileName = filePath.split(/[/\\]/).pop()
+                            const fileName = getFileName(filePath)
                             const isCollapsed = collapsedFiles.has(filePath)
                             
                             return (

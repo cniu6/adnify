@@ -4,8 +4,13 @@
  */
 
 import type * as Monaco from 'monaco-editor'
+
+// 扩展 CompletionItem 类型以支持 LSP data 字段
+interface CompletionItemWithData extends Monaco.languages.CompletionItem {
+  data?: unknown
+}
+
 import {
-  pathToLspUri,
   lspUriToPath,
   getHoverInfo,
   getCompletions,
@@ -149,7 +154,7 @@ export function registerLspProviders(monaco: typeof Monaco) {
       if (!result) return { suggestions: [] }
 
       const items = result.items || result
-      const suggestions: Monaco.languages.CompletionItem[] = items.map((item: any) => {
+      const suggestions: CompletionItemWithData[] = items.map((item: any) => {
         const kind = completionKindMap[item.kind] ?? 0
         
         return {
@@ -180,9 +185,10 @@ export function registerLspProviders(monaco: typeof Monaco) {
       }
     },
     resolveCompletionItem: async (item) => {
-      if (!item.data) return item
+      const itemWithData = item as CompletionItemWithData
+      if (!itemWithData.data) return item
 
-      const resolved = await resolveCompletionItem(item.data)
+      const resolved = await resolveCompletionItem(itemWithData.data)
       if (resolved) {
         if (resolved.documentation) {
           item.documentation = typeof resolved.documentation === 'string'

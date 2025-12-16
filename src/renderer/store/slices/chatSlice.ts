@@ -1,0 +1,253 @@
+/**
+ * 聊天相关状态切片
+ */
+import { StateCreator } from 'zustand'
+import { ToolStatus, ToolApprovalType, Checkpoint } from '../../agent/toolTypes'
+
+export type ChatMode = 'chat' | 'agent'
+
+export interface Message {
+  id: string
+  role: 'user' | 'assistant' | 'tool'
+  content:
+    | string
+    | Array<
+        | { type: 'text'; text: string }
+        | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
+      >
+  toolCallId?: string
+  toolName?: string
+  toolResult?: string
+  isStreaming?: boolean
+  timestamp: number
+  // 关联的工具调用 ID 列表（用于内联显示）
+  toolCallIds?: string[]
+}
+
+export interface ToolCall {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
+  argsBuffer?: string
+  status: ToolStatus
+  approvalType?: ToolApprovalType
+  result?: string
+  error?: string
+}
+
+export interface ContextStats {
+  totalChars: number
+  maxChars: number
+  fileCount: number
+  maxFiles: number
+  messageCount: number
+  maxMessages: number
+  semanticResultCount: number
+  terminalChars: number
+}
+
+export interface ChatSlice {
+  // State
+  chatMode: ChatMode
+  messages: Message[]
+  isStreaming: boolean
+  currentToolCalls: ToolCall[]
+  pendingToolCall: ToolCall | null
+  checkpoints: Checkpoint[]
+  currentCheckpointIdx: number
+  currentSessionId: string | null
+  inputPrompt: string
+  contextStats: ContextStats | null
+
+  // Actions
+  setChatMode: (mode: ChatMode) => void
+  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void
+  updateLastMessage: (content: string) => void
+  appendTokenToLastMessage: (token: string) => void
+  finalizeLastMessage: () => void
+  editMessage: (id: string, content: string) => void
+  deleteMessagesAfter: (id: string) => void
+  setIsStreaming: (streaming: boolean) => void
+  startToolCall: (id: string, name: string) => void
+  appendToolCallArgs: (id: string, delta: string) => void
+  linkToolCallToLastMessage: (toolCallId: string) => void
+  clearMessages: () => void
+  addToolCall: (toolCall: Omit<ToolCall, 'status'>) => void
+  updateToolCall: (id: string, updates: Partial<ToolCall>) => void
+  setPendingToolCall: (toolCall: ToolCall | null) => void
+  approveToolCall: () => void
+  rejectToolCall: () => void
+  addCheckpoint: (checkpoint: Checkpoint) => void
+  setCurrentCheckpointIdx: (idx: number) => void
+  clearCheckpoints: () => void
+  setCurrentSessionId: (id: string | null) => void
+  setInputPrompt: (prompt: string) => void
+  setContextStats: (stats: ContextStats | null) => void
+}
+
+export const createChatSlice: StateCreator<ChatSlice, [], [], ChatSlice> = (set) => ({
+  // Initial state
+  chatMode: 'chat',
+  messages: [],
+  isStreaming: false,
+  currentToolCalls: [],
+  pendingToolCall: null,
+  checkpoints: [],
+  currentCheckpointIdx: -1,
+  currentSessionId: null,
+  inputPrompt: '',
+  contextStats: null,
+
+  // Actions
+  setChatMode: (mode) => set({ chatMode: mode }),
+
+  addMessage: (message) =>
+    set((state) => ({
+      messages: [
+        ...state.messages,
+        {
+          ...message,
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+        },
+      ],
+    })),
+
+  updateLastMessage: (content) =>
+    set((state) => {
+      const messages = [...state.messages]
+      const lastIndex = messages.length - 1
+      if (lastIndex >= 0) {
+        messages[lastIndex] = { ...messages[lastIndex], content }
+      }
+      return { messages }
+    }),
+
+  appendTokenToLastMessage: (token) =>
+    set((state) => {
+      const messages = [...state.messages]
+      const lastIndex = messages.length - 1
+      if (lastIndex >= 0) {
+        const lastMsg = messages[lastIndex]
+        if (lastMsg.role === 'assistant' && !lastMsg.toolCallId) {
+          messages[lastIndex] = { ...lastMsg, content: lastMsg.content + token }
+        }
+      }
+      return { messages }
+    }),
+
+  finalizeLastMessage: () =>
+    set((state) => {
+      const messages = [...state.messages]
+      const lastIndex = messages.length - 1
+      if (lastIndex >= 0 && messages[lastIndex].isStreaming) {
+        messages[lastIndex] = { ...messages[lastIndex], isStreaming: false }
+      }
+      return { messages }
+    }),
+
+  editMessage: (id, content) =>
+    set((state) => ({
+      messages: state.messages.map((m) => (m.id === id ? { ...m, content } : m)),
+    })),
+
+  deleteMessagesAfter: (id) =>
+    set((state) => {
+      const index = state.messages.findIndex((m) => m.id === id)
+      if (index === -1) return state
+      return {
+        messages: state.messages.slice(0, index + 1),
+        currentToolCalls: [],
+      }
+    }),
+
+  setIsStreaming: (streaming) => set({ isStreaming: streaming }),
+
+  startToolCall: (id, name) =>
+    set((state) => ({
+      currentToolCalls: [
+        ...state.currentToolCalls,
+        { id, name, arguments: {}, argsBuffer: '', status: 'running' as ToolStatus },
+      ],
+    })),
+
+  appendToolCallArgs: (id, delta) =>
+    set((state) => ({
+      currentToolCalls: state.currentToolCalls.map((tc) =>
+        tc.id === id ? { ...tc, argsBuffer: (tc.argsBuffer || '') + delta } : tc
+      ),
+    })),
+
+  linkToolCallToLastMessage: (toolCallId) =>
+    set((state) => {
+      const messages = [...state.messages]
+      const lastIndex = messages.length - 1
+      if (lastIndex >= 0 && messages[lastIndex].role === 'assistant') {
+        const lastMsg = messages[lastIndex]
+        const existingIds = lastMsg.toolCallIds || []
+        if (!existingIds.includes(toolCallId)) {
+          messages[lastIndex] = {
+            ...lastMsg,
+            toolCallIds: [...existingIds, toolCallId],
+          }
+        }
+      }
+      return { messages }
+    }),
+
+  clearMessages: () => set({ messages: [], currentToolCalls: [], contextStats: null }),
+
+  addToolCall: (toolCall) =>
+    set((state) => ({
+      currentToolCalls: [...state.currentToolCalls, { ...toolCall, status: 'running' as ToolStatus }],
+    })),
+
+  updateToolCall: (id, updates) =>
+    set((state) => ({
+      currentToolCalls: state.currentToolCalls.map((tc) =>
+        tc.id === id ? { ...tc, ...updates } : tc
+      ),
+    })),
+
+  setPendingToolCall: (toolCall) => set({ pendingToolCall: toolCall }),
+
+  approveToolCall: () =>
+    set((state) => {
+      if (state.pendingToolCall) {
+        return {
+          pendingToolCall: null,
+          currentToolCalls: state.currentToolCalls.map((tc) =>
+            tc.id === state.pendingToolCall?.id ? { ...tc, status: 'running' as ToolStatus } : tc
+          ),
+        }
+      }
+      return {}
+    }),
+
+  rejectToolCall: () =>
+    set((state) => {
+      if (state.pendingToolCall) {
+        return {
+          pendingToolCall: null,
+          currentToolCalls: state.currentToolCalls.map((tc) =>
+            tc.id === state.pendingToolCall?.id
+              ? { ...tc, status: 'rejected' as ToolStatus, error: 'Rejected by user' }
+              : tc
+          ),
+        }
+      }
+      return {}
+    }),
+
+  addCheckpoint: (checkpoint) =>
+    set((state) => ({
+      checkpoints: [...state.checkpoints.slice(-49), checkpoint],
+      currentCheckpointIdx: state.checkpoints.length,
+    })),
+
+  setCurrentCheckpointIdx: (idx) => set({ currentCheckpointIdx: idx }),
+  clearCheckpoints: () => set({ checkpoints: [], currentCheckpointIdx: -1 }),
+  setCurrentSessionId: (id) => set({ currentSessionId: id }),
+  setInputPrompt: (prompt) => set({ inputPrompt: prompt }),
+  setContextStats: (stats) => set({ contextStats: stats }),
+})

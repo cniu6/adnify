@@ -4,6 +4,7 @@ import type { editor } from 'monaco-editor'
 import { X, Circle, AlertTriangle, AlertCircle, RefreshCw, FileCode, ChevronRight, Home } from 'lucide-react'
 import { useStore } from '../store'
 import { t } from '../i18n'
+import { getFileName, getDirPath, getPathSeparator, joinPath } from '../utils/pathUtils'
 import { toast } from './Toast'
 import DiffViewer from './DiffViewer'
 import InlineEdit from './InlineEdit'
@@ -91,7 +92,7 @@ const LANGUAGE_MAP: Record<string, string> = {
 }
 
 const getLanguage = (path: string): string => {
-  const fileName = path.split(/[/\\]/).pop()?.toLowerCase() || ''
+  const fileName = getFileName(path).toLowerCase()
 
   // 特殊文件名
   if (fileName === 'dockerfile') return 'dockerfile'
@@ -516,17 +517,17 @@ export default function Editor() {
     if (!workspacePath) return
     
     // 获取当前文件的目录
-    const sep = filePath.includes('\\') ? '\\' : '/'
-    const currentDir = filePath.substring(0, filePath.lastIndexOf(sep))
+    const sep = getPathSeparator(filePath)
+    const currentDir = getDirPath(filePath)
     
     // 解析 import 路径
     let targetPath = importPath
     
     // 相对路径
     if (importPath.startsWith('./') || importPath.startsWith('../')) {
-      targetPath = currentDir + sep + importPath
+      targetPath = joinPath(currentDir, importPath)
       // 规范化路径
-      targetPath = targetPath.split(sep).reduce((acc: string[], part) => {
+      targetPath = targetPath.split(sep === '\\' ? /\\/ : /\//).reduce((acc: string[], part) => {
         if (part === '..') acc.pop()
         else if (part !== '.') acc.push(part)
         return acc
@@ -534,12 +535,12 @@ export default function Editor() {
     } 
     // 绝对路径（从项目根目录）
     else if (importPath.startsWith('@/') || importPath.startsWith('~/')) {
-      targetPath = workspacePath + sep + importPath.slice(2)
+      targetPath = joinPath(workspacePath, importPath.slice(2))
     }
     // node_modules 或别名路径 - 暂不处理
     else if (!importPath.startsWith('/')) {
       // 尝试从 src 目录查找
-      targetPath = workspacePath + sep + 'src' + sep + importPath
+      targetPath = joinPath(workspacePath, 'src', importPath)
     }
     
     // 尝试不同的扩展名
@@ -649,10 +650,9 @@ export default function Editor() {
         const success = await window.electronAPI.writeFile(activeFile.path, activeFile.content)
         if (success) {
           markFileSaved(activeFile.path)
-          const fileName = activeFile.path.split(/[/\\]/).pop()
           toast.success(
             language === 'zh' ? '文件已保存' : 'File Saved',
-            fileName
+            getFileName(activeFile.path)
           )
         } else {
           toast.error(
@@ -677,10 +677,9 @@ export default function Editor() {
         const success = await window.electronAPI.writeFile(file.path, file.content)
         if (success) {
           markFileSaved(file.path)
-          const fileName = file.path.split(/[/\\]/).pop()
           toast.success(
             language === 'zh' ? '文件已保存' : 'File Saved',
-            fileName
+            getFileName(file.path)
           )
         } else {
           toast.error(
@@ -704,7 +703,7 @@ export default function Editor() {
   const handleCloseFile = useCallback(async (filePath: string) => {
     const file = openFiles.find(f => f.path === filePath)
     if (file?.isDirty) {
-      const fileName = filePath.split(/[/\\]/).pop()
+      const fileName = getFileName(filePath)
       const result = window.confirm(
         language === 'zh' 
           ? `"${fileName}" 有未保存的更改。是否保存？`
@@ -753,9 +752,9 @@ export default function Editor() {
 
   // Breadcrumb path generation
   const getBreadcrumbs = (path: string) => {
-      // Very simple: just split path. 
-      // In a real app, you'd make this relative to workspace root.
-      const parts = path.split(/[/\\]/)
+      // 使用 pathUtils 分割路径
+      const sep = getPathSeparator(path)
+      const parts = path.split(sep === '\\' ? /\\/ : /\//)
       // Show last 3 parts max to avoid clutter
       return parts.slice(-4)
   }
@@ -790,7 +789,7 @@ export default function Editor() {
       <div className="h-10 flex items-center bg-background-secondary border-b border-border-subtle overflow-hidden select-none">
         <div className="flex items-center flex-1 overflow-x-auto no-scrollbar h-full">
           {openFiles.map((file) => {
-            const fileName = file.path.split(/[/\\]/).pop()
+            const fileName = getFileName(file.path)
             const isActive = file.path === activeFilePath
             return (
               <div

@@ -8,6 +8,7 @@ import {
   FileText, FolderTree, Search, Terminal, AlertTriangle,
   ChevronDown, ChevronUp, Copy, Check
 } from 'lucide-react'
+import { getFileName } from '../utils/pathUtils'
 
 interface ToolResultViewerProps {
   toolName: string
@@ -73,7 +74,7 @@ const FileContentViewer = memo(function FileContentViewer({ result }: { result: 
 
   const [, filePath, startLine, endLine, totalLines] = fileMatch
   const code = codeMatch[1]
-  const fileName = filePath.split(/[/\\]/).pop()
+  const fileName = getFileName(filePath)
 
   return (
     <div className="rounded-lg overflow-hidden border border-editor-border">

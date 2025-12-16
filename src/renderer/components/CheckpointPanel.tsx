@@ -8,6 +8,7 @@ import { History, RotateCcw, ChevronDown, ChevronUp, FileText, MessageSquare, Wr
 import { useStore } from '../store'
 import { Checkpoint } from '../agent/toolTypes'
 import { checkpointService } from '../agent/checkpointService'
+import { getFileName } from '../utils/pathUtils'
 
 interface CheckpointItemProps {
   checkpoint: Checkpoint
@@ -87,7 +88,7 @@ const CheckpointItem = memo(function CheckpointItem({
                 className="flex items-center gap-2 text-xs text-editor-text"
               >
                 <FileText className="w-3 h-3 text-editor-text-muted" />
-                <span className="truncate">{path.split(/[/\\]/).pop()}</span>
+                <span className="truncate">{getFileName(path)}</span>
               </div>
             ))}
           </div>

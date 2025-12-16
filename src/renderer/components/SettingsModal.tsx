@@ -747,6 +747,85 @@ function EditorSettings({ settings, setSettings, language }: EditorSettingsProps
                 />
               </div>
             </div>
+
+            {/* 上下文限制设置 */}
+            <div className="pt-4 mt-4 border-t border-border-subtle">
+              <h4 className="text-sm font-medium mb-3">{language === 'zh' ? '上下文限制' : 'Context Limits'}</h4>
+              <p className="text-xs text-text-muted mb-3">
+                {language === 'zh' ? '控制发送给 AI 的上下文大小，避免超出模型限制' : 'Control context size sent to AI to avoid exceeding model limits'}
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '最大上下文字符数' : 'Max Context Chars'}</label>
+                  <input
+                    type="number"
+                    value={advancedConfig.ai.maxContextChars}
+                    onChange={(e) => handleAdvancedChange('ai.maxContextChars', parseInt(e.target.value) || 50000)}
+                    min={10000} max={200000} step={10000}
+                    className="w-full bg-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+                  />
+                  <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '文件和上下文的总字符限制' : 'Total char limit for files and context'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '最大历史消息数' : 'Max History Messages'}</label>
+                  <input
+                    type="number"
+                    value={advancedConfig.ai.maxHistoryMessages}
+                    onChange={(e) => handleAdvancedChange('ai.maxHistoryMessages', parseInt(e.target.value) || 20)}
+                    min={5} max={100}
+                    className="w-full bg-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+                  />
+                  <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '发送给 AI 的历史消息数量' : 'Number of history messages sent to AI'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '最大上下文文件数' : 'Max Context Files'}</label>
+                  <input
+                    type="number"
+                    value={advancedConfig.ai.maxContextFiles}
+                    onChange={(e) => handleAdvancedChange('ai.maxContextFiles', parseInt(e.target.value) || 10)}
+                    min={1} max={30}
+                    className="w-full bg-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '语义搜索最大结果数' : 'Max Semantic Results'}</label>
+                  <input
+                    type="number"
+                    value={advancedConfig.ai.maxSemanticResults}
+                    onChange={(e) => handleAdvancedChange('ai.maxSemanticResults', parseInt(e.target.value) || 8)}
+                    min={1} max={20}
+                    className="w-full bg-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '单文件最大字符数' : 'Max Single File Chars'}</label>
+                  <input
+                    type="number"
+                    value={advancedConfig.ai.maxSingleFileChars}
+                    onChange={(e) => handleAdvancedChange('ai.maxSingleFileChars', parseInt(e.target.value) || 10000)}
+                    min={1000} max={50000} step={1000}
+                    className="w-full bg-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '终端输出最大字符数' : 'Max Terminal Chars'}</label>
+                  <input
+                    type="number"
+                    value={advancedConfig.ai.maxTerminalChars}
+                    onChange={(e) => handleAdvancedChange('ai.maxTerminalChars', parseInt(e.target.value) || 5000)}
+                    min={1000} max={20000} step={1000}
+                    className="w-full bg-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

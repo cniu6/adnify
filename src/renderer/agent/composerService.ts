@@ -5,6 +5,7 @@
  */
 
 import { useStore } from '../store'
+import { getExtension, getDirPath, getPathSeparator, joinPath } from '../utils/pathUtils'
 
 export interface ComposerFile {
   path: string
@@ -58,7 +59,7 @@ class ComposerService {
     if (!content) return []
 
     const relatedFiles: Set<string> = new Set()
-    const ext = filePath.split('.').pop()?.toLowerCase() || ''
+    const ext = getExtension(filePath)
 
     // TypeScript/JavaScript imports
     if (['ts', 'tsx', 'js', 'jsx', 'mjs'].includes(ext)) {
@@ -124,7 +125,7 @@ class ComposerService {
     for (const filePath of selectedFiles) {
       const content = await window.electronAPI.readFile(filePath)
       if (content !== null) {
-        const ext = filePath.split('.').pop()?.toLowerCase() || ''
+        const ext = getExtension(filePath)
         files.push({
           path: filePath,
           content,
@@ -278,15 +279,15 @@ Important:
 
   // 辅助方法
   private resolveImportPath(fromFile: string, importPath: string, workspacePath: string): string {
-    const sep = workspacePath.includes('\\') ? '\\' : '/'
-    const fromDir = fromFile.split(sep).slice(0, -1).join(sep)
+    const sep = getPathSeparator(workspacePath)
+    const fromDir = getDirPath(fromFile)
     
     // 简单的路径解析
     let resolved = importPath
     if (importPath.startsWith('./')) {
-      resolved = `${fromDir}${sep}${importPath.slice(2)}`
+      resolved = joinPath(fromDir, importPath.slice(2))
     } else if (importPath.startsWith('../')) {
-      const parts = fromDir.split(sep)
+      const parts = fromDir.split(sep === '\\' ? /\\/ : /\//)
       let upCount = 0
       let remaining = importPath
       while (remaining.startsWith('../')) {
@@ -310,17 +311,17 @@ Important:
   }
 
   private resolvePythonImport(fromFile: string, modulePath: string, workspacePath: string): string {
-    const sep = workspacePath.includes('\\') ? '\\' : '/'
-    const fromDir = fromFile.split(sep).slice(0, -1).join(sep)
+    const sep = getPathSeparator(workspacePath)
+    const fromDir = getDirPath(fromFile)
     
     // 将模块路径转换为文件路径
     const filePath = modulePath.replace(/\./g, sep) + '.py'
     
     if (modulePath.startsWith('.')) {
-      return `${fromDir}${sep}${filePath.slice(1)}`
+      return joinPath(fromDir, filePath.slice(1))
     }
     
-    return `${workspacePath}${sep}${filePath}`
+    return joinPath(workspacePath, filePath)
   }
 
   private async fileExists(filePath: string): Promise<boolean> {

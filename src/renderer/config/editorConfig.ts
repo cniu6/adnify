@@ -52,7 +52,13 @@ export interface EditorConfig {
     maxToolLoops: number // 最大工具调用循环次数
     completionMaxTokens: number // 补全最大 token 数
     completionTemperature: number // 补全温度
-    contextMaxChars: number // 上下文最大字符数
+    // 上下文限制
+    maxContextChars: number // 上下文最大字符数
+    maxHistoryMessages: number // 最大历史消息数
+    maxContextFiles: number // 最大上下文文件数
+    maxSemanticResults: number // 语义搜索最大结果数
+    maxTerminalChars: number // 终端输出最大字符数
+    maxSingleFileChars: number // 单文件最大字符数
   }
 
   // 忽略的目录
@@ -99,7 +105,13 @@ export const defaultEditorConfig: EditorConfig = {
     maxToolLoops: 15,
     completionMaxTokens: 256,
     completionTemperature: 0.1,
-    contextMaxChars: 500,
+    // 上下文限制
+    maxContextChars: 50000, // 50KB
+    maxHistoryMessages: 20, // 最近 20 条消息
+    maxContextFiles: 10, // 最多 10 个文件
+    maxSemanticResults: 8, // 语义搜索最多 8 条
+    maxTerminalChars: 5000, // 终端输出最多 5000 字符
+    maxSingleFileChars: 10000, // 单文件最多 10000 字符
   },
 
   // 忽略的目录

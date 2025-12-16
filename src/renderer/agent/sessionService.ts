@@ -29,13 +29,25 @@ const SESSIONS_KEY = 'chat_sessions'
 const MAX_SESSIONS = 50
 
 /**
+ * 提取消息文本内容
+ */
+function getMessageText(content: Message['content']): string {
+	if (typeof content === 'string') return content
+	return content
+		.filter((c): c is { type: 'text'; text: string } => c.type === 'text')
+		.map(c => c.text)
+		.join('')
+}
+
+/**
  * 生成会话名称
  */
 function generateSessionName(messages: Message[]): string {
 	const firstUserMessage = messages.find(m => m.role === 'user')
 	if (firstUserMessage) {
-		const preview = firstUserMessage.content.slice(0, 50)
-		return preview.length < firstUserMessage.content.length ? preview + '...' : preview
+		const text = getMessageText(firstUserMessage.content)
+		const preview = text.slice(0, 50)
+		return preview.length < text.length ? preview + '...' : preview
 	}
 	return `Session ${new Date().toLocaleString()}`
 }
@@ -46,7 +58,7 @@ function generateSessionName(messages: Message[]): string {
 function getMessagePreview(messages: Message[]): string {
 	const firstUserMessage = messages.find(m => m.role === 'user')
 	if (firstUserMessage) {
-		return firstUserMessage.content.slice(0, 100)
+		return getMessageText(firstUserMessage.content).slice(0, 100)
 	}
 	return ''
 }
@@ -58,7 +70,7 @@ class SessionService {
 	async getSessions(): Promise<SessionSummary[]> {
 		try {
 			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
-			if (!data) return []
+			if (!data || typeof data !== 'string') return []
 			
 			const sessions: ChatSession[] = JSON.parse(data)
 			return sessions.map(s => ({
@@ -81,7 +93,7 @@ class SessionService {
 	async getSession(id: string): Promise<ChatSession | null> {
 		try {
 			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
-			if (!data) return null
+			if (!data || typeof data !== 'string') return null
 			
 			const sessions: ChatSession[] = JSON.parse(data)
 			return sessions.find(s => s.id === id) || null
@@ -100,7 +112,7 @@ class SessionService {
 		config?: Partial<LLMConfig>
 	): Promise<string> {
 		const data = await window.electronAPI.getSetting(SESSIONS_KEY)
-		let sessions: ChatSession[] = data ? JSON.parse(data) : []
+		let sessions: ChatSession[] = data && typeof data === 'string' ? JSON.parse(data) : []
 		
 		const now = Date.now()
 		
@@ -148,7 +160,7 @@ class SessionService {
 	async deleteSession(id: string): Promise<boolean> {
 		try {
 			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
-			if (!data) return false
+			if (!data || typeof data !== 'string') return false
 			
 			let sessions: ChatSession[] = JSON.parse(data)
 			const initialLength = sessions.length
@@ -170,7 +182,7 @@ class SessionService {
 	async renameSession(id: string, name: string): Promise<boolean> {
 		try {
 			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
-			if (!data) return false
+			if (!data || typeof data !== 'string') return false
 			
 			const sessions: ChatSession[] = JSON.parse(data)
 			const session = sessions.find(s => s.id === id)
@@ -221,7 +233,7 @@ class SessionService {
 			session.updatedAt = Date.now()
 			
 			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
-			const sessions: ChatSession[] = data ? JSON.parse(data) : []
+			const sessions: ChatSession[] = data && typeof data === 'string' ? JSON.parse(data) : []
 			
 			sessions.unshift(session)
 			await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))

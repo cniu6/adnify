@@ -12,6 +12,7 @@ import {
 } from './toolTypes'
 import { terminalService } from './terminalService'
 import { lintService } from './lintService'
+import { toFullPath } from '../utils/pathUtils'
 
 // 需要用户审批的工具
 export const APPROVAL_REQUIRED: Record<string, ToolApprovalType> = {
@@ -387,18 +388,10 @@ export async function executeToolCall(
 	}
 	const getBoolean = (key: string): boolean => Boolean(args[key])
 
-    // Helper to resolve paths
+    // Helper to resolve paths - 使用 pathUtils
     const resolvePath = (p: string): string => {
         if (!p) return ''
-        // If absolute path (simple check for unix/win), return it
-        if (p.startsWith('/') || p.match(/^[a-zA-Z]:/)) return p
-        // If workspace set, join
-        if (workspacePath) {
-            // Simple join handling, assuming forward slashes usually from LLM
-            const sep = workspacePath.includes('\\') ? '\\' : '/'
-            return `${workspacePath}${sep}${p}`
-        }
-        return p
+        return toFullPath(p, workspacePath ?? null)
     }
 
 	switch (toolName) {

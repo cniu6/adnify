@@ -4,6 +4,7 @@
  */
 
 import { useStore } from '../store'
+import { getEditorConfig } from '../config/editorConfig'
 
 export interface FileContext {
 	path: string
@@ -21,9 +22,29 @@ export interface ContextSelection {
 	range?: [number, number] // [startLine, endLine]
 }
 
-// 上下文限制
-const MAX_CONTEXT_CHARS = 50000
-const MAX_FILES = 10
+// 上下文统计信息（用于 UI 显示）
+export interface ContextStats {
+	totalChars: number
+	maxChars: number
+	fileCount: number
+	maxFiles: number
+	messageCount: number
+	maxMessages: number
+	semanticResultCount: number
+	terminalChars: number
+}
+
+// 获取配置的限制值
+const getContextLimits = () => {
+	const config = getEditorConfig()
+	return {
+		maxContextChars: config.ai.maxContextChars,
+		maxFiles: config.ai.maxContextFiles,
+		maxSemanticResults: config.ai.maxSemanticResults,
+		maxTerminalChars: config.ai.maxTerminalChars,
+		maxSingleFileChars: config.ai.maxSingleFileChars,
+	}
+}
 
 /**
  * 解析消息中的 @file 引用
@@ -127,11 +148,12 @@ export function formatFileContext(file: FileContext): string {
 	const lang = getLanguageFromPath(file.path)
 	const lines = file.content.split('\n')
 	const lineCount = lines.length
+	const { maxSingleFileChars } = getContextLimits()
 	
 	// 如果文件太大，截断并添加提示
 	let content = file.content
-	if (content.length > 10000) {
-		content = content.slice(0, 10000) + '\n\n... (truncated, file has ' + lineCount + ' lines)'
+	if (content.length > maxSingleFileChars) {
+		content = content.slice(0, maxSingleFileChars) + '\n\n... (truncated, file has ' + lineCount + ' lines)'
 	}
 	
 	return `**${file.path}** (${lineCount} lines):\n\`\`\`${lang}\n${content}\n\`\`\``
@@ -207,12 +229,15 @@ export function buildContextString(
 /**
  * 执行代码库语义搜索
  */
-export async function searchCodebase(query: string, topK: number = 8): Promise<FileContext[]> {
+export async function searchCodebase(query: string, topK?: number): Promise<FileContext[]> {
 	const state = useStore.getState()
 	if (!state.workspacePath) return []
 	
+	const { maxSemanticResults } = getContextLimits()
+	const limit = topK ?? maxSemanticResults
+	
 	try {
-		const results = await window.electronAPI.indexSearch(state.workspacePath, query, topK)
+		const results = await window.electronAPI.indexSearch(state.workspacePath, query, limit)
 		return results.map(r => ({
 			path: r.relativePath,
 			content: r.content,
@@ -346,9 +371,9 @@ export function getTerminalContext(): string {
 	let output = terminalOutputArr.join('\n')
 	
 	// 限制输出长度
-	const maxLength = 5000
-	if (output.length > maxLength) {
-		output = '...(truncated)\n' + output.slice(-maxLength)
+	const { maxTerminalChars } = getContextLimits()
+	if (output.length > maxTerminalChars) {
+		output = '...(truncated)\n' + output.slice(-maxTerminalChars)
 	}
 	
 	return `**Terminal Output:**\n\`\`\`\n${output}\n\`\`\``
@@ -374,12 +399,14 @@ export async function collectContext(
 	terminalContext?: string
 	cleanedMessage: string
 	totalChars: number
+	stats: ContextStats
 }> {
+	const limits = getContextLimits()
 	const {
 		includeActiveFile = true,
 		includeOpenFiles = false,
         includeProjectStructure = true,
-		maxChars = MAX_CONTEXT_CHARS,
+		maxChars = limits.maxContextChars,
 	} = options || {}
 	
 	const state = useStore.getState()
@@ -390,6 +417,7 @@ export async function collectContext(
 	let symbolsContext = ''
 	let gitContext = ''
 	let terminalContext = ''
+	let terminalChars = 0
 
     // 0. 获取项目结构
     if (includeProjectStructure && state.workspacePath) {
@@ -407,7 +435,7 @@ export async function collectContext(
 	
 	// 2. 如果使用 @codebase，执行语义搜索
 	if (useCodebase && cleanedMessage.trim()) {
-		semanticResults = await searchCodebase(cleanedMessage, 8)
+		semanticResults = await searchCodebase(cleanedMessage)
 		// 计算语义结果的字符数
 		for (const result of semanticResults) {
 			totalChars += result.content.length + 100 // 额外的格式化开销
@@ -433,12 +461,13 @@ export async function collectContext(
 	// 5. 如果使用 @terminal，获取终端输出
 	if (useTerminal) {
 		terminalContext = getTerminalContext()
-		totalChars += terminalContext.length
+		terminalChars = terminalContext.length
+		totalChars += terminalChars
 	}
 	
 	// 6. 加载引用的文件
 	for (const ref of refs) {
-		if (files.length >= MAX_FILES) break
+		if (files.length >= limits.maxFiles) break
 		
 		// 尝试在工作区中查找文件
 		let fullPath = ref
@@ -477,7 +506,7 @@ export async function collectContext(
 	// 8. 添加其他打开的文件（可选）
 	if (includeOpenFiles) {
 		for (const openFile of state.openFiles) {
-			if (files.length >= MAX_FILES) break
+			if (files.length >= limits.maxFiles) break
 			if (files.some(f => f.path === openFile.path)) continue
 			if (totalChars + openFile.content.length > maxChars) continue
 			
@@ -494,7 +523,26 @@ export async function collectContext(
 	// 按相关性排序
 	files.sort((a, b) => b.relevance - a.relevance)
 	
-	return { files, semanticResults, projectStructure, symbolsContext, gitContext, terminalContext, cleanedMessage, totalChars }
+	// 构建统计信息
+	const stats: ContextStats = {
+		totalChars,
+		maxChars: limits.maxContextChars,
+		fileCount: files.length,
+		maxFiles: limits.maxFiles,
+		messageCount: 0, // 由 useAgent 填充
+		maxMessages: getEditorConfig().ai.maxHistoryMessages,
+		semanticResultCount: semanticResults.length,
+		terminalChars,
+	}
+	
+	return { files, semanticResults, projectStructure, symbolsContext, gitContext, terminalContext, cleanedMessage, totalChars, stats }
+}
+
+/**
+ * 获取当前上下文限制配置
+ */
+export function getContextLimitsConfig() {
+	return getContextLimits()
 }
 
 /**
@@ -516,4 +564,5 @@ export const contextService = {
 	getGitContext,
 	getTerminalContext,
 	collectContext,
+	getContextLimitsConfig,
 }

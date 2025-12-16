@@ -5,6 +5,7 @@
  */
 
 import { useStore } from '../store'
+import { joinPath } from '../utils/pathUtils'
 
 export interface ProjectRules {
   content: string
@@ -144,11 +145,10 @@ ${rules.content}
   }
 
   /**
-   * 路径拼接辅助函数
+   * 路径拼接辅助函数 - 使用 pathUtils
    */
   private joinPath(base: string, relative: string): string {
-    const sep = base.includes('\\') ? '\\' : '/'
-    return `${base}${sep}${relative.replace(/\//g, sep)}`
+    return joinPath(base, relative)
   }
 }
 

@@ -1,238 +1,53 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import {
-  Send, Sparkles,
-  Trash2, StopCircle,
-  FileText, AlertTriangle,
-  History, Image as ImageIcon, X,
-  Code, GitBranch, Terminal, Database, User
-} from 'lucide-react'
+/**
+ * 聊天面板主组件
+ * 整合所有聊天相关子组件
+ */
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Sparkles, AlertTriangle } from 'lucide-react'
 import { Logo } from './Logo'
-import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { useStore, Message } from '../store'
+import { useStore } from '../store'
 import { useAgent } from '../hooks/useAgent'
 import { t } from '../i18n'
-import { getEditorConfig } from '../config/editorConfig'
+import { toFullPath, normalizePath } from '../utils/pathUtils'
 
+import {
+  ChatMessage,
+  ChatHeader,
+  ChatContextStats,
+  ChatInput,
+  PendingImage,
+  getMessageText,
+} from './chat'
 import ToolCallInline from './ToolCallInline'
 import SessionList from './SessionList'
 import FileMentionPopup from './FileMentionPopup'
 import { sessionService } from '../agent/sessionService'
 import { checkpointService } from '../agent/checkpointService'
 
-
-interface ChatMessageProps {
-  message: Message
-  onEdit?: (messageId: string, newContent: string) => void
-  onRegenerate?: (messageId: string) => void
-}
-
-function ChatMessage({ message, onEdit, onRegenerate }: ChatMessageProps) {
-  const isUser = message.role === 'user'
-  const [isEditing, setIsEditing] = useState(false)
-  const [editContent, setEditContent] = useState('')
-  const { language } = useStore()
-  const editorConfig = getEditorConfig()
-  // 使用编辑器配置的字体大小，聊天面板稍小一点
-  const fontSize = Math.max(12, editorConfig.fontSize - 2)
-
-  if (message.role === 'tool') {
-      return null
-  }
-
-  // Helper to extract text and images
-  const textContent = typeof message.content === 'string' 
-      ? message.content 
-      : Array.isArray(message.content) 
-        ? message.content.filter(c => c.type === 'text').map(c => (c as any).text).join('')
-        : ''
-  
-  const images = Array.isArray(message.content) 
-      ? message.content.filter(c => c.type === 'image') 
-      : []
-
-  const handleStartEdit = () => {
-    setEditContent(textContent)
-    setIsEditing(true)
-  }
-
-  const handleSaveEdit = () => {
-    if (onEdit && editContent.trim()) {
-      onEdit(message.id, editContent.trim())
-    }
-    setIsEditing(false)
-  }
-
-  const handleCancelEdit = () => {
-    setIsEditing(false)
-    setEditContent('')
-  }
-
-  return (
-    <div className="w-full px-4 py-3 group hover:bg-surface/30 transition-colors">
-      {/* 用户/AI 标识行 */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`
-          w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0
-          ${isUser 
-              ? 'bg-surface-active text-text-secondary' 
-              : 'bg-accent/20 text-accent'}
-        `}>
-          {isUser ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-        </div>
-        <span className="text-xs font-medium text-text-secondary">
-          {isUser ? 'You' : 'Adnify'}
-        </span>
-      </div>
-
-      {/* 消息内容 */}
-      <div className="pl-8">
-        {/* 图片预览 */}
-        {images.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3">
-            {images.map((img: any, i) => (
-              <div key={i} className="rounded-lg overflow-hidden border border-border-subtle max-w-[200px]">
-                <img 
-                  src={img.source.type === 'base64' ? `data:${img.source.media_type};base64,${img.source.data}` : img.source.data} 
-                  alt="User upload" 
-                  className="max-w-full h-auto object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {isEditing ? (
-          <div className="space-y-2">
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="w-full bg-background border border-border-subtle rounded-lg px-3 py-2 text-text-primary resize-none focus:outline-none focus:border-accent"
-              style={{ fontSize }}
-              rows={3}
-              autoFocus
-            />
-            <div className="flex items-center gap-2 justify-end">
-              <button
-                onClick={handleCancelEdit}
-                className="px-3 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
-              >
-                {t('cancel', language)}
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="px-3 py-1 bg-accent text-white text-xs rounded-md hover:bg-accent-hover transition-colors"
-              >
-                {t('saveAndResend', language)}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <ReactMarkdown
-              className="prose prose-invert max-w-none break-words leading-relaxed text-text-primary"
-              components={{
-                code({ className, children, node, ...props }) {
-                  const match = /language-(\w+)/.exec(className || '')
-                  const content = String(children)
-                  const isCodeBlock = match || (node?.position?.start?.line !== node?.position?.end?.line)
-                  const isInline = !isCodeBlock && !content.includes('\n')
-                  
-                  return isInline ? (
-                    <code className="bg-surface-active px-1.5 py-0.5 rounded text-accent font-mono text-[0.9em]" {...props}>
-                      {children}
-                    </code>
-                  ) : (
-                    <div className="relative group/code my-3 rounded-lg overflow-hidden border border-border-subtle bg-[#0a0a0b]">
-                      <div className="flex items-center justify-between px-3 py-1.5 bg-surface border-b border-border-subtle">
-                        <span className="text-[10px] text-text-muted font-mono uppercase">{match?.[1] || 'code'}</span>
-                      </div>
-                      <SyntaxHighlighter
-                        style={vscDarkPlus}
-                        language={match?.[1]}
-                        PreTag="div"
-                        className="!bg-transparent !p-3 !m-0 custom-scrollbar"
-                        customStyle={{ background: 'transparent', margin: 0, fontSize: fontSize - 1 }}
-                        wrapLines={true}
-                        wrapLongLines={true} 
-                      >
-                        {String(children).replace(/\n$/, '')}
-                      </SyntaxHighlighter>
-                    </div>
-                  )
-                },
-                p: ({children}) => <p className="mb-2 last:mb-0" style={{ fontSize }}>{children}</p>,
-                ul: ({children}) => <ul className="list-disc pl-4 mb-2 space-y-1 marker:text-text-muted" style={{ fontSize }}>{children}</ul>,
-                ol: ({children}) => <ol className="list-decimal pl-4 mb-2 space-y-1 marker:text-text-muted" style={{ fontSize }}>{children}</ol>,
-                li: ({children}) => <li style={{ fontSize }}>{children}</li>,
-                a: ({href, children}) => <a href={href} target="_blank" className="text-accent hover:underline transition-colors">{children}</a>,
-                blockquote: ({children}) => <blockquote className="border-l-2 border-accent/50 pl-3 py-1 my-2 text-text-muted">{children}</blockquote>,
-                h1: ({children}) => <h1 className="text-lg font-semibold mb-2 mt-4 first:mt-0">{children}</h1>,
-                h2: ({children}) => <h2 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h2>,
-                h3: ({children}) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h3>,
-              }}
-            >
-              {textContent}
-            </ReactMarkdown>
-            {message.isStreaming && (
-              <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-0.5 align-middle rounded-sm" />
-            )}
-            
-            {/* Message Actions */}
-            {!message.isStreaming && (
-              <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {isUser && onEdit && (
-                  <button
-                    onClick={handleStartEdit}
-                    className="p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded transition-colors"
-                    title={t('editMessage', language)}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                )}
-                {!isUser && onRegenerate && (
-                  <button
-                    onClick={() => onRegenerate(message.id)}
-                    className="p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded transition-colors"
-                    title={t('regenerateResponse', language)}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface PendingImage {
-    id: string
-    file: File
-    previewUrl: string
-    base64?: string
-}
-
 export default function ChatPanel() {
   const {
-    chatMode, setChatMode, messages, isStreaming, currentToolCalls,
-    clearMessages, llmConfig, pendingToolCall,
-    setCurrentSessionId, addMessage, workspacePath, openFile, setActiveFile,
-    inputPrompt, setInputPrompt, editMessage, deleteMessagesAfter, language
+    chatMode,
+    setChatMode,
+    messages,
+    isStreaming,
+    currentToolCalls,
+    clearMessages,
+    llmConfig,
+    pendingToolCall,
+    setCurrentSessionId,
+    addMessage,
+    workspacePath,
+    openFile,
+    setActiveFile,
+    inputPrompt,
+    setInputPrompt,
+    editMessage,
+    deleteMessagesAfter,
+    language,
+    contextStats,
   } = useStore()
-  const {
-    sendMessage,
-    abort,
-    approveCurrentTool,
-    rejectCurrentTool,
-  } = useAgent()
+
+  const { sendMessage, abort, approveCurrentTool, rejectCurrentTool } = useAgent()
 
   const [input, setInput] = useState('')
   const [images, setImages] = useState<PendingImage[]>([])
@@ -240,166 +55,156 @@ export default function ChatPanel() {
   const [showFileMention, setShowFileMention] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionPosition, setMentionPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const inputContainerRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
 
   // External prompt (from Command Palette)
   useEffect(() => {
-      if (inputPrompt) {
-          setInput(inputPrompt)
-          setInputPrompt('')
-          setTimeout(() => textareaRef.current?.focus(), 100)
-      }
+    if (inputPrompt) {
+      setInput(inputPrompt)
+      setInputPrompt('')
+      setTimeout(() => textareaRef.current?.focus(), 100)
+    }
   }, [inputPrompt, setInputPrompt])
 
-  // Tool tool file handling
-  const handleToolFileClick = useCallback(async (filePath: string) => {
-    let fullPath = filePath
-    if (workspacePath && !filePath.startsWith('/') && !filePath.match(/^[a-zA-Z]:/)) {
-      const sep = workspacePath.includes('\\') ? '\\': '/'
-      fullPath = `${workspacePath}${sep}${filePath}`
-    }
-    const currentContent = await window.electronAPI.readFile(fullPath)
-    if (currentContent === null) return
-    
-    // Checkpoints logic
-    const serviceCheckpoints = checkpointService.getCheckpoints()
-    const { checkpoints: storeCheckpoints } = useStore.getState()
-    const allCheckpoints = [...serviceCheckpoints, ...storeCheckpoints]
-    let originalContent: string | undefined
-    const normalizePath = (p: string) => p.replace(/\\/g, '/').toLowerCase()
-    const normalizedFullPath = normalizePath(fullPath)
-    const normalizedFilePath = normalizePath(filePath)
-    
-    for (let i = allCheckpoints.length - 1; i >= 0; i--) {
-      const checkpoint = allCheckpoints[i]
-      if (!checkpoint.snapshots) continue
-      const snapshotPaths = Object.keys(checkpoint.snapshots)
-      for (const snapshotPath of snapshotPaths)
- {
-        const normalizedSnapshotPath = normalizePath(snapshotPath)
-        if (normalizedSnapshotPath === normalizedFullPath ||
+  // Auto scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, currentToolCalls])
+
+  // Tool file click handler
+  const handleToolFileClick = useCallback(
+    async (filePath: string) => {
+      const fullPath = toFullPath(filePath, workspacePath)
+      const currentContent = await window.electronAPI.readFile(fullPath)
+      if (currentContent === null) return
+
+      // Find original content from checkpoints
+      const serviceCheckpoints = checkpointService.getCheckpoints()
+      const { checkpoints: storeCheckpoints } = useStore.getState()
+      const allCheckpoints = [...serviceCheckpoints, ...storeCheckpoints]
+      let originalContent: string | undefined
+
+      const normalizedFullPath = normalizePath(fullPath)
+      const normalizedFilePath = normalizePath(filePath)
+
+      for (let i = allCheckpoints.length - 1; i >= 0; i--) {
+        const checkpoint = allCheckpoints[i]
+        if (!checkpoint.snapshots) continue
+
+        for (const snapshotPath of Object.keys(checkpoint.snapshots)) {
+          const normalizedSnapshotPath = normalizePath(snapshotPath)
+          if (
+            normalizedSnapshotPath === normalizedFullPath ||
             normalizedSnapshotPath === normalizedFilePath ||
             normalizedSnapshotPath.endsWith('/' + normalizedFilePath) ||
-            normalizedFullPath.endsWith('/' + normalizePath(snapshotPath.split(/[\\/]/).pop() || ''))) {
-          originalContent = checkpoint.snapshots[snapshotPath].content
-          break
+            normalizedFullPath.endsWith(
+              '/' + normalizePath(snapshotPath.split(/[\\/]/).pop() || '')
+            )
+          ) {
+            originalContent = checkpoint.snapshots[snapshotPath].content
+            break
+          }
         }
+        if (originalContent) break
       }
-      if (originalContent) break
-    }
-    
-    if (originalContent && originalContent !== currentContent) {
-      openFile(fullPath, currentContent, originalContent)
-    } else {
-      openFile(fullPath, currentContent)
-    }
-    setActiveFile(fullPath)
-  }, [workspacePath, openFile, setActiveFile])
 
-  // File mentions detection
-  const fileRefs = useMemo(() => {
-    const refs: string[] = []
-    const regex = /@(?:file:)?([^\s@]+\.[a-zA-Z0-9]+)/g
-    let match
-    while ((match = regex.exec(input)) !== null) {
-      if (match[1] !== 'codebase') {
-        refs.push(match[1])
+      if (originalContent && originalContent !== currentContent) {
+        openFile(fullPath, currentContent, originalContent)
+      } else {
+        openFile(fullPath, currentContent)
       }
-    }
-    return refs
-  }, [input])
-
-  // Special context reference detection
-  const hasCodebaseRef = useMemo(() => /@codebase\b/i.test(input), [input])
-  const hasSymbolsRef = useMemo(() => /@symbols\b/i.test(input), [input])
-  const hasGitRef = useMemo(() => /@git\b/i.test(input), [input])
-  const hasTerminalRef = useMemo(() => /@terminal\b/i.test(input), [input])
+      setActiveFile(fullPath)
+    },
+    [workspacePath, openFile, setActiveFile]
+  )
 
   // Image handling
-  const addImage = async (file: File) => {
-      const id = crypto.randomUUID()
-      const previewUrl = URL.createObjectURL(file)
-      
-      const reader = new FileReader()
-      reader.onload = () => {
-          const result = reader.result as string
-          const base64 = result.split(',')[1]
-          setImages(prev => prev.map(img => img.id === id ? { ...img, base64 } : img))
-      }
-      reader.readAsDataURL(file)
+  const addImage = useCallback(async (file: File) => {
+    const id = crypto.randomUUID()
+    const previewUrl = URL.createObjectURL(file)
 
-      setImages(prev => [...prev, { id, file, previewUrl }])
-  }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      const base64 = result.split(',')[1]
+      setImages((prev) => prev.map((img) => (img.id === id ? { ...img, base64 } : img)))
+    }
+    reader.readAsDataURL(file)
 
-  const removeImage = (id: string) => {
-      setImages(prev => prev.filter(img => img.id !== id))
-  }
+    setImages((prev) => [...prev, { id, file, previewUrl }])
+  }, [])
 
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+  // Paste handler
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
       const items = e.clipboardData.items
       for (const item of items) {
-          if (item.type.startsWith('image/')) {
-              e.preventDefault()
-              const file = item.getAsFile()
-              if (file) addImage(file)
-          }
+        if (item.type.startsWith('image/')) {
+          e.preventDefault()
+          const file = item.getAsFile()
+          if (file) addImage(file)
+        }
       }
-  }, [])
+    },
+    [addImage]
+  )
 
   // Drag and Drop
   const handleDragOver = useCallback((e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragging(true)
+    e.preventDefault()
+    setIsDragging(true)
   }, [])
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragging(false)
+    e.preventDefault()
+    setIsDragging(false)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
       setIsDragging(false)
-      
-      // Check for files first (images)
+
       const files = Array.from(e.dataTransfer.files)
-      const imageFiles = files.filter(f => f.type.startsWith('image/'))
-      
+      const imageFiles = files.filter((f) => f.type.startsWith('image/'))
+
       if (imageFiles.length > 0) {
-          imageFiles.forEach(addImage)
-          return
+        imageFiles.forEach(addImage)
+        return
       }
 
-      // If not images, check for text/paths
+      // Handle file paths
       let paths: string[] = []
       const internalPath = e.dataTransfer.getData('application/adnify-file-path')
       if (internalPath) {
-          paths.push(internalPath)
+        paths.push(internalPath)
       } else {
-          const nonImages = files.filter(f => !f.type.startsWith('image/'))
-          if (nonImages.length > 0) {
-             paths = nonImages.map(f => (f as File & { path?: string }).path).filter((p): p is string => Boolean(p))
-          }
+        const nonImages = files.filter((f) => !f.type.startsWith('image/'))
+        if (nonImages.length > 0) {
+          paths = nonImages
+            .map((f) => (f as File & { path?: string }).path)
+            .filter((p): p is string => Boolean(p))
+        }
       }
-      
-      if (paths.length > 0) {
-          setInput(prev => {
-              const prefix = prev.trim() ? prev + ' ' : ''
-              const mentions = paths.map(p => {
-                  const name = p.split(/[\\/]/).pop()
-                  return `@${name}` 
-              }).join(' ')
-              return prefix + mentions + ' '
-          })
-          textareaRef.current?.focus()
-      }
-  }, [])
 
+      if (paths.length > 0) {
+        setInput((prev) => {
+          const prefix = prev.trim() ? prev + ' ' : ''
+          const mentions = paths.map((p) => `@${p.split(/[\\/]/).pop()}`).join(' ')
+          return prefix + mentions + ' '
+        })
+        textareaRef.current?.focus()
+      }
+    },
+    [addImage]
+  )
+
+  // Input change handler with file mention detection
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     const cursorPos = e.target.selectionStart || 0
@@ -421,49 +226,50 @@ export default function ChatPanel() {
     }
   }, [])
 
-  const handleSelectFile = useCallback((filePath: string) => {
-    const cursorPos = textareaRef.current?.selectionStart || input.length
-    const textBeforeCursor = input.slice(0, cursorPos)
-    const textAfterCursor = input.slice(cursorPos)
-    
-    const atIndex = textBeforeCursor.lastIndexOf('@')
-    if (atIndex !== -1) {
-      const newInput = textBeforeCursor.slice(0, atIndex) + '@' + filePath + ' ' + textAfterCursor
-      setInput(newInput)
-    }
-    
-    setShowFileMention(false)
-    setMentionQuery('')
-    textareaRef.current?.focus()
-  }, [input])
+  // File selection from mention popup
+  const handleSelectFile = useCallback(
+    (filePath: string) => {
+      const cursorPos = textareaRef.current?.selectionStart || input.length
+      const textBeforeCursor = input.slice(0, cursorPos)
+      const textAfterCursor = input.slice(cursorPos)
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, currentToolCalls])
+      const atIndex = textBeforeCursor.lastIndexOf('@')
+      if (atIndex !== -1) {
+        const newInput = textBeforeCursor.slice(0, atIndex) + '@' + filePath + ' ' + textAfterCursor
+        setInput(newInput)
+      }
 
+      setShowFileMention(false)
+      setMentionQuery('')
+      textareaRef.current?.focus()
+    },
+    [input]
+  )
+
+  // Submit handler
   const handleSubmit = useCallback(async () => {
     if ((!input.trim() && images.length === 0) || isStreaming) return
-    
-    let userMessage: string | any[] = input.trim()
-    
-    if (images.length > 0) {
-        const readyImages = images.filter(img => img.base64)
-        if (readyImages.length !== images.length) {
-            console.warn('Waiting for image processing...')
-            return
-        }
 
-        userMessage = [
-            { type: 'text', text: input.trim() },
-            ...readyImages.map(img => ({
-                type: 'image',
-                source: {
-                    type: 'base64',
-                    media_type: img.file.type,
-                    data: img.base64
-                }
-            }))
-        ]
+    let userMessage: string | any[] = input.trim()
+
+    if (images.length > 0) {
+      const readyImages = images.filter((img) => img.base64)
+      if (readyImages.length !== images.length) {
+        console.warn('Waiting for image processing...')
+        return
+      }
+
+      userMessage = [
+        { type: 'text', text: input.trim() },
+        ...readyImages.map((img) => ({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: img.file.type,
+            data: img.base64,
+          },
+        })),
+      ]
     }
 
     setInput('')
@@ -471,241 +277,215 @@ export default function ChatPanel() {
     await sendMessage(userMessage as any)
   }, [input, images, isStreaming, sendMessage])
 
-  const handleLoadSession = useCallback(async (sessionId: string) => {
-    const session = await sessionService.getSession(sessionId)
-    if (session) {
-      clearMessages()
-      setChatMode(session.mode)
-      session.messages.forEach(msg => {
-        addMessage({
-          role: msg.role,
-          content: msg.content as any, // Cast for compatibility
-          toolCallId: msg.toolCallId,
-          toolName: msg.toolName,
+  // Load session
+  const handleLoadSession = useCallback(
+    async (sessionId: string) => {
+      const session = await sessionService.getSession(sessionId)
+      if (session) {
+        clearMessages()
+        setChatMode(session.mode)
+        session.messages.forEach((msg) => {
+          addMessage({
+            role: msg.role,
+            content: msg.content as any,
+            toolCallId: msg.toolCallId,
+            toolName: msg.toolName,
+          })
         })
-      })
-      setCurrentSessionId(sessionId)
-      setShowSessions(false)
-    }
-  }, [clearMessages, setChatMode, addMessage, setCurrentSessionId])
-
-  // 编辑消息并重新发送
-  const handleEditMessage = useCallback(async (messageId: string, newContent: string) => {
-    // 删除该消息之后的所有消息
-    deleteMessagesAfter(messageId)
-    // 更新消息内容
-    editMessage(messageId, newContent)
-    // 重新发送
-    await sendMessage(newContent)
-  }, [deleteMessagesAfter, editMessage, sendMessage])
-
-  // 重新生成响应
-  const handleRegenerate = useCallback(async (messageId: string) => {
-    // 找到这条消息之前的用户消息
-    const msgIndex = messages.findIndex(m => m.id === messageId)
-    if (msgIndex <= 0) return
-    
-    // 找到最近的用户消息
-    let userMsgIndex = msgIndex - 1
-    while (userMsgIndex >= 0 && messages[userMsgIndex].role !== 'user') {
-      userMsgIndex--
-    }
-    
-    if (userMsgIndex < 0) return
-    
-    const userMsg = messages[userMsgIndex]
-    const userContent = typeof userMsg.content === 'string' 
-      ? userMsg.content 
-      : userMsg.content.filter(c => c.type === 'text').map(c => (c as any).text).join('')
-    
-    // 删除用户消息之后的所有消息
-    deleteMessagesAfter(userMsg.id)
-    // 重新发送
-    await sendMessage(userContent)
-  }, [messages, deleteMessagesAfter, sendMessage])
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (showFileMention) {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        setShowFileMention(false)
-        setMentionQuery('')
+        setCurrentSessionId(sessionId)
+        setShowSessions(false)
       }
-      if (['Enter', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key)) {
-        e.preventDefault()
-        return
+    },
+    [clearMessages, setChatMode, addMessage, setCurrentSessionId]
+  )
+
+  // Edit message and resend
+  const handleEditMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      deleteMessagesAfter(messageId)
+      editMessage(messageId, newContent)
+      await sendMessage(newContent)
+    },
+    [deleteMessagesAfter, editMessage, sendMessage]
+  )
+
+  // Regenerate response
+  const handleRegenerate = useCallback(
+    async (messageId: string) => {
+      const msgIndex = messages.findIndex((m) => m.id === messageId)
+      if (msgIndex <= 0) return
+
+      let userMsgIndex = msgIndex - 1
+      while (userMsgIndex >= 0 && messages[userMsgIndex].role !== 'user') {
+        userMsgIndex--
       }
-    }
-    
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit()
-    }
-  }
+
+      if (userMsgIndex < 0) return
+
+      const userMsg = messages[userMsgIndex]
+      const userContent = getMessageText(userMsg.content)
+
+      deleteMessagesAfter(userMsg.id)
+      await sendMessage(userContent)
+    },
+    [messages, deleteMessagesAfter, sendMessage]
+  )
+
+  // Keyboard handler
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (showFileMention) {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setShowFileMention(false)
+          setMentionQuery('')
+        }
+        if (['Enter', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key)) {
+          e.preventDefault()
+          return
+        }
+      }
+
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        handleSubmit()
+      }
+    },
+    [showFileMention, handleSubmit]
+  )
 
   const hasApiKey = !!llmConfig.apiKey
 
   return (
-    <div 
-        className={`w-full h-full flex flex-col relative z-10 bg-[#09090b] transition-colors ${isDragging ? 'bg-accent/5 ring-2 ring-inset ring-accent' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-    > {/* Header */}
-      <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-background/50 backdrop-blur-sm z-20">
-        <div className="flex bg-surface rounded-lg p-0.5 border border-border-subtle">
-            <button
-            onClick={() => setChatMode('chat')}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${ 
-                chatMode === 'chat'
-                ? 'bg-background text-text-primary shadow-sm'
-                : 'text-text-muted hover:text-text-primary'
-            }`}
-            >
-            Chat
-            </button>
-            <button
-            onClick={() => setChatMode('agent')}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${ 
-                chatMode === 'agent'
-                ? 'text-accent bg-accent/10 shadow-sm'
-                : 'text-text-muted hover:text-text-primary'
-            }`}
-            >
-            Agent
-            </button>
-        </div>
-        
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowSessions(!showSessions)}
-            className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${showSessions ? 'text-accent' : 'text-text-muted'}`}
-            title={t('history', language)}
-          >
-            <History className="w-4 h-4" />
-          </button>
-           <button
-            onClick={clearMessages}
-            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-status-error transition-colors"
-            title={t('clearChat', language)}
-          >
-            <Trash2 className="w-4 h-4 text-text-muted" />
-          </button>
-        </div>
-      </div>
+    <div
+      className={`w-full h-full flex flex-col relative z-10 bg-[#09090b] transition-colors ${
+        isDragging ? 'bg-accent/5 ring-2 ring-inset ring-accent' : ''
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Header */}
+      <ChatHeader
+        chatMode={chatMode}
+        setChatMode={setChatMode}
+        showSessions={showSessions}
+        setShowSessions={setShowSessions}
+        onClearMessages={clearMessages}
+      />
 
-      {/* Overlays */}
+      {/* Context Stats Bar */}
+      {contextStats && messages.length > 0 && (
+        <ChatContextStats stats={contextStats} language={language} />
+      )}
+
+      {/* Session List Overlay */}
       {showSessions && (
         <div className="absolute top-12 right-0 left-0 bottom-0 bg-background/95 backdrop-blur-md z-30 overflow-hidden animate-slide-in p-4">
-          <SessionList 
-            onClose={() => setShowSessions(false)} 
-            onLoadSession={handleLoadSession}
-          />
+          <SessionList onClose={() => setShowSessions(false)} onLoadSession={handleLoadSession} />
         </div>
       )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-0 pb-4 bg-background">
+        {/* API Key Warning */}
         {!hasApiKey && (
           <div className="m-4 p-4 border border-warning/20 bg-warning/5 rounded-lg flex gap-3">
-             <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
-             <div>
-                <span className="font-medium text-sm text-warning block mb-1">{t('setupRequired', language)}</span>
-                <p className="text-xs text-text-muted leading-relaxed">{t('setupRequiredDesc', language)}</p>
-             </div>
+            <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
+            <div>
+              <span className="font-medium text-sm text-warning block mb-1">
+                {t('setupRequired', language)}
+              </span>
+              <p className="text-xs text-text-muted leading-relaxed">
+                {t('setupRequiredDesc', language)}
+              </p>
+            </div>
           </div>
         )}
 
+        {/* Empty State */}
         {messages.length === 0 && hasApiKey && (
           <div className="h-full flex flex-col items-center justify-center opacity-40 select-none pointer-events-none gap-6 animate-fade-in">
-             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-surface to-surface-active border border-border-subtle flex items-center justify-center shadow-2xl">
-                <Logo className="w-12 h-12" glow />
-             </div>
-             <div className="text-center">
-                 <p className="text-lg font-semibold text-text-primary mb-1">Adnify Agent</p>
-                 <p className="text-sm text-text-muted">{t('howCanIHelp', language)}</p>
-             </div>
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-surface to-surface-active border border-border-subtle flex items-center justify-center shadow-2xl">
+              <Logo className="w-12 h-12" glow />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-text-primary mb-1">Adnify Agent</p>
+              <p className="text-sm text-text-muted">{t('howCanIHelp', language)}</p>
+            </div>
           </div>
         )}
 
+        {/* Messages */}
         <div className="flex flex-col gap-0 pb-4">
-            {messages.map((msg, index) => {
-                // 跳过 tool 类型的消息（它们会在 ToolCallInline 中显示结果）
-                if (msg.role === 'tool') {
-                    return null
-                }
-                
-                // 获取文本内容
-                const textContent = typeof msg.content === 'string' 
-                    ? msg.content 
-                    : Array.isArray(msg.content) 
-                        ? msg.content.filter(c => c.type === 'text').map(c => (c as any).text).join('')
-                        : ''
-                
-                // 检查是否是最后一条 assistant 消息（用于显示当前工具调用）
-                const isLastAssistant = msg.role === 'assistant' && 
-                    (index === messages.length - 1 || 
-                     messages.slice(index + 1).every(m => m.role === 'tool'))
-                
-                const shouldShowCurrentToolCalls = isLastAssistant && currentToolCalls.length > 0
-                
-                // 如果是空的 assistant 消息但有工具调用，仍然显示（只显示工具调用部分）
-                const hasContent = textContent.trim() || msg.isStreaming || shouldShowCurrentToolCalls
-                if (msg.role === 'assistant' && !hasContent) {
-                    return null
-                }
-                
-                return (
-                    <div key={msg.id}>
-                        {/* 只有有文本内容时才显示消息 */}
-                        {(textContent.trim() || msg.isStreaming || msg.role === 'user') && (
-                            <ChatMessage 
-                                message={msg}
-                                onEdit={handleEditMessage}
-                                onRegenerate={handleRegenerate}
-                            />
-                        )}
-                        
-                        {/* 工具调用内联显示 - 在 AI 消息内部 */}
-                        {shouldShowCurrentToolCalls && (
-                            <div className="px-4 py-2 pl-12">
-                                {currentToolCalls.map((toolCall) => (
-                                    <ToolCallInline
-                                        key={toolCall.id}
-                                        toolCall={toolCall}
-                                        onApprove={pendingToolCall?.id === toolCall.id ? approveCurrentTool : undefined}
-                                        onReject={pendingToolCall?.id === toolCall.id ? rejectCurrentTool : undefined}
-                                        onFileClick={handleToolFileClick}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )
-            })}
+          {messages.map((msg) => {
+            if (msg.role === 'tool') return null
+
+            const textContent = getMessageText(msg.content)
             
-            {/* 如果没有消息但有工具调用（AI 直接执行工具的情况） */}
-            {messages.length === 0 && currentToolCalls.length > 0 && (
-                <div className="px-4 py-3">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-md flex items-center justify-center bg-accent/20 text-accent">
-                            <Sparkles className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="text-xs font-medium text-text-secondary">Adnify</span>
-                    </div>
-                    <div className="pl-8">
-                        {currentToolCalls.map((toolCall) => (
-                            <ToolCallInline
-                                key={toolCall.id}
-                                toolCall={toolCall}
-                                onApprove={pendingToolCall?.id === toolCall.id ? approveCurrentTool : undefined}
-                                onReject={pendingToolCall?.id === toolCall.id ? rejectCurrentTool : undefined}
-                                onFileClick={handleToolFileClick}
-                            />
-                        ))}
-                    </div>
+            // 获取与此消息关联的工具调用
+            const linkedToolCalls = msg.toolCallIds
+              ? currentToolCalls.filter((tc) => msg.toolCallIds?.includes(tc.id))
+              : []
+            
+            const hasContent = textContent.trim() || msg.isStreaming || linkedToolCalls.length > 0
+
+            if (msg.role === 'assistant' && !hasContent) return null
+
+            return (
+              <div key={msg.id}>
+                {(textContent.trim() || msg.isStreaming || msg.role === 'user') && (
+                  <ChatMessage
+                    message={msg}
+                    onEdit={handleEditMessage}
+                    onRegenerate={handleRegenerate}
+                  />
+                )}
+
+                {/* 内联显示与此消息关联的工具调用 */}
+                {linkedToolCalls.length > 0 && (
+                  <div className="px-4 py-2 pl-12">
+                    {linkedToolCalls.map((toolCall) => (
+                      <ToolCallInline
+                        key={toolCall.id}
+                        toolCall={toolCall}
+                        onApprove={
+                          pendingToolCall?.id === toolCall.id ? approveCurrentTool : undefined
+                        }
+                        onReject={
+                          pendingToolCall?.id === toolCall.id ? rejectCurrentTool : undefined
+                        }
+                        onFileClick={handleToolFileClick}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Tool calls without messages (fallback) */}
+          {messages.length === 0 && currentToolCalls.length > 0 && (
+            <div className="px-4 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-md flex items-center justify-center bg-accent/20 text-accent">
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
-            )}
+                <span className="text-xs font-medium text-text-secondary">Adnify</span>
+              </div>
+              <div className="pl-8">
+                {currentToolCalls.map((toolCall) => (
+                  <ToolCallInline
+                    key={toolCall.id}
+                    toolCall={toolCall}
+                    onApprove={pendingToolCall?.id === toolCall.id ? approveCurrentTool : undefined}
+                    onReject={pendingToolCall?.id === toolCall.id ? rejectCurrentTool : undefined}
+                    onFileClick={handleToolFileClick}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div ref={messagesEndRef} />
@@ -725,136 +505,23 @@ export default function ChatPanel() {
       )}
 
       {/* Input Area */}
-      <div ref={inputContainerRef} className="p-4 bg-background border-t border-border z-20">
-        <div className={`
-            relative group rounded-xl border transition-all duration-200
-            ${isStreaming 
-                ? 'border-accent/50 bg-accent/5' 
-                : 'border-border-subtle bg-surface focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/20 focus-within:shadow-glow'}
-        `}> {/* Image Previews */}
-              {images.length > 0 && (
-                  <div className="flex gap-2 p-3 pb-0 overflow-x-auto custom-scrollbar">
-                      {images.map(img => (
-                          <div key={img.id} className="relative group/img flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-border-subtle">
-                              <img src={img.previewUrl} alt="preview" className="w-full h-full object-cover" />
-                              <button
-                                  onClick={() => removeImage(img.id)}
-                                  className="absolute top-0.5 right-0.5 p-0.5 bg-black/50 rounded-full text-white hover:bg-red-500 transition-colors opacity-0 group-hover/img:opacity-100"
-                              >
-                                  <X className="w-3 h-3" />
-                              </button>
-                          </div>
-                      ))}
-                  </div>
-              )}
-
-          {/* Context Chips */}
-          {(fileRefs.length > 0 || hasCodebaseRef || hasSymbolsRef || hasGitRef || hasTerminalRef) && (
-             <div className="flex flex-wrap gap-1.5 px-3 pt-3">
-                {hasCodebaseRef && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-medium rounded-full border border-purple-500/20 animate-fade-in">
-                        <Database className="w-3 h-3" />
-                        @codebase
-                    </span>
-                )}
-                {hasSymbolsRef && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-medium rounded-full border border-blue-500/20 animate-fade-in">
-                        <Code className="w-3 h-3" />
-                        @symbols
-                    </span>
-                )}
-                {hasGitRef && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-400 text-[10px] font-medium rounded-full border border-orange-500/20 animate-fade-in">
-                        <GitBranch className="w-3 h-3" />
-                        @git
-                    </span>
-                )}
-                {hasTerminalRef && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 text-green-400 text-[10px] font-medium rounded-full border border-green-500/20 animate-fade-in">
-                        <Terminal className="w-3 h-3" />
-                        @terminal
-                    </span>
-                )}
-                {fileRefs.map((ref, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent/10 text-accent text-[10px] font-medium rounded-full border border-accent/20 animate-fade-in">
-                        <FileText className="w-3 h-3" />
-                        {ref}
-                    </span>
-                ))}
-             </div>
-          )}
-
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder={hasApiKey ? t('pasteImagesHint', language) : t('configureApiKey', language)}
-            disabled={!hasApiKey || !!pendingToolCall}
-            className="w-full bg-transparent border-none rounded-xl px-4 py-3 pr-12
-                     text-sm text-text-primary placeholder-text-muted/60 resize-none
-                     focus:ring-0 focus:outline-none leading-relaxed"
-            rows={1}
-            style={{ minHeight: '52px', maxHeight: '200px' }}
-          />
-          
-          <div className="absolute right-2 bottom-2 flex items-center gap-1">
-            <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*" 
-                multiple 
-                onChange={(e) => {
-                    if (e.target.files) {
-                        Array.from(e.target.files).forEach(addImage)
-                    }
-                    e.target.value = ''
-                }}
-            />
-            <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
-                title={t('uploadImage', language)}
-            >
-                <ImageIcon className="w-4 h-4" />
-            </button>
-
-            <button
-                onClick={isStreaming ? abort : handleSubmit}
-                disabled={!hasApiKey || ((!input.trim() && images.length === 0) && !isStreaming) || !!pendingToolCall}
-                className={`p-2 rounded-lg transition-all flex items-center justify-center
-                ${isStreaming
-                    ? 'bg-status-error/10 text-status-error hover:bg-status-error/20'
-                    : (input.trim() || images.length > 0)
-                        ? 'bg-accent text-white shadow-glow hover:bg-accent-hover' 
-                        : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'}
-                `}
-            >
-                {isStreaming ? (
-                <StopCircle className="w-4 h-4" />
-                ) : (
-                <Send className="w-4 h-4" />
-                )}
-            </button>
-          </div>
-        </div>
-        
-        <div className="mt-2 flex items-center justify-between px-1">
-            <div className="flex items-center gap-2 text-[10px] text-text-muted">
-                {chatMode === 'agent' && (
-                    <span className="flex items-center gap-1 text-accent">
-                        <Sparkles className="w-3 h-3" />
-                        {t('agentMode', language)}
-                    </span>
-                )}
-            </div>
-            <span className="text-[10px] text-text-muted opacity-50 font-mono">
-                {t('returnToSend', language)}
-            </span>
-        </div>
-      </div>
+      <ChatInput
+        input={input}
+        setInput={setInput}
+        images={images}
+        setImages={setImages}
+        isStreaming={isStreaming}
+        hasApiKey={hasApiKey}
+        hasPendingToolCall={!!pendingToolCall}
+        chatMode={chatMode}
+        onSubmit={handleSubmit}
+        onAbort={abort}
+        onInputChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        textareaRef={textareaRef}
+        inputContainerRef={inputContainerRef}
+      />
     </div>
   )
 }

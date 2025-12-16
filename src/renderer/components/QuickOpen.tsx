@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { Search, FileText, X } from 'lucide-react'
 import { useStore } from '../store'
+import { getFileName } from '../utils/pathUtils'
 
 interface QuickOpenProps {
   onClose: () => void
@@ -111,7 +112,7 @@ const FileMatchItem = memo(function FileMatchItem({
   isSelected: boolean
   onSelect: () => void
 }) {
-  const fileName = file.path.split(/[/\\]/).pop() || file.path
+  const fileName = getFileName(file.path) || file.path
   const dirPath = file.path.slice(0, file.path.length - fileName.length - 1)
 
   // 计算文件名中的匹配位置
@@ -198,7 +199,7 @@ export default function QuickOpen({ onClose }: QuickOpenProps) {
       setMatches(
         allFiles.slice(0, 20).map(path => ({
           path,
-          name: path.split(/[/\\]/).pop() || path,
+          name: getFileName(path) || path,
           score: 0,
           matches: [],
         }))
@@ -213,7 +214,7 @@ export default function QuickOpen({ onClose }: QuickOpenProps) {
       if (result) {
         results.push({
           path: filePath,
-          name: filePath.split(/[/\\]/).pop() || filePath,
+          name: getFileName(filePath) || filePath,
           score: result.score,
           matches: result.matches,
         })
