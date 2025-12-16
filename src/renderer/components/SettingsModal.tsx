@@ -13,6 +13,7 @@ import { t, Language } from '../i18n'
 import { BUILTIN_PROVIDERS, BuiltinProviderName, ProviderModelConfig } from '../types/provider'
 import { getEditorConfig, saveEditorConfig, EditorConfig } from '../config/editorConfig'
 import { themeManager } from '../config/themeConfig'
+import { toast } from './Toast'
 
 type SettingsTab = 'provider' | 'editor' | 'agent' | 'keybindings' | 'system'
 
@@ -903,9 +904,9 @@ function SystemSettings({ language }: { language: Language }) {
             setLoading(false)
             if (success) {
                 setDataPath(newPath)
-                alert(language === 'zh' ? '配置目录已更改' : 'Data directory changed successfully')
+                toast.success(language === 'zh' ? '配置目录已更改' : 'Data directory changed successfully')
             } else {
-                alert(language === 'zh' ? '更改失败' : 'Failed to change data directory')
+                toast.error(language === 'zh' ? '更改失败' : 'Failed to change data directory')
             }
         }
     }
@@ -933,7 +934,7 @@ function SystemSettings({ language }: { language: Language }) {
 
   const handleStartIndexing = async () => {
     if (!workspacePath) {
-      alert(language === 'zh' ? '请先打开一个工作区' : 'Please open a workspace first')
+      toast.warning(language === 'zh' ? '请先打开一个工作区' : 'Please open a workspace first')
       return
     }
     

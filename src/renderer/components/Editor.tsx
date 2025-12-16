@@ -4,6 +4,7 @@ import type { editor } from 'monaco-editor'
 import { X, Circle, AlertTriangle, AlertCircle, RefreshCw, FileCode, ChevronRight, Home } from 'lucide-react'
 import { useStore } from '../store'
 import { t } from '../i18n'
+import { toast } from './Toast'
 import DiffViewer from './DiffViewer'
 import InlineEdit from './InlineEdit'
 import EditorContextMenu from './EditorContextMenu'
@@ -644,25 +645,60 @@ export default function Editor() {
 
   const handleSave = useCallback(async () => {
     if (activeFile) {
-      const success = await window.electronAPI.writeFile(activeFile.path, activeFile.content)
-      if (success) {
-        markFileSaved(activeFile.path)
+      try {
+        const success = await window.electronAPI.writeFile(activeFile.path, activeFile.content)
+        if (success) {
+          markFileSaved(activeFile.path)
+          const fileName = activeFile.path.split(/[/\\]/).pop()
+          toast.success(
+            language === 'zh' ? '文件已保存' : 'File Saved',
+            fileName
+          )
+        } else {
+          toast.error(
+            language === 'zh' ? '保存失败' : 'Save Failed',
+            language === 'zh' ? '无法写入文件' : 'Could not write to file'
+          )
+        }
+      } catch (error) {
+        toast.error(
+          language === 'zh' ? '保存失败' : 'Save Failed',
+          String(error)
+        )
       }
     }
-  }, [activeFile, markFileSaved])
+  }, [activeFile, markFileSaved, language])
 
   // 保存指定文件
   const saveFile = useCallback(async (filePath: string) => {
     const file = openFiles.find(f => f.path === filePath)
     if (file) {
-      const success = await window.electronAPI.writeFile(file.path, file.content)
-      if (success) {
-        markFileSaved(file.path)
+      try {
+        const success = await window.electronAPI.writeFile(file.path, file.content)
+        if (success) {
+          markFileSaved(file.path)
+          const fileName = file.path.split(/[/\\]/).pop()
+          toast.success(
+            language === 'zh' ? '文件已保存' : 'File Saved',
+            fileName
+          )
+        } else {
+          toast.error(
+            language === 'zh' ? '保存失败' : 'Save Failed',
+            language === 'zh' ? '无法写入文件' : 'Could not write to file'
+          )
+        }
+        return success
+      } catch (error) {
+        toast.error(
+          language === 'zh' ? '保存失败' : 'Save Failed',
+          String(error)
+        )
+        return false
       }
-      return success
     }
     return false
-  }, [openFiles, markFileSaved])
+  }, [openFiles, markFileSaved, language])
 
   // 关闭文件（带保存提示）
   const handleCloseFile = useCallback(async (filePath: string) => {
@@ -1086,7 +1122,10 @@ function TabContextMenu({
     { type: 'separator' as const },
     { label: isZh ? '保存' : 'Save', action: () => onSave(filePath), shortcut: 'Ctrl+S', disabled: !isDirty },
     { type: 'separator' as const },
-    { label: isZh ? '复制路径' : 'Copy Path', action: () => navigator.clipboard.writeText(filePath) },
+    { label: isZh ? '复制路径' : 'Copy Path', action: () => {
+      navigator.clipboard.writeText(filePath)
+      toast.success(isZh ? '已复制路径' : 'Path Copied')
+    }},
     { label: isZh ? '在资源管理器中显示' : 'Reveal in Explorer', action: () => window.electronAPI.showItemInFolder(filePath) },
   ]
 

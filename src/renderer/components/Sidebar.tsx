@@ -10,6 +10,7 @@ import { FileItem } from '../types/electron'
 import { t } from '../i18n'
 import { gitService, GitStatus, GitCommit } from '../agent/gitService'
 import { getEditorConfig } from '../config/editorConfig'
+import { toast } from './Toast'
 
 const getFileIcon = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase()
@@ -843,8 +844,9 @@ function GitView() {
         if (result.success) {
             setCommitMessage('')
             refreshStatus()
+            toast.success('Commit successful')
         } else {
-            alert(`Commit failed: ${result.error}`)
+            toast.error('Commit failed', result.error)
         }
     }
 
@@ -853,9 +855,10 @@ function GitView() {
         const result = await gitService.push()
         setIsPushing(false)
         if (!result.success) {
-            alert(`Push failed: ${result.error}`)
+            toast.error('Push failed', result.error)
         } else {
             refreshStatus()
+            toast.success('Push successful')
         }
     }
 
@@ -864,9 +867,10 @@ function GitView() {
         const result = await gitService.pull()
         setIsPulling(false)
         if (!result.success) {
-            alert(`Pull failed: ${result.error}`)
+            toast.error('Pull failed', result.error)
         } else {
             refreshStatus()
+            toast.success('Pull successful')
         }
     }
 
@@ -875,8 +879,9 @@ function GitView() {
         if (result.success) {
             refreshStatus()
             setShowBranches(false)
+            toast.success('Branch switched', branchName)
         } else {
-            alert(`Checkout failed: ${result.error}`)
+            toast.error('Checkout failed', result.error)
         }
     }
 
@@ -887,8 +892,9 @@ function GitView() {
             setNewBranchName('')
             setShowNewBranch(false)
             refreshStatus()
+            toast.success('Branch created', newBranchName)
         } else {
-            alert(`Create branch failed: ${result.error}`)
+            toast.error('Create branch failed', result.error)
         }
     }
 
@@ -896,8 +902,9 @@ function GitView() {
         const result = await gitService.stash()
         if (result.success) {
             refreshStatus()
+            toast.success('Changes stashed')
         } else {
-            alert(`Stash failed: ${result.error}`)
+            toast.error('Stash failed', result.error)
         }
     }
 
@@ -905,8 +912,9 @@ function GitView() {
         const result = await gitService.stashApply(index, true)
         if (result.success) {
             refreshStatus()
+            toast.success('Stash applied')
         } else {
-            alert(`Stash pop failed: ${result.error}`)
+            toast.error('Stash pop failed', result.error)
         }
     }
 

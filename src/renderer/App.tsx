@@ -13,6 +13,7 @@ import ActivityBar from './components/ActivityBar'
 import StatusBar from './components/StatusBar'
 import ComposerPanel from './components/ComposerPanel'
 import OnboardingWizard from './components/OnboardingWizard'
+import { ToastProvider, useToast, setGlobalToast } from './components/Toast'
 import { initEditorConfig } from './config/editorConfig'
 import { themeManager } from './config/themeConfig'
 import { restoreWorkspaceState, initWorkspaceStateSync } from './services/workspaceStateService'
@@ -20,7 +21,17 @@ import { restoreWorkspaceState, initWorkspaceStateSync } from './services/worksp
 // 暴露 store 给插件系统
 ;(window as any).__ADNIFY_STORE__ = { getState: () => useStore.getState() }
 
-export default function App() {
+// 初始化全局 Toast 的组件
+function ToastInitializer() {
+  const toastContext = useToast()
+  useEffect(() => {
+    setGlobalToast(toastContext)
+  }, [toastContext])
+  return null
+}
+
+// 主应用内容
+function AppContent() {
   const { 
     showSettings, setLLMConfig, setLanguage, setAutoApprove, setShowSettings, 
     setTerminalVisible, terminalVisible, setWorkspacePath, setFiles,
@@ -293,5 +304,15 @@ export default function App() {
         <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
       )}
     </div>
+  )
+}
+
+// 导出包装了 ToastProvider 的 App
+export default function App() {
+  return (
+    <ToastProvider>
+      <ToastInitializer />
+      <AppContent />
+    </ToastProvider>
   )
 }
