@@ -2,7 +2,7 @@
  * 窗口控制 IPC handlers
  */
 
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, app } from 'electron'
 
 export function registerWindowHandlers(createWindow: (isEmpty?: boolean) => BrowserWindow) {
   ipcMain.on('window:minimize', (event) => {
@@ -27,5 +27,9 @@ export function registerWindowHandlers(createWindow: (isEmpty?: boolean) => Brow
   // 新增：打开新窗口
   ipcMain.handle('window:new', () => {
     createWindow(true)
+  })
+
+  ipcMain.handle('app:getVersion', () => {
+    return app.getVersion()
   })
 }

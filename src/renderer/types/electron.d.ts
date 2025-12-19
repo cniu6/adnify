@@ -161,6 +161,7 @@ export interface EmbeddingConfigInput {
 export interface ElectronAPI {
   // App lifecycle
   appReady: () => void
+  getAppVersion: () => Promise<string>
 
   // Window controls
   minimize: () => void

@@ -127,6 +127,7 @@ interface EmbeddingProvider {
 export interface ElectronAPI {
   // App lifecycle
   appReady: () => void
+  getAppVersion: () => Promise<string>
 
   // Window controls
   minimize: () => void
@@ -271,6 +272,7 @@ export interface ElectronAPI {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   appReady: () => ipcRenderer.send('app:ready'),
+  getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   minimize: () => ipcRenderer.send('window:minimize'),
   maximize: () => ipcRenderer.send('window:maximize'),
   close: () => ipcRenderer.send('window:close'),

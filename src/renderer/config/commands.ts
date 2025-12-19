@@ -35,6 +35,7 @@ export const registerCoreCommands = () => {
         { id: 'workbench.action.showShortcuts', title: 'Keyboard Shortcuts', category: 'Help', defaultKey: '?' },
         { id: 'workbench.action.toggleComposer', title: 'Toggle Composer', category: 'View', defaultKey: 'Ctrl+Shift+I' },
         { id: 'workbench.action.closePanel', title: 'Close Panel', category: 'View', defaultKey: 'Escape' },
+        { id: 'help.about', title: 'About', category: 'Help', defaultKey: '' },
     ]
 
     commands.forEach(cmd => keybindingService.registerCommand(cmd))

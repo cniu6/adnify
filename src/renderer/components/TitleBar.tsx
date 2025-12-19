@@ -1,8 +1,9 @@
-import { Minus, Square, X, Search, Plus } from 'lucide-react'
-
+import { Minus, Square, X, Search, Plus, HelpCircle } from 'lucide-react'
+import { useStore } from '../store'
 import { Logo } from './Logo'
 
 export default function TitleBar() {
+  const { setShowQuickOpen, setShowAbout } = useStore()
   return (
     <div className="h-10 bg-transparent flex items-center justify-between px-3 drag-region select-none border-b border-white/5 z-50">
 
@@ -14,7 +15,10 @@ export default function TitleBar() {
 
       {/* Center - Command Palette Trigger */}
       <div className="flex-1 flex justify-center no-drag">
-        <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-black/20 border border-white/5 hover:border-accent/30 hover:bg-white/5 hover:shadow-sm transition-all cursor-pointer group w-80 text-xs backdrop-blur-sm">
+        <div
+          onClick={() => setShowQuickOpen(true)}
+          className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-black/20 border border-white/5 hover:border-accent/30 hover:bg-white/5 hover:shadow-sm transition-all cursor-pointer group w-80 text-xs backdrop-blur-sm"
+        >
           <Search className="w-3.5 h-3.5 text-text-muted group-hover:text-accent transition-colors" />
           <span className="text-text-muted group-hover:text-text-primary transition-colors">Search files...</span>
           <div className="flex items-center gap-1 ml-auto">
@@ -25,6 +29,13 @@ export default function TitleBar() {
 
       {/* Right Controls */}
       <div className="flex items-center justify-end gap-2 no-drag w-1/3">
+        <button
+          onClick={() => setShowAbout(true)}
+          className="p-1.5 rounded-md hover:bg-white/5 transition-colors text-text-muted hover:text-text-primary mr-2"
+          title="About Adnify"
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+        </button>
         <button
           onClick={() => window.electronAPI.newWindow()}
           className="p-1.5 rounded-md hover:bg-white/5 transition-colors text-text-muted hover:text-text-primary mr-2"

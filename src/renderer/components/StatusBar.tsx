@@ -6,7 +6,7 @@ import { IndexStatus } from '../types/electron'
 import { indexWorkerService, IndexProgress } from '../services/indexWorkerService'
 
 export default function StatusBar() {
-  const { activeFilePath, isStreaming, workspacePath, setShowSettings, language, terminalVisible, setTerminalVisible } = useStore()
+  const { activeFilePath, isStreaming, workspacePath, setShowSettings, language, terminalVisible, setTerminalVisible, cursorPosition } = useStore()
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
   const [workerProgress, setWorkerProgress] = useState<IndexProgress | null>(null)
 
@@ -127,7 +127,7 @@ export default function StatusBar() {
           )}
           <span className="cursor-pointer hover:text-text-primary">UTF-8</span>
           <div className="flex items-center gap-2 cursor-pointer hover:text-text-primary">
-            <span>Ln 1, Col 1</span>
+            <span>Ln {cursorPosition?.line || 1}, Col {cursorPosition?.column || 1}</span>
           </div>
         </div>
       </div>

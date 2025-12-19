@@ -20,6 +20,7 @@ import { initEditorConfig } from './config/editorConfig'
 import { themeManager } from './config/themeConfig'
 import { restoreWorkspaceState, initWorkspaceStateSync } from './services/workspaceStateService'
 import { ThemeManager } from './components/ThemeManager'
+import AboutDialog from './components/AboutDialog'
 import { adnifyDir } from './services/adnifyDirService'
 import { checkpointService } from './agent/checkpointService'
 import { useAgentStore } from './agent/core/AgentStore'
@@ -45,11 +46,11 @@ function AppContent() {
     showSettings, setLLMConfig, setLanguage, setAutoApprove, setPromptTemplateId, setShowSettings,
     setTerminalVisible, terminalVisible, setWorkspace, setFiles,
     activeSidePanel, showComposer, setShowComposer,
-    sidebarWidth, setSidebarWidth, chatWidth, setChatWidth
+    sidebarWidth, setSidebarWidth, chatWidth, setChatWidth,
+    showQuickOpen, setShowQuickOpen, showAbout, setShowAbout
   } = useStore()
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
-  const [showQuickOpen, setShowQuickOpen] = useState(false)
 
   // 引导状态
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -273,8 +274,13 @@ function AppContent() {
       if (showKeyboardShortcuts) setShowKeyboardShortcuts(false)
       if (showQuickOpen) setShowQuickOpen(false)
       if (showComposer) setShowComposer(false)
+      if (showAbout) setShowAbout(false)
     }
-  }, [setShowSettings, setTerminalVisible, terminalVisible, showCommandPalette, showKeyboardShortcuts, showQuickOpen, showComposer])
+    else if (keybindingService.matches(e, 'help.about')) {
+      e.preventDefault()
+      setShowAbout(true)
+    }
+  }, [setShowSettings, setTerminalVisible, terminalVisible, showCommandPalette, showKeyboardShortcuts, showQuickOpen, showComposer, showAbout, setShowQuickOpen, setShowAbout])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
@@ -354,6 +360,7 @@ function AppContent() {
       {showOnboarding && isInitialized && (
         <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
       )}
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
       <GlobalConfirmDialog />
     </div >
   )

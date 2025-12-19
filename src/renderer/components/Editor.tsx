@@ -108,10 +108,11 @@ const getLanguage = (path: string): string => {
 }
 
 export default function Editor() {
-  const { openFiles, activeFilePath, setActiveFile, closeFile, updateFileContent, markFileSaved, language, activeDiff, setActiveDiff } = useStore()
+  const { openFiles, activeFilePath, setActiveFile, closeFile, updateFileContent, markFileSaved, language, activeDiff, setActiveDiff, setCursorPosition } = useStore()
   const { pendingChanges, acceptChange, undoChange } = useAgent()
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<typeof import('monaco-editor') | null>(null)
+  const cursorDebounceRef = useRef<NodeJS.Timeout | null>(null)
 
 
   // Lint 错误状态
@@ -197,6 +198,14 @@ export default function Editor() {
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
+
+    // Track cursor position
+    editor.onDidChangeCursorPosition((e) => {
+      if (cursorDebounceRef.current) clearTimeout(cursorDebounceRef.current)
+      cursorDebounceRef.current = setTimeout(() => {
+        setCursorPosition({ line: e.position.lineNumber, column: e.position.column })
+      }, 100)
+    })
 
 
 

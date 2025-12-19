@@ -45,6 +45,8 @@ import FileMentionPopup from '@/renderer/components/FileMentionPopup'
 import ChatMessageUI from './ChatMessage'
 import AgentStatusBar from './AgentStatusBar'
 import { keybindingService } from '@/renderer/services/keybindingService'
+import SlashCommandPopup from './SlashCommandPopup'
+import { slashCommandService, SlashCommand } from '@/renderer/services/slashCommandService'
 
 export default function ChatPanel() {
   const {
@@ -101,6 +103,8 @@ export default function ChatPanel() {
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionPosition, setMentionPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
+  const [showSlashCommand, setShowSlashCommand] = useState(false)
+  const [slashCommandQuery, setSlashCommandQuery] = useState('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -268,9 +272,18 @@ export default function ChatPanel() {
         setMentionPosition({ x: rect.left + 16, y: rect.top })
       }
       setShowFileMention(true)
-    } else {
+      setShowSlashCommand(false)
+    } else if (value.startsWith('/')) {
+      // 检测斜杠命令
+      setSlashCommandQuery(value)
+      setShowSlashCommand(true)
       setShowFileMention(false)
       setMentionQuery('')
+    } else {
+      setShowFileMention(false)
+      setShowSlashCommand(false)
+      setMentionQuery('')
+      setSlashCommandQuery('')
     }
   }, [])
 
@@ -373,6 +386,24 @@ export default function ChatPanel() {
     if (exists) return
     addContextItem({ type: 'File', uri: activeFilePath })
   }, [activeFilePath, contextItems, addContextItem])
+
+  // 处理斜杠命令选择
+  const handleSlashCommand = useCallback((cmd: SlashCommand) => {
+    const result = slashCommandService.parse('/' + cmd.name, {
+      activeFilePath: activeFilePath || undefined,
+      selectedCode: undefined, // TODO: 从编辑器获取选中的代码
+      workspacePath: workspacePath || undefined,
+    })
+    if (result) {
+      setInput(result.prompt)
+      if (result.mode) {
+        setChatMode(result.mode)
+      }
+    }
+    setShowSlashCommand(false)
+    setSlashCommandQuery('')
+    textareaRef.current?.focus()
+  }, [activeFilePath, workspacePath, setChatMode])
 
   // 键盘处理
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -754,6 +785,19 @@ export default function ChatPanel() {
           textareaRef={textareaRef}
           inputContainerRef={inputContainerRef}
         />
+
+        {/* Slash Command Popup */}
+        {showSlashCommand && (
+          <SlashCommandPopup
+            query={slashCommandQuery}
+            onSelect={handleSlashCommand}
+            onClose={() => {
+              setShowSlashCommand(false)
+              setSlashCommandQuery('')
+            }}
+            position={{ x: 16, y: 60 }}
+          />
+        )}
       </div>
     </div>
   )
