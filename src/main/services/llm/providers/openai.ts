@@ -190,6 +190,10 @@ export class OpenAIProvider extends BaseProvider {
               } else if (currentToolCall) {
                 if (tc.function?.name) {
                   currentToolCall.name = tc.function.name
+                  onStream({
+                    type: 'tool_call_delta',
+                    toolCallDelta: { id: currentToolCall.id, name: tc.function.name },
+                  })
                 }
                 if (tc.function?.arguments) {
                   currentToolCall.argsString += tc.function.arguments

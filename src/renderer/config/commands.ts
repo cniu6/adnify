@@ -34,6 +34,7 @@ export const registerCoreCommands = () => {
         { id: 'workbench.action.openSettings', title: 'Open Settings', category: 'File', defaultKey: 'Ctrl+,' },
         { id: 'workbench.action.showShortcuts', title: 'Keyboard Shortcuts', category: 'Help', defaultKey: '?' },
         { id: 'workbench.action.toggleComposer', title: 'Toggle Composer', category: 'View', defaultKey: 'Ctrl+Shift+I' },
+        { id: 'workbench.action.toggleDevTools', title: 'Toggle Developer Tools', category: 'Help', defaultKey: 'F12' },
         { id: 'workbench.action.closePanel', title: 'Close Panel', category: 'View', defaultKey: 'Escape' },
         { id: 'help.about', title: 'About', category: 'Help', defaultKey: '' },
     ]

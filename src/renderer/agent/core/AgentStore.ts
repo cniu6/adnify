@@ -30,16 +30,16 @@ interface AgentState {
   // 线程管理
   threads: Record<string, ChatThread>
   currentThreadId: string | null
-  
+
   // 流状态（不持久化）
   streamState: StreamState
-  
+
   // 待确认的更改（不持久化）
   pendingChanges: PendingChange[]
-  
+
   // 消息级别的检查点（不持久化，用于回退）
   messageCheckpoints: MessageCheckpoint[]
-  
+
   // 配置
   autoApprove: {
     edits: boolean
@@ -53,7 +53,7 @@ interface AgentActions {
   createThread: () => string
   switchThread: (threadId: string) => void
   deleteThread: (threadId: string) => void
-  
+
   // 消息操作
   addUserMessage: (content: MessageContent, contextItems?: ContextItem[]) => string
   addAssistantMessage: (content?: string) => string
@@ -63,23 +63,23 @@ interface AgentActions {
   addCheckpoint: (type: 'user_message' | 'tool_edit', fileSnapshots: Record<string, FileSnapshot>) => string
   clearMessages: () => void
   deleteMessagesAfter: (messageId: string) => void
-  
+
   // 工具调用操作（Cursor 风格：内联到 parts）
   addToolCallPart: (messageId: string, toolCall: Omit<ToolCall, 'status'>) => void
   updateToolCall: (messageId: string, toolCallId: string, updates: Partial<ToolCall>) => void
-  
+
   // 上下文操作
   addContextItem: (item: ContextItem) => void
   removeContextItem: (index: number) => void
   clearContextItems: () => void
-  
+
   // 流状态操作
   setStreamState: (state: Partial<StreamState>) => void
   setStreamPhase: (phase: StreamState['phase'], toolCall?: ToolCall, error?: string) => void
-  
+
   // 配置操作
   setAutoApprove: (type: keyof AgentState['autoApprove'], value: boolean) => void
-  
+
   // 待确认更改操作
   addPendingChange: (change: Omit<PendingChange, 'id' | 'timestamp' | 'status'>) => void
   acceptAllChanges: () => void
@@ -87,14 +87,14 @@ interface AgentActions {
   acceptChange: (filePath: string) => void
   undoChange: (filePath: string) => Promise<boolean>
   clearPendingChanges: () => void
-  
+
   // 消息检查点操作
   createMessageCheckpoint: (messageId: string, description: string) => Promise<string>
   addSnapshotToCurrentCheckpoint: (filePath: string, content: string | null) => void
   restoreToCheckpoint: (checkpointId: string) => Promise<{ success: boolean; restoredFiles: string[]; errors: string[] }>
   getCheckpointForMessage: (messageId: string) => MessageCheckpoint | null
   clearMessageCheckpoints: () => void
-  
+
   // 获取器
   getCurrentThread: () => ChatThread | null
   getMessages: () => ChatMessage[]
@@ -170,11 +170,11 @@ export const useAgentStore = create<AgentStore>()(
       addUserMessage: (content, contextItems) => {
         const state = get()
         let threadId = state.currentThreadId
-        
+
         if (!threadId || !state.threads[threadId]) {
           threadId = get().createThread()
         }
-        
+
         const message: UserMessage = {
           id: generateId(),
           role: 'user',
@@ -182,11 +182,11 @@ export const useAgentStore = create<AgentStore>()(
           timestamp: Date.now(),
           contextItems,
         }
-        
+
         set(state => {
           const thread = state.threads[threadId!]
           if (!thread) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -198,7 +198,7 @@ export const useAgentStore = create<AgentStore>()(
             },
           }
         })
-        
+
         return message.id
       },
 
@@ -206,7 +206,7 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return ''
-        
+
         const message: AssistantMessage = {
           id: generateId(),
           role: 'assistant',
@@ -216,11 +216,11 @@ export const useAgentStore = create<AgentStore>()(
           parts: content ? [{ type: 'text', content }] : [],
           toolCalls: [],
         }
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -233,7 +233,7 @@ export const useAgentStore = create<AgentStore>()(
             },
           }
         })
-        
+
         return message.id
       },
 
@@ -241,16 +241,16 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           const messages = thread.messages.map(msg => {
             if (msg.id === messageId && msg.role === 'assistant') {
               const assistantMsg = msg as AssistantMessage
               const newContent = assistantMsg.content + content
-              
+
               // 更新 parts：如果最后一个 part 是 text，追加内容；否则添加新的 text part
               let newParts = [...assistantMsg.parts]
               if (newParts.length > 0 && newParts[newParts.length - 1].type === 'text') {
@@ -259,12 +259,12 @@ export const useAgentStore = create<AgentStore>()(
               } else {
                 newParts.push({ type: 'text', content })
               }
-              
+
               return { ...assistantMsg, content: newContent, parts: newParts }
             }
             return msg
           })
-          
+
           return {
             threads: {
               ...state.threads,
@@ -278,18 +278,18 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           const messages = thread.messages.map(msg => {
             if (msg.id === messageId && msg.role === 'assistant') {
               return { ...msg, isStreaming: false }
             }
             return msg
           })
-          
+
           return {
             threads: {
               ...state.threads,
@@ -307,7 +307,7 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return ''
-        
+
         const message: ToolResultMessage = {
           id: generateId(),
           role: 'tool',
@@ -318,11 +318,11 @@ export const useAgentStore = create<AgentStore>()(
           type,
           rawParams,
         }
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -334,7 +334,7 @@ export const useAgentStore = create<AgentStore>()(
             },
           }
         })
-        
+
         return message.id
       },
 
@@ -342,7 +342,7 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return ''
-        
+
         const message: CheckpointMessage = {
           id: generateId(),
           role: 'checkpoint',
@@ -350,14 +350,14 @@ export const useAgentStore = create<AgentStore>()(
           timestamp: Date.now(),
           fileSnapshots,
         }
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           const newMessages = [...thread.messages, message]
           const checkpointIdx = newMessages.length - 1
-          
+
           return {
             threads: {
               ...state.threads,
@@ -369,7 +369,7 @@ export const useAgentStore = create<AgentStore>()(
             },
           }
         })
-        
+
         return message.id
       },
 
@@ -377,11 +377,11 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -401,14 +401,14 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           const index = thread.messages.findIndex(m => m.id === messageId)
           if (index === -1) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -427,21 +427,27 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           const messages = thread.messages.map(msg => {
             if (msg.id === messageId && msg.role === 'assistant') {
               const assistantMsg = msg as AssistantMessage
+
+              // 防止重复添加相同的 toolCallId
+              if (assistantMsg.toolCalls?.some(tc => tc.id === toolCall.id)) {
+                return msg
+              }
+
               const newToolCall: ToolCall = { ...toolCall, status: 'pending' }
-              
+
               // 添加到 parts（内联显示）
               const newParts: AssistantPart[] = [...assistantMsg.parts, { type: 'tool_call', toolCall: newToolCall }]
               // 同时添加到 toolCalls（兼容）
               const newToolCalls = [...(assistantMsg.toolCalls || []), newToolCall]
-              
+
               return {
                 ...assistantMsg,
                 parts: newParts,
@@ -450,7 +456,7 @@ export const useAgentStore = create<AgentStore>()(
             }
             return msg
           })
-          
+
           return {
             threads: {
               ...state.threads,
@@ -464,15 +470,15 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           const messages = thread.messages.map(msg => {
             if (msg.id === messageId && msg.role === 'assistant') {
               const assistantMsg = msg as AssistantMessage
-              
+
               // 更新 parts 中的 tool_call
               const newParts = assistantMsg.parts.map(part => {
                 if (part.type === 'tool_call' && part.toolCall.id === toolCallId) {
@@ -480,12 +486,12 @@ export const useAgentStore = create<AgentStore>()(
                 }
                 return part
               })
-              
+
               // 更新 toolCalls 数组
               const newToolCalls = assistantMsg.toolCalls?.map(tc =>
                 tc.id === toolCallId ? { ...tc, ...updates } : tc
               )
-              
+
               return {
                 ...assistantMsg,
                 parts: newParts,
@@ -494,7 +500,7 @@ export const useAgentStore = create<AgentStore>()(
             }
             return msg
           })
-          
+
           return {
             threads: {
               ...state.threads,
@@ -508,18 +514,18 @@ export const useAgentStore = create<AgentStore>()(
       addContextItem: (item) => {
         let state = get()
         let threadId = state.currentThreadId
-        
+
         if (!threadId || !state.threads[threadId]) {
           threadId = get().createThread()
           state = get()
         }
-        
+
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           // 检查是否已存在
           const exists = thread.contextItems.some(existing => {
             if (existing.type !== item.type) return false
@@ -528,9 +534,9 @@ export const useAgentStore = create<AgentStore>()(
             }
             return existing.type === item.type
           })
-          
+
           if (exists) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -547,11 +553,11 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -568,11 +574,11 @@ export const useAgentStore = create<AgentStore>()(
         const state = get()
         const threadId = state.currentThreadId
         if (!threadId) return
-        
+
         set(state => {
           const thread = state.threads[threadId]
           if (!thread) return state
-          
+
           return {
             threads: {
               ...state.threads,
@@ -618,7 +624,7 @@ export const useAgentStore = create<AgentStore>()(
             }
             return { pendingChanges: updated }
           }
-          
+
           // 添加新的更改
           const newChange: PendingChange = {
             ...change,
@@ -718,12 +724,12 @@ export const useAgentStore = create<AgentStore>()(
         // 创建检查点时，记录当前所有 pendingChanges 中的文件快照
         // 这样每个检查点都有独立的快照记录
         const fileSnapshots: Record<string, FileSnapshot> = {}
-        
+
         // 复制当前 pendingChanges 中的快照到检查点
         for (const change of state.pendingChanges) {
           fileSnapshots[change.filePath] = { ...change.snapshot }
         }
-        
+
         const checkpoint: MessageCheckpoint = {
           id: crypto.randomUUID(),
           messageId,
@@ -740,23 +746,23 @@ export const useAgentStore = create<AgentStore>()(
 
         return checkpoint.id
       },
-      
+
       // 添加文件快照到当前检查点（在文件修改前调用）
       addSnapshotToCurrentCheckpoint: (filePath: string, content: string | null) => {
         console.log('[Checkpoint] Adding snapshot for:', filePath, 'content length:', content?.length ?? 'null')
-        
+
         set(state => {
           // 找到最新的检查点
           if (state.messageCheckpoints.length === 0) {
             console.log('[Checkpoint] No checkpoints exist, cannot add snapshot')
             return state
           }
-          
+
           const checkpoints = [...state.messageCheckpoints]
           const lastCheckpoint = checkpoints[checkpoints.length - 1]
-          
+
           console.log('[Checkpoint] Current checkpoint:', lastCheckpoint.id, 'existing files:', Object.keys(lastCheckpoint.fileSnapshots))
-          
+
           // 如果该文件还没有快照，添加它（只保留最早的快照）
           if (!(filePath in lastCheckpoint.fileSnapshots)) {
             checkpoints[checkpoints.length - 1] = {
@@ -769,7 +775,7 @@ export const useAgentStore = create<AgentStore>()(
             console.log('[Checkpoint] Added snapshot for:', filePath)
             return { messageCheckpoints: checkpoints }
           }
-          
+
           console.log('[Checkpoint] Snapshot already exists for:', filePath)
           return state
         })
@@ -778,18 +784,18 @@ export const useAgentStore = create<AgentStore>()(
       restoreToCheckpoint: async (checkpointId) => {
         const state = get()
         const checkpointIdx = state.messageCheckpoints.findIndex(cp => cp.id === checkpointId)
-        
+
         console.log('[Restore] Looking for checkpoint:', checkpointId)
         console.log('[Restore] All checkpoints:', state.messageCheckpoints.map(cp => ({
           id: cp.id,
           messageId: cp.messageId,
           files: Object.keys(cp.fileSnapshots),
         })))
-        
+
         if (checkpointIdx === -1) {
           return { success: false, restoredFiles: [], errors: ['Checkpoint not found'] }
         }
-        
+
         const checkpoint = state.messageCheckpoints[checkpointIdx]
         const restoredFiles: string[] = []
         const errors: string[] = []
@@ -797,7 +803,7 @@ export const useAgentStore = create<AgentStore>()(
         // 收集该检查点及之后所有检查点的文件快照
         // 我们需要恢复到该检查点之前的状态
         const filesToRestore: Record<string, FileSnapshot> = {}
-        
+
         // 从该检查点开始，收集所有需要恢复的文件
         for (let i = checkpointIdx; i < state.messageCheckpoints.length; i++) {
           const cp = state.messageCheckpoints[i]
@@ -808,14 +814,14 @@ export const useAgentStore = create<AgentStore>()(
             }
           }
         }
-        
+
         // 同时检查 pendingChanges 中的文件（可能有检查点之后新增的修改）
         for (const change of state.pendingChanges) {
           if (!(change.filePath in filesToRestore)) {
             filesToRestore[change.filePath] = change.snapshot
           }
         }
-        
+
         console.log('[Restore] Files to restore:', Object.keys(filesToRestore))
         console.log('[Restore] PendingChanges:', state.pendingChanges.map(c => c.filePath))
 
@@ -946,10 +952,10 @@ export const selectContextItems = (state: AgentStore) => {
   return thread?.contextItems || EMPTY_CONTEXT_ITEMS
 }
 
-export const selectIsStreaming = (state: AgentStore) => 
+export const selectIsStreaming = (state: AgentStore) =>
   state.streamState.phase === 'streaming' || state.streamState.phase === 'tool_running'
 
-export const selectIsAwaitingApproval = (state: AgentStore) => 
+export const selectIsAwaitingApproval = (state: AgentStore) =>
   state.streamState.phase === 'tool_pending'
 
 export const selectPendingChanges = (state: AgentStore) => state.pendingChanges

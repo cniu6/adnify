@@ -266,6 +266,9 @@ export interface ElectronAPI {
     results?: { title: string; url: string; snippet: string }[]
     error?: string
   }>
+
+  // Command Execution
+  onExecuteCommand: (callback: (commandId: string) => void) => () => void
 }
 
 // =================== 暴露 API ===================
@@ -276,6 +279,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.send('window:minimize'),
   maximize: () => ipcRenderer.send('window:maximize'),
   close: () => ipcRenderer.send('window:close'),
+  toggleDevTools: () => ipcRenderer.send('window:toggleDevTools'),
   newWindow: () => ipcRenderer.invoke('window:new'),
 
   openFile: () => ipcRenderer.invoke('file:open'),
@@ -410,4 +414,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // HTTP API
   httpReadUrl: (url: string, timeout?: number) => ipcRenderer.invoke('http:readUrl', url, timeout),
   httpWebSearch: (query: string, maxResults?: number) => ipcRenderer.invoke('http:webSearch', query, maxResults),
+
+  // Command Execution
+  onExecuteCommand: (callback: (commandId: string) => void) => {
+    const handler = (_: IpcRendererEvent, commandId: string) => callback(commandId)
+    ipcRenderer.on('workbench:execute-command', handler)
+    return () => ipcRenderer.removeListener('workbench:execute-command', handler)
+  },
 })

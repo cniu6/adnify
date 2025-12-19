@@ -7,7 +7,7 @@ import { X, Plus, Trash2, ChevronUp, ChevronDown, Terminal as TerminalIcon, Spar
 import { useStore } from '../store'
 import { getEditorConfig } from '../config/editorConfig'
 import { themes } from './ThemeManager'
-import { Button } from './ui/Button'
+import { Button, Select } from './ui'
 
 const XTERM_STYLE = `
 .xterm { font-feature-settings: "liga" 0; position: relative; user-select: none; -ms-user-select: none; -webkit-user-select: none; padding: 4px; }
@@ -369,15 +369,14 @@ export default function TerminalPanel() {
                     {/* Middle Section: Root Selector & New Terminal */}
                     <div className="relative flex-shrink-0 h-full flex items-center px-1 gap-1 border-l border-white/5 mx-1">
                         {workspace && workspace.roots.length > 1 && (
-                            <select
-                                value={selectedRoot}
-                                onChange={(e) => setSelectedRoot(e.target.value)}
-                                className="bg-transparent text-[10px] text-text-muted hover:text-text-primary outline-none border-none max-w-[100px] truncate cursor-pointer"
-                            >
-                                {workspace.roots.map(root => (
-                                    <option key={root} value={root}>{root.split(/[\\/]/).pop()}</option>
-                                ))}
-                            </select>
+                            <div className="w-[120px]">
+                                <Select
+                                    value={selectedRoot}
+                                    onChange={setSelectedRoot}
+                                    options={workspace.roots.map(root => ({ value: root, label: root.split(/[\\/]/).pop() || root }))}
+                                    className="h-7 text-xs border-transparent bg-transparent hover:bg-white/5"
+                                />
+                            </div>
                         )}
                         <div className="relative">
                             <Button
@@ -390,9 +389,11 @@ export default function TerminalPanel() {
                                 <Plus className="w-3.5 h-3.5" />
                             </Button>
                             {showShellMenu && (
-                                <div ref={shellMenuRef} className="absolute bottom-full left-0 mb-2 w-48 bg-surface border border-border-subtle rounded-lg shadow-xl py-1 flex flex-col max-h-64 overflow-y-auto z-[100]">
+                                <div ref={shellMenuRef} className="absolute bottom-full left-0 mb-2 w-48 bg-surface border border-border-subtle rounded-lg shadow-xl py-1 flex flex-col max-h-64 overflow-y-auto z-[100] animate-scale-in">
                                     {availableShells.map(shell => (
-                                        <button key={shell.label} onClick={() => createTerminal(shell.path, shell.label)} className="text-left px-3 py-2 text-xs text-text-primary hover:bg-surface-hover w-full">{shell.label}</button>
+                                        <button key={shell.label} onClick={() => createTerminal(shell.path, shell.label)} className="text-left px-3 py-2 text-xs text-text-primary hover:bg-surface-hover w-full transition-colors">
+                                            {shell.label}
+                                        </button>
                                     ))}
                                 </div>
                             )}
@@ -414,11 +415,11 @@ export default function TerminalPanel() {
                                 Run
                             </Button>
                             {showScriptMenu && (
-                                <div ref={scriptMenuRef} className="absolute bottom-full right-0 mb-2 bg-surface border border-border-subtle rounded-lg shadow-xl py-1 flex flex-col max-h-64 overflow-y-auto z-[100] min-w-[160px]">
+                                <div ref={scriptMenuRef} className="absolute bottom-full right-0 mb-2 bg-surface border border-border-subtle rounded-lg shadow-xl py-1 flex flex-col max-h-64 overflow-y-auto z-[100] min-w-[180px] animate-scale-in">
                                     {Object.keys(scripts).length > 0 ? Object.entries(scripts).map(([name, cmd]) => (
-                                        <button key={name} onClick={() => runScript(name)} className="text-left px-3 py-2 text-xs text-text-primary hover:bg-surface-hover flex flex-col gap-0.5 border-b border-border-subtle/50 last:border-0 w-full">
-                                            <span className="font-medium">{name}</span>
-                                            <span className="text-[10px] text-text-muted truncate max-w-[200px] opacity-70">{cmd}</span>
+                                        <button key={name} onClick={() => runScript(name)} className="text-left px-3 py-2 text-xs text-text-primary hover:bg-surface-hover flex flex-col gap-0.5 border-b border-border-subtle/50 last:border-0 w-full transition-colors">
+                                            <span className="font-medium text-accent">{name}</span>
+                                            <span className="text-[10px] text-text-muted truncate max-w-[200px] opacity-70 font-mono">{cmd}</span>
                                         </button>
                                     )) : <div className="px-3 py-2 text-xs text-text-muted italic">No scripts found</div>}
                                 </div>

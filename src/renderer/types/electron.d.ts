@@ -167,6 +167,7 @@ export interface ElectronAPI {
   minimize: () => void
   maximize: () => void
   close: () => void
+  toggleDevTools: () => void
   newWindow: () => void
 
   // File operations (安全 - 强制工作区边界)
@@ -288,14 +289,10 @@ export interface ElectronAPI {
     contentType?: string
     statusCode?: number
   }>
-  httpWebSearch: (query: string, maxResults?: number) => Promise<{
-    success: boolean
-    results?: { title: string; url: string; snippet: string }[]
-    error?: string
-  }>
-}
 
-// LSP Types
+  // Command Execution
+  onExecuteCommand: (callback: (commandId: string) => void) => () => void
+}
 export interface LspPosition {
   line: number
   character: number

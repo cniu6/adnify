@@ -24,6 +24,11 @@ export function registerWindowHandlers(createWindow: (isEmpty?: boolean) => Brow
     win?.close()
   })
 
+  ipcMain.on('window:toggleDevTools', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    win?.webContents.toggleDevTools()
+  })
+
   // 新增：打开新窗口
   ipcMain.handle('window:new', () => {
     createWindow(true)

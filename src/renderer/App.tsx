@@ -49,9 +49,9 @@ function AppContent() {
     setTerminalVisible, terminalVisible, setWorkspace, setFiles,
     activeSidePanel, showComposer, setShowComposer,
     sidebarWidth, setSidebarWidth, chatWidth, setChatWidth,
-    showQuickOpen, setShowQuickOpen, showAbout, setShowAbout
+    showQuickOpen, setShowQuickOpen, showAbout, setShowAbout,
+    showCommandPalette, setShowCommandPalette
   } = useStore()
-  const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
 
   // 引导状态
@@ -79,16 +79,17 @@ function AppContent() {
 
   useEffect(() => {
     // Load saved settings & restore workspace
+    // Load saved settings & restore workspace
     const loadSettings = async () => {
       try {
+        // 注册核心命令并初始化快捷键服务 (Move this up to ensure it runs)
+        registerCoreCommands()
+        await keybindingService.init()
+
         // 初始化编辑器配置和主题
         updateLoaderStatus('Loading configuration...')
         await initEditorConfig()
         await themeManager.init()
-
-        // 注册核心命令并初始化快捷键服务
-        registerCoreCommands()
-        await keybindingService.init()
 
         // 检查是否首次使用
         const onboardingCompleted = await window.electronAPI.getSetting('onboardingCompleted') as boolean | undefined
@@ -183,6 +184,8 @@ function AppContent() {
         }, 100)
       } catch (error) {
         console.error('Failed to load settings:', error)
+        // Even if loading fails, ensure keybindings are registered
+        registerCoreCommands()
         removeInitialLoader()
         setIsInitialized(true)
         window.electronAPI.appReady()
@@ -244,9 +247,18 @@ function AppContent() {
 
   // 全局快捷键
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
-    if (keybindingService.matches(e, 'workbench.action.showCommands')) {
+    // Fallback check for Ctrl+Shift+P or F1
+    if (
+      keybindingService.matches(e, 'workbench.action.showCommands') ||
+      (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') ||
+      e.key === 'F1'
+    ) {
       e.preventDefault()
       setShowCommandPalette(true)
+    }
+
+    if (e.key === 'F12') {
+      window.electronAPI.toggleDevTools()
     }
     else if (keybindingService.matches(e, 'workbench.action.quickOpen')) {
       e.preventDefault()
@@ -286,7 +298,23 @@ function AppContent() {
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+
+    // Listen for menu commands from main process
+    const removeListener = window.electronAPI.onExecuteCommand((commandId) => {
+      console.log('[App] Received command from main:', commandId)
+      if (commandId === 'workbench.action.showCommands') {
+        console.log('[App] Showing Command Palette')
+        setShowCommandPalette(true)
+      }
+      if (commandId === 'workbench.action.toggleDevTools') {
+        window.electronAPI.toggleDevTools()
+      }
+    })
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+      removeListener()
+    }
   }, [handleGlobalKeyDown])
 
   return (

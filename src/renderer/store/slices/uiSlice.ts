@@ -17,6 +17,7 @@ export interface UISlice {
   terminalVisible: boolean
   chatVisible: boolean
   showSettings: boolean
+  showCommandPalette: boolean
   showComposer: boolean
   showQuickOpen: boolean
   showAbout: boolean
@@ -26,12 +27,14 @@ export interface UISlice {
   terminalLayout: 'tabs' | 'split'
   cursorPosition: { line: number; column: number }
   toast: ((message: string, type?: 'success' | 'error' | 'info' | 'warning') => void) | null
+  selectedCode: string // 编辑器当前选中的代码
 
   setIsInitialized: (initialized: boolean) => void
   setActiveSidePanel: (panel: SidePanel) => void
   setTerminalVisible: (visible: boolean) => void
   setChatVisible: (visible: boolean) => void
   setShowSettings: (show: boolean) => void
+  setShowCommandPalette: (show: boolean) => void
   setShowComposer: (show: boolean) => void
   setShowQuickOpen: (show: boolean) => void
   setShowAbout: (show: boolean) => void
@@ -43,6 +46,7 @@ export interface UISlice {
   isLspReady: boolean
   setIsLspReady: (ready: boolean) => void
   setToast: (toast: ((message: string, type?: 'success' | 'error' | 'info' | 'warning') => void) | null) => void
+  setSelectedCode: (code: string) => void
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -52,6 +56,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   terminalVisible: false,
   chatVisible: true,
   showSettings: false,
+  showCommandPalette: false,
   showComposer: false,
   showQuickOpen: false,
   showAbout: false,
@@ -61,6 +66,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   terminalLayout: 'tabs',
   cursorPosition: { line: 1, column: 1 },
   toast: null,
+  selectedCode: '',
 
   setIsInitialized: (initialized) => set({ isInitialized: initialized }),
   setIsLspReady: (ready) => set({ isLspReady: ready }),
@@ -68,6 +74,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setTerminalVisible: (visible) => set({ terminalVisible: visible }),
   setChatVisible: (visible) => set({ chatVisible: visible }),
   setShowSettings: (show) => set({ showSettings: show }),
+  setShowCommandPalette: (show) => set({ showCommandPalette: show }),
   setShowComposer: (show) => set({ showComposer: show }),
   setShowQuickOpen: (show) => set({ showQuickOpen: show }),
   setShowAbout: (show) => set({ showAbout: show }),
@@ -77,4 +84,5 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setTerminalLayout: (layout) => set({ terminalLayout: layout }),
   setCursorPosition: (pos) => set({ cursorPosition: pos }),
   setToast: (toast) => set({ toast }),
+  setSelectedCode: (code) => set({ selectedCode: code }),
 })

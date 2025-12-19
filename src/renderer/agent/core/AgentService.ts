@@ -449,7 +449,7 @@ class AgentServiceClass {
 
           // 验证工具名称是否合法 (防止 LLM 幻觉生成带空格的工具名)
           const isValidToolName = (name: string) => {
-            return /^[a-zA-Z0-9_]+$/.test(name)
+            return /^[a-zA-Z0-9_-]+$/.test(name)
           }
 
           // 流式工具调用开始 - 立即显示工具卡片
@@ -458,7 +458,7 @@ class AgentServiceClass {
             const toolName = chunk.toolCallDelta.name || 'unknown'
 
             // 过滤无效的工具名称
-            if (!isValidToolName(toolName)) {
+            if (toolName !== 'unknown' && !isValidToolName(toolName)) {
               console.warn('[Agent] Ignoring invalid tool name:', toolName)
               return
             }
@@ -483,6 +483,19 @@ class AgentServiceClass {
 
           // 流式工具调用参数 - 实时更新参数预览
           if (chunk.type === 'tool_call_delta' && chunk.toolCallDelta && currentToolCall) {
+            // 更新工具名称
+            if (chunk.toolCallDelta.name) {
+              const newName = chunk.toolCallDelta.name
+              if (isValidToolName(newName)) {
+                currentToolCall.name = newName
+                if (this.currentAssistantId) {
+                  store.updateToolCall(this.currentAssistantId, currentToolCall.id, {
+                    name: newName
+                  })
+                }
+              }
+            }
+
             if (chunk.toolCallDelta.args) {
               currentToolCall.argsString += chunk.toolCallDelta.args
 

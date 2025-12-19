@@ -135,6 +135,24 @@ function createWindow(isEmpty: boolean = false) {
     }
   })
 
+  // 注册快捷键监听 (Frameless window workaround)
+  win.webContents.on('before-input-event', (_, input) => {
+    // Ctrl+Shift+P: Command Palette
+    if ((input.control && input.shift && input.key.toLowerCase() === 'p') || input.key === 'F1') {
+      if (input.type === 'keyDown') {
+        // Do NOT prevent default, let it propagate to renderer as fallback
+        // event.preventDefault() 
+        win.webContents.send('workbench:execute-command', 'workbench.action.showCommands')
+      }
+    }
+    // F12: Toggle DevTools
+    if (input.key === 'F12' && input.type === 'keyDown') {
+      // Do NOT prevent default, let it propagate to renderer as fallback
+      // event.preventDefault()
+      win.webContents.toggleDevTools()
+    }
+  })
+
   // 加载页面
   const query = isEmpty ? '?empty=1' : ''
   if (!app.isPackaged) {
@@ -180,6 +198,58 @@ app.whenReady().then(() => {
       mainStore = store
     },
   })
+
+  // 创建应用菜单
+  const { Menu } = require('electron')
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+        {
+          label: 'Command Palette',
+          // accelerator: 'Ctrl+Shift+P', // Remove accelerator to let renderer handle it
+          click: (_: any, focusedWindow: BrowserWindow) => {
+            console.log('[Main] Menu: Command Palette triggered')
+            if (focusedWindow) {
+              console.log('[Main] Sending workbench:execute-command to renderer')
+              focusedWindow.webContents.send('workbench:execute-command', 'workbench.action.showCommands')
+            } else {
+              console.log('[Main] No focused window to send command to')
+            }
+          }
+        }
+      ]
+    }
+  ]
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
 
   // 创建第一个窗口
   const firstWin = createWindow()

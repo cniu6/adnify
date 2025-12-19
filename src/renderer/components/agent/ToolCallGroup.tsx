@@ -88,26 +88,26 @@ export default function ToolCallGroup({
     }
 
     return (
-        <div className="my-2 rounded-lg border border-white/10 bg-white/[0.02] overflow-hidden">
+        <div className="my-2 rounded-lg border border-white/5 bg-surface/20 backdrop-blur-sm overflow-hidden shadow-sm">
             {/* Group Header */}
             <div
-                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-white/[0.04] transition-colors select-none"
+                className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-white/[0.04] transition-colors select-none group"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
-                <div className="p-1 rounded bg-white/5 text-text-muted">
+                <div className="p-1.5 rounded-md bg-white/5 border border-white/5 text-text-muted group-hover:bg-white/10 transition-colors shadow-inner">
                     <Layers className="w-3.5 h-3.5" />
                 </div>
 
                 <div className="flex-1 min-w-0 flex items-center gap-2">
-                    <span className="text-xs font-medium text-text-secondary">
+                    <span className="text-xs font-medium text-text-secondary group-hover:text-text-primary transition-colors">
                         {title}
                     </span>
-                    <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded-full bg-white/5 border border-white/5">
+                    <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded-full bg-white/5 border border-white/5 font-mono">
                         {toolCalls.length}
                     </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <StatusIcon />
                     {isExpanded ? (
                         <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
@@ -119,7 +119,7 @@ export default function ToolCallGroup({
 
             {/* Group Content */}
             {isExpanded && (
-                <div className="border-t border-white/5 p-2 space-y-1 bg-black/10">
+                <div className="border-t border-white/5 p-2 space-y-2 bg-black/10 animate-slide-down">
                     {toolCalls.map((tc) => {
                         const isFileOp = WRITE_TOOLS.includes(tc.name)
                         const isPending = tc.id === pendingToolId

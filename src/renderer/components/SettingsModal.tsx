@@ -6,7 +6,8 @@
 import React, { useState, useEffect } from 'react'
 import {
   Cpu, Check, Eye, EyeOff,
-  AlertTriangle, Settings2, Code, Keyboard, Plus, Trash, HardDrive
+  AlertTriangle, Settings2, Code, Keyboard, Plus, Trash, HardDrive,
+  Monitor, Shield, Terminal, Sparkles, Layout, Type
 } from 'lucide-react'
 import { useStore, LLMConfig, AutoApproveSettings } from '../store'
 import { t, Language } from '../i18n'
@@ -17,7 +18,7 @@ import { toast } from './ToastProvider'
 import { getPromptTemplates } from '../agent/promptTemplates'
 import { completionService } from '../services/completionService'
 import KeybindingPanel from './KeybindingPanel'
-import { Button, Input, Checkbox, Modal, Select } from './ui'
+import { Button, Input, Modal, Select, Switch } from './ui'
 
 type SettingsTab = 'provider' | 'editor' | 'agent' | 'keybindings' | 'security' | 'system'
 
@@ -145,111 +146,147 @@ export default function SettingsModal() {
   const selectedProvider = currentProviders.find(p => p.id === localConfig.provider)
 
   const tabs = [
-    { id: 'provider' as const, label: localLanguage === 'zh' ? 'AI 模型' : 'AI Models', icon: Cpu },
-    { id: 'editor' as const, label: localLanguage === 'zh' ? '编辑器' : 'Editor', icon: Code },
-    { id: 'agent' as const, label: localLanguage === 'zh' ? 'Agent' : 'Agent', icon: Settings2 },
-    { id: 'keybindings' as const, label: localLanguage === 'zh' ? '快捷键' : 'Keybindings', icon: Keyboard },
-    { id: 'security' as const, label: localLanguage === 'zh' ? '安全' : 'Security', icon: AlertTriangle },
-    { id: 'system' as const, label: localLanguage === 'zh' ? '系统' : 'System', icon: HardDrive },
+    { id: 'provider' as const, label: localLanguage === 'zh' ? 'AI 模型' : 'AI Models', icon: Cpu, description: 'Configure LLM providers and models' },
+    { id: 'editor' as const, label: localLanguage === 'zh' ? '编辑器' : 'Editor', icon: Code, description: 'Customize editor appearance and behavior' },
+    { id: 'agent' as const, label: localLanguage === 'zh' ? 'Agent' : 'Agent', icon: Sparkles, description: 'Set up AI agent capabilities' },
+    { id: 'keybindings' as const, label: localLanguage === 'zh' ? '快捷键' : 'Keybindings', icon: Keyboard, description: 'View and manage keyboard shortcuts' },
+    { id: 'security' as const, label: localLanguage === 'zh' ? '安全' : 'Security', icon: Shield, description: 'Manage permissions and security settings' },
+    { id: 'system' as const, label: localLanguage === 'zh' ? '系统' : 'System', icon: HardDrive, description: 'System preferences and storage' },
   ]
 
   return (
-    <Modal isOpen={true} onClose={() => setShowSettings(false)} title={t('settings', localLanguage)} size="xl">
-      <div className="flex h-[600px] -m-6">
+    <Modal isOpen={true} onClose={() => setShowSettings(false)} title="" size="4xl">
+      <div className="flex h-[750px] -m-6 bg-background rounded-xl overflow-hidden border border-white/5 shadow-2xl">
         {/* Sidebar */}
-        <div className="w-48 border-r border-border-subtle p-2 flex-shrink-0 bg-background/30">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${activeTab === tab.id
-                ? 'bg-accent/10 text-accent font-medium shadow-sm'
-                : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
-                }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <div className="w-64 bg-surface/50 backdrop-blur-md border-r border-white/5 flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-6 border-b border-white/5">
+            <h2 className="text-xl font-bold text-text-primary tracking-tight">
+              {localLanguage === 'zh' ? '设置' : 'Settings'}
+            </h2>
+            <p className="text-xs text-text-muted mt-1">
+              Configure your environment
+            </p>
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-background custom-scrollbar">
-          {activeTab === 'provider' && (
-            <ProviderSettings
-              localConfig={localConfig}
-              setLocalConfig={setLocalConfig}
-              showApiKey={showApiKey}
-              setShowApiKey={setShowApiKey}
-              selectedProvider={selectedProvider}
-              providers={currentProviders}
-              language={localLanguage}
-            />
-          )}
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${activeTab === tab.id
+                  ? 'bg-accent/10 text-accent shadow-[0_0_20px_rgba(var(--accent),0.1)] border border-accent/20'
+                  : 'text-text-secondary hover:bg-white/5 hover:text-text-primary border border-transparent'
+                  }`}
+              >
+                <tab.icon className={`w-4 h-4 transition-colors ${activeTab === tab.id ? 'text-accent' : 'text-text-muted group-hover:text-text-primary'}`} />
+                <div className="flex flex-col items-start">
+                  <span>{tab.label}</span>
+                </div>
+              </button>
+            ))}
+          </nav>
 
-          {activeTab === 'editor' && (
-            <EditorSettings
-              settings={editorSettings}
-              setSettings={setEditorSettings}
-              language={localLanguage}
-            />
-          )}
-
-          {activeTab === 'agent' && (
-            <AgentSettings
-              autoApprove={localAutoApprove}
-              setAutoApprove={setLocalAutoApprove}
-              aiInstructions={aiInstructions}
-              setAiInstructions={setAiInstructions}
-              promptTemplateId={localPromptTemplateId}
-              setPromptTemplateId={setLocalPromptTemplateId}
-              language={localLanguage}
-            />
-          )}
-
-          {activeTab === 'keybindings' && (
-            <KeybindingPanel />
-          )}
-
-          {activeTab === 'security' && (
-            <SecuritySettings language={localLanguage} />
-          )}
-
-          {activeTab === 'system' && (
-            <SystemSettings language={localLanguage} />
-          )}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle -mx-6 -mb-6 mt-6 bg-background/50">
-        <div className="flex items-center gap-4">
-          {/* Language Selector */}
-          <div className="relative group w-32">
+          {/* Footer: Language */}
+          <div className="p-4 border-t border-white/5 bg-surface/30">
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <Monitor className="w-3.5 h-3.5 text-text-muted" />
+              <label className="text-xs text-text-muted font-medium">
+                {localLanguage === 'zh' ? '界面语言' : 'Interface Language'}
+              </label>
+            </div>
             <Select
               value={localLanguage}
               onChange={(value) => setLocalLanguage(value as Language)}
               options={LANGUAGES.map(lang => ({ value: lang.id, label: lang.name }))}
+              className="w-full"
             />
-            {/* 语言切换提示 */}
-            {localLanguage !== language && (
-              <div className="absolute top-full left-0 mt-1 px-2 py-1 bg-warning/10 border border-warning/20 rounded text-[10px] text-warning whitespace-nowrap z-50">
-                {localLanguage === 'zh' ? '保存后需重新加载以应用编辑器菜单语言' : 'Reload required for editor menu language'}
-              </div>
-            )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={() => setShowSettings(false)}>
-            {t('cancel', localLanguage)}
-          </Button>
-          <Button
-            variant={saved ? 'success' : 'primary'}
-            onClick={handleSave}
-            leftIcon={saved ? <Check className="w-4 h-4" /> : undefined}
-          >
-            {saved ? t('saved', localLanguage) : t('saveSettings', localLanguage)}
-          </Button>
+
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col bg-background/50 relative">
+          {/* Content Header */}
+          <div className="px-8 py-6 border-b border-white/5 bg-surface/20 backdrop-blur-sm sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              {React.createElement(tabs.find(t => t.id === activeTab)?.icon || Settings2, {
+                className: "w-6 h-6 text-accent"
+              })}
+              <div>
+                <h3 className="text-lg font-semibold text-text-primary">
+                  {tabs.find(t => t.id === activeTab)?.label}
+                </h3>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {tabs.find(t => t.id === activeTab)?.description}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="max-w-3xl mx-auto space-y-8">
+              {activeTab === 'provider' && (
+                <ProviderSettings
+                  localConfig={localConfig}
+                  setLocalConfig={setLocalConfig}
+                  showApiKey={showApiKey}
+                  setShowApiKey={setShowApiKey}
+                  selectedProvider={selectedProvider}
+                  providers={currentProviders}
+                  language={localLanguage}
+                />
+              )}
+
+              {activeTab === 'editor' && (
+                <EditorSettings
+                  settings={editorSettings}
+                  setSettings={setEditorSettings}
+                  language={localLanguage}
+                />
+              )}
+
+              {activeTab === 'agent' && (
+                <AgentSettings
+                  autoApprove={localAutoApprove}
+                  setAutoApprove={setLocalAutoApprove}
+                  aiInstructions={aiInstructions}
+                  setAiInstructions={setAiInstructions}
+                  promptTemplateId={localPromptTemplateId}
+                  setPromptTemplateId={setLocalPromptTemplateId}
+                  language={localLanguage}
+                />
+              )}
+
+              {activeTab === 'keybindings' && (
+                <KeybindingPanel />
+              )}
+
+              {activeTab === 'security' && (
+                <SecuritySettings language={localLanguage} />
+              )}
+
+              {activeTab === 'system' && (
+                <SystemSettings language={localLanguage} />
+              )}
+            </div>
+          </div>
+
+          {/* Action Footer */}
+          <div className="px-8 py-5 border-t border-white/5 bg-surface/30 backdrop-blur-md flex items-center justify-end gap-3">
+            <Button variant="ghost" onClick={() => setShowSettings(false)} className="hover:bg-white/5">
+              {t('cancel', localLanguage)}
+            </Button>
+            <Button
+              variant={saved ? 'success' : 'primary'}
+              onClick={handleSave}
+              leftIcon={saved ? <Check className="w-4 h-4" /> : undefined}
+              className="min-w-[100px] shadow-lg shadow-accent/20"
+            >
+              {saved ? t('saved', localLanguage) : t('saveSettings', localLanguage)}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>
@@ -282,149 +319,159 @@ function ProviderSettings({
   }
 
   return (
-    <div className="space-y-6 text-text-primary">
+    <div className="space-y-8 animate-fade-in">
       {/* Provider Selector */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '服务提供商' : 'Provider'}</label>
-        <div className="grid grid-cols-4 gap-2">
+      <section>
+        <h4 className="text-sm font-medium text-text-secondary mb-4 uppercase tracking-wider text-xs">
+          {language === 'zh' ? '选择提供商' : 'Select Provider'}
+        </h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {providers.map(p => (
             <button
               key={p.id}
               onClick={() => setLocalConfig({ ...localConfig, provider: p.id as any, model: p.models[0] || '' })}
-              className={`px-3 py-2.5 rounded-lg border text-sm transition-all ${localConfig.provider === p.id
-                ? 'border-accent bg-accent/10 text-accent shadow-sm'
-                : 'border-border-subtle hover:border-text-muted text-text-muted hover:text-text-primary bg-surface'
-                }`}
+              className={`
+                relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200
+                ${localConfig.provider === p.id
+                  ? 'border-accent bg-accent/10 text-accent shadow-[0_0_15px_rgba(var(--accent),0.15)]'
+                  : 'border-white/10 bg-surface/30 text-text-muted hover:bg-surface hover:border-white/20 hover:text-text-primary'
+                }
+              `}
             >
-              {p.name}
+              <span className="font-medium text-sm">{p.name}</span>
+              {localConfig.provider === p.id && (
+                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent animate-pulse" />
+              )}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Model Selector & Management */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '模型' : 'Model'}</label>
-        <div className="space-y-3">
-          <Select
-            value={localConfig.model}
-            onChange={(value) => setLocalConfig({ ...localConfig, model: value })}
-            options={selectedProvider?.models.map(m => ({ value: m, label: m })) || []}
-            className="w-full"
-          />
+      {/* Configuration */}
+      <section className="space-y-6 p-6 bg-surface/30 rounded-xl border border-white/5">
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+          {language === 'zh' ? '配置' : 'Configuration'}
+        </h4>
 
-          {/* Add Model UI */}
+        {/* Model Selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-text-primary">
+            {language === 'zh' ? '模型' : 'Model'}
+          </label>
           <div className="flex gap-2">
-            <Input
-              value={newModelName}
-              onChange={(e) => setNewModelName(e.target.value)}
-              placeholder={language === 'zh' ? '输入新模型名称' : 'Enter new model name'}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddModel()}
+            <Select
+              value={localConfig.model}
+              onChange={(value) => setLocalConfig({ ...localConfig, model: value })}
+              options={selectedProvider?.models.map(m => ({ value: m, label: m })) || []}
+              className="flex-1"
             />
-            <Button
-              variant="secondary"
-              onClick={handleAddModel}
-              disabled={!newModelName.trim()}
-              className="px-3"
-            >
-              <Plus className="w-4 h-4 text-accent" />
-            </Button>
           </div>
 
-          {/* Custom Model List */}
-          {providerConfigs[localConfig.provider]?.customModels?.length > 0 && (
-            <div className="space-y-2 mt-2">
-              <p className="text-xs text-text-muted">{language === 'zh' ? '自定义模型列表:' : 'Custom Models:'}</p>
-              <div className="max-h-32 overflow-y-auto custom-scrollbar space-y-1">
+          {/* Custom Model Management */}
+          <div className="mt-3 pt-3 border-t border-white/5">
+            <div className="flex gap-2 items-center">
+              <Input
+                value={newModelName}
+                onChange={(e) => setNewModelName(e.target.value)}
+                placeholder={language === 'zh' ? '添加自定义模型...' : 'Add custom model...'}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddModel()}
+                className="flex-1 h-9 text-sm"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleAddModel}
+                disabled={!newModelName.trim()}
+                className="h-9 px-3"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {providerConfigs[localConfig.provider]?.customModels?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
                 {providerConfigs[localConfig.provider]?.customModels.map((model: string) => (
-                  <div key={model} className="flex items-center justify-between px-3 py-2 bg-surface/50 rounded-lg border border-border-subtle/50 text-xs">
-                    <span className="font-mono text-text-secondary">{model}</span>
+                  <div key={model} className="flex items-center gap-1.5 px-2.5 py-1 bg-surface rounded-full border border-white/10 text-xs text-text-secondary group hover:border-accent/30 transition-colors">
+                    <span>{model}</span>
                     <button
                       onClick={() => removeCustomModel(localConfig.provider, model)}
-                      className="p-1 hover:text-red-400 text-text-muted transition-colors"
+                      className="text-text-muted hover:text-red-400 transition-colors"
                     >
-                      <Trash className="w-3.5 h-3.5" />
+                      <Trash className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* API Key */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-text-primary">API Key</label>
+          <div className="relative">
+            <Input
+              type={showApiKey ? "text" : "password"}
+              value={localConfig.apiKey}
+              onChange={(e) => setLocalConfig({ ...localConfig, apiKey: e.target.value })}
+              placeholder={(BUILTIN_PROVIDERS[localConfig.provider as BuiltinProviderName] as any)?.apiKeyPlaceholder || 'Enter API Key'}
+              rightIcon={
+                <button
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="text-text-muted hover:text-text-primary transition-colors"
+                >
+                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              }
+            />
+          </div>
+          {localConfig.provider !== 'custom' && localConfig.provider !== 'ollama' && (
+            <div className="flex justify-end">
+              <a
+                href={(BUILTIN_PROVIDERS[localConfig.provider as BuiltinProviderName] as any)?.apiKeyUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-accent hover:text-accent-hover hover:underline"
+              >
+                {language === 'zh' ? '获取 API Key →' : 'Get API Key →'}
+              </a>
             </div>
           )}
         </div>
-      </div>
 
-      {/* API Key */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">API Key</label>
-        <div className="relative">
-          <Input
-            type={showApiKey ? "text" : "password"}
-            value={localConfig.apiKey}
-            onChange={(e) => setLocalConfig({ ...localConfig, apiKey: e.target.value })}
-            placeholder={(BUILTIN_PROVIDERS[localConfig.provider as BuiltinProviderName] as any)?.apiKeyPlaceholder || 'Enter API Key'}
-            rightIcon={
-              <button
-                onClick={() => setShowApiKey(!showApiKey)}
-                className="text-text-muted hover:text-text-primary"
-              >
-                {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            }
-          />
+        {/* Advanced Options Toggle */}
+        <div className="pt-2">
+          <details className="group">
+            <summary className="flex items-center gap-2 text-xs font-medium text-text-muted cursor-pointer hover:text-text-primary transition-colors select-none">
+              <span className="group-open:rotate-90 transition-transform">▶</span>
+              {language === 'zh' ? '高级设置 (端点 & 超时)' : 'Advanced Settings (Endpoint & Timeout)'}
+            </summary>
+            <div className="mt-4 space-y-4 pl-4 border-l border-white/5">
+              <div>
+                <label className="text-xs text-text-secondary mb-1.5 block">{language === 'zh' ? '自定义端点' : 'Custom Endpoint'}</label>
+                <Input
+                  value={localConfig.baseUrl || ''}
+                  onChange={(e) => setLocalConfig({ ...localConfig, baseUrl: e.target.value || undefined })}
+                  placeholder="https://api.example.com/v1"
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-text-secondary mb-1.5 block">{language === 'zh' ? '请求超时 (秒)' : 'Request Timeout (seconds)'}</label>
+                <Input
+                  type="number"
+                  value={(localConfig.timeout || 120000) / 1000}
+                  onChange={(e) => setLocalConfig({ ...localConfig, timeout: (parseInt(e.target.value) || 120) * 1000 })}
+                  min={30}
+                  max={600}
+                  step={30}
+                  className="w-32 text-sm"
+                />
+              </div>
+            </div>
+          </details>
         </div>
-        <p className="text-xs text-text-muted mt-2">
-          {localConfig.provider !== 'custom' && localConfig.provider !== 'ollama' && (
-            <a
-              href={(BUILTIN_PROVIDERS[localConfig.provider as BuiltinProviderName] as any)?.apiKeyUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-accent underline decoration-dotted"
-            >
-              {language === 'zh' ? '获取 API Key' : 'Get API Key'}
-            </a>
-          )}
-        </p>
-      </div>
-
-      {/* Custom Endpoint - 对所有 provider 都显示 */}
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '自定义端点 (可选)' : 'Custom Endpoint (Optional)'}</h3>
-        <Input
-          value={localConfig.baseUrl || ''}
-          onChange={(e) => setLocalConfig({ ...localConfig, baseUrl: e.target.value || undefined })}
-          placeholder={
-            localConfig.provider === 'openai' ? 'https://api.openai.com/v1' :
-              localConfig.provider === 'anthropic' ? 'https://api.anthropic.com' :
-                localConfig.provider === 'gemini' ? 'https://generativelanguage.googleapis.com' :
-                  'https://api.example.com/v1'
-          }
-        />
-        <p className="text-xs text-text-muted mt-2">
-          {language === 'zh'
-            ? '留空使用官方 API，或填写代理/兼容 API 地址'
-            : 'Leave empty for official API, or enter proxy/compatible API URL'}
-        </p>
-      </div>
-
-      {/* Request Timeout */}
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '请求超时' : 'Request Timeout'}</h3>
-        <div className="flex items-center gap-3">
-          <Input
-            type="number"
-            value={(localConfig.timeout || 120000) / 1000}
-            onChange={(e) => setLocalConfig({ ...localConfig, timeout: (parseInt(e.target.value) || 120) * 1000 })}
-            min={30}
-            max={600}
-            step={30}
-            className="w-32"
-          />
-          <span className="text-sm text-text-muted">{language === 'zh' ? '秒' : 'seconds'}</span>
-        </div>
-        <p className="text-xs text-text-muted mt-2">
-          {language === 'zh' ? 'API 请求的最大等待时间（30-600秒）' : 'Maximum wait time for API requests (30-600 seconds)'}
-        </p>
-      </div>
+      </section>
     </div>
   )
 }
@@ -456,312 +503,233 @@ interface EditorSettingsProps {
 function EditorSettings({ settings, setSettings, language }: EditorSettingsProps) {
   // 获取完整配置用于显示高级选项
   const [advancedConfig, setAdvancedConfig] = useState(getEditorConfig())
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const { currentTheme, setTheme } = useStore()
   const allThemes = Object.keys(themes)
 
   const handleThemeChange = (themeId: string) => {
     setTheme(themeId as any)
-    // 保存主题到 electron-store 以便重启后恢复
     window.electronAPI.setSetting('currentTheme', themeId)
   }
 
-  const handleAdvancedChange = (key: string, value: number) => {
-    const newConfig = { ...advancedConfig }
-    if (key.startsWith('performance.')) {
-      const perfKey = key.replace('performance.', '') as keyof typeof newConfig.performance
-      newConfig.performance = { ...newConfig.performance, [perfKey]: value }
-    } else if (key.startsWith('ai.')) {
-      const aiKey = key.replace('ai.', '') as keyof typeof newConfig.ai
-      newConfig.ai = { ...newConfig.ai, [aiKey]: value }
-    }
-    setAdvancedConfig(newConfig)
-    saveEditorConfig(newConfig)
-  }
+
 
   return (
-    <div className="space-y-6 text-text-primary">
-      {/* 主题选择器 */}
-      <div>
-        <label className="text-sm font-medium mb-3 block">{language === 'zh' ? '主题' : 'Theme'}</label>
-        <div className="grid grid-cols-3 gap-2">
+    <div className="space-y-8 animate-fade-in">
+      {/* Theme Section */}
+      <section>
+        <h4 className="flex items-center gap-2 text-sm font-medium text-text-secondary mb-4 uppercase tracking-wider text-xs">
+          <Layout className="w-4 h-4" />
+          {language === 'zh' ? '外观' : 'Appearance'}
+        </h4>
+        <div className="grid grid-cols-3 gap-3">
           {allThemes.map(themeId => {
             const themeVars = themes[themeId as keyof typeof themes]
             return (
               <button
                 key={themeId}
                 onClick={() => handleThemeChange(themeId)}
-                className={`relative p-3 rounded-lg border text-left transition-all ${currentTheme === themeId
-                  ? 'border-accent bg-accent/10 shadow-sm'
-                  : 'border-border-subtle hover:border-text-muted bg-surface'
+                className={`relative p-3 rounded-xl border text-left transition-all duration-200 group overflow-hidden ${currentTheme === themeId
+                  ? 'border-accent bg-accent/10 shadow-md'
+                  : 'border-white/10 bg-surface/30 hover:border-white/20 hover:bg-surface/50'
                   }`}
               >
-                {/* 主题预览色块 */}
-                <div className="flex gap-1 mb-2">
-                  <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: `rgb(${themeVars['--background']})` }}
-                  />
-                  <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: `rgb(${themeVars['--accent']})` }}
-                  />
-                  <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: `rgb(${themeVars['--text-primary']})` }}
-                  />
+                <div className="flex gap-1.5 mb-3">
+                  <div className="w-5 h-5 rounded-full shadow-sm ring-1 ring-white/10" style={{ backgroundColor: `rgb(${themeVars['--background']})` }} />
+                  <div className="w-5 h-5 rounded-full shadow-sm ring-1 ring-white/10" style={{ backgroundColor: `rgb(${themeVars['--accent']})` }} />
+                  <div className="w-5 h-5 rounded-full shadow-sm ring-1 ring-white/10" style={{ backgroundColor: `rgb(${themeVars['--text-primary']})` }} />
                 </div>
-                <span className="text-xs font-medium capitalize">{themeId.replace('-', ' ')}</span>
+                <span className="text-xs font-medium capitalize block truncate">{themeId.replace('-', ' ')}</span>
                 {currentTheme === themeId && (
-                  <div className="absolute top-1 right-1">
-                    <Check className="w-3 h-3 text-accent" />
+                  <div className="absolute top-2 right-2">
+                    <Check className="w-3.5 h-3.5 text-accent" />
                   </div>
                 )}
               </button>
             )
           })}
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '字体大小' : 'Font Size'}</label>
-          <Input
-            type="number"
-            value={settings.fontSize}
-            onChange={(e) => setSettings({ ...settings, fontSize: parseInt(e.target.value) || 14 })}
-            min={10} max={24}
+      {/* Typography & Layout */}
+      <section className="space-y-4">
+        <h4 className="flex items-center gap-2 text-sm font-medium text-text-secondary mb-4 uppercase tracking-wider text-xs">
+          <Type className="w-4 h-4" />
+          {language === 'zh' ? '排版与布局' : 'Typography & Layout'}
+        </h4>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '字体大小' : 'Font Size'}</label>
+            <Input
+              type="number"
+              value={settings.fontSize}
+              onChange={(e) => setSettings({ ...settings, fontSize: parseInt(e.target.value) || 14 })}
+              min={10} max={32}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-primary">{language === 'zh' ? 'Tab 大小' : 'Tab Size'}</label>
+            <Select
+              value={settings.tabSize.toString()}
+              onChange={(value) => setSettings({ ...settings, tabSize: parseInt(value) })}
+              options={[
+                { value: '2', label: '2 Spaces' },
+                { value: '4', label: '4 Spaces' },
+                { value: '8', label: '8 Spaces' },
+              ]}
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '自动换行' : 'Word Wrap'}</label>
+            <Select
+              value={settings.wordWrap}
+              onChange={(value) => setSettings({ ...settings, wordWrap: value as any })}
+              options={[
+                { value: 'on', label: 'On' },
+                { value: 'off', label: 'Off' },
+                { value: 'wordWrapColumn', label: 'Column' },
+              ]}
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '行号' : 'Line Numbers'}</label>
+            <Select
+              value={settings.lineNumbers}
+              onChange={(value) => setSettings({ ...settings, lineNumbers: value as any })}
+              options={[
+                { value: 'on', label: 'On' },
+                { value: 'off', label: 'Off' },
+                { value: 'relative', label: 'Relative' },
+              ]}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Features Switches */}
+      <section className="space-y-4 p-5 bg-surface/30 rounded-xl border border-white/5">
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+          {language === 'zh' ? '功能特性' : 'Features'}
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+          <Switch
+            label={language === 'zh' ? '显示小地图' : 'Show Minimap'}
+            checked={settings.minimap}
+            onChange={(e) => setSettings({ ...settings, minimap: e.target.checked })}
+          />
+          <Switch
+            label={language === 'zh' ? '括号配对着色' : 'Bracket Pair Colorization'}
+            checked={settings.bracketPairColorization}
+            onChange={(e) => setSettings({ ...settings, bracketPairColorization: e.target.checked })}
+          />
+          <Switch
+            label={language === 'zh' ? '保存时格式化' : 'Format on Save'}
+            checked={settings.formatOnSave}
+            onChange={(e) => setSettings({ ...settings, formatOnSave: e.target.checked })}
           />
         </div>
-        <div>
-          <label className="text-sm font-medium mb-2 block">{language === 'zh' ? 'Tab 大小' : 'Tab Size'}</label>
-          <Select
-            value={settings.tabSize.toString()}
-            onChange={(value) => setSettings({ ...settings, tabSize: parseInt(value) })}
-            options={[
-              { value: '2', label: '2' },
-              { value: '4', label: '4' },
-              { value: '8', label: '8' },
-            ]}
-            className="w-full"
-          />
+        <div className="pt-4 border-t border-white/5">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '自动保存' : 'Auto Save'}</label>
+            <Select
+              value={settings.autoSave}
+              onChange={(value) => setSettings({ ...settings, autoSave: value as any })}
+              options={[
+                { value: 'off', label: 'Off' },
+                { value: 'afterDelay', label: 'After Delay' },
+                { value: 'onFocusChange', label: 'On Focus Change' },
+              ]}
+              className="w-48"
+            />
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '自动换行' : 'Word Wrap'}</label>
-          <Select
-            value={settings.wordWrap}
-            onChange={(value) => setSettings({ ...settings, wordWrap: value as 'on' | 'off' | 'wordWrapColumn' })}
-            options={[
-              { value: 'on', label: language === 'zh' ? '开启' : 'On' },
-              { value: 'off', label: language === 'zh' ? '关闭' : 'Off' },
-              { value: 'wordWrapColumn', label: language === 'zh' ? '按列' : 'By Column' },
-            ]}
-            className="w-full"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '行号' : 'Line Numbers'}</label>
-          <Select
-            value={settings.lineNumbers}
-            onChange={(value) => setSettings({ ...settings, lineNumbers: value as 'on' | 'off' | 'relative' })}
-            options={[
-              { value: 'on', label: language === 'zh' ? '显示' : 'On' },
-              { value: 'off', label: language === 'zh' ? '隐藏' : 'Off' },
-              { value: 'relative', label: language === 'zh' ? '相对' : 'Relative' },
-            ]}
-            className="w-full"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <Checkbox
-          label={language === 'zh' ? '显示小地图' : 'Show Minimap'}
-          checked={settings.minimap}
-          onChange={(e) => setSettings({ ...settings, minimap: e.target.checked })}
-        />
-
-        <Checkbox
-          label={language === 'zh' ? '括号配对着色' : 'Bracket Pair Colorization'}
-          checked={settings.bracketPairColorization}
-          onChange={(e) => setSettings({ ...settings, bracketPairColorization: e.target.checked })}
-        />
-
-        <Checkbox
-          label={language === 'zh' ? '保存时格式化' : 'Format on Save'}
-          checked={settings.formatOnSave}
-          onChange={(e) => setSettings({ ...settings, formatOnSave: e.target.checked })}
-        />
-      </div>
-
-      <div>
-        <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '自动保存' : 'Auto Save'}</label>
-        <Select
-          value={settings.autoSave}
-          onChange={(value) => setSettings({ ...settings, autoSave: value as 'off' | 'afterDelay' | 'onFocusChange' })}
-          options={[
-            { value: 'off', label: language === 'zh' ? '关闭' : 'Off' },
-            { value: 'afterDelay', label: language === 'zh' ? '延迟后' : 'After Delay' },
-            { value: 'onFocusChange', label: language === 'zh' ? '失去焦点时' : 'On Focus Change' },
-          ]}
-          className="w-full"
-        />
-      </div>
-
-      {/* AI 代码补全设置 */}
-      <div className="pt-4 border-t border-border-subtle">
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? 'AI 代码补全' : 'AI Code Completion'}</h3>
-
-        <div className="space-y-3">
-          <Checkbox
-            label={language === 'zh' ? '启用 AI 补全' : 'Enable AI Completion'}
+      {/* AI Completion */}
+      <section className="space-y-4 p-5 bg-gradient-to-br from-accent/5 to-transparent rounded-xl border border-accent/10">
+        <div className="flex items-center justify-between">
+          <h4 className="flex items-center gap-2 text-sm font-medium text-accent uppercase tracking-wider text-xs">
+            <Sparkles className="w-4 h-4" />
+            {language === 'zh' ? 'AI 代码补全' : 'AI Code Completion'}
+          </h4>
+          <Switch
             checked={settings.completionEnabled}
             onChange={(e) => setSettings({ ...settings, completionEnabled: e.target.checked })}
           />
-          <p className="text-xs text-text-muted ml-7">{language === 'zh' ? '输入时显示 AI 代码建议' : 'Show AI code suggestions while typing'}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '触发延迟 (ms)' : 'Trigger Delay (ms)'}</label>
-            <Input
-              type="number"
-              value={settings.completionDebounceMs}
-              onChange={(e) => setSettings({ ...settings, completionDebounceMs: parseInt(e.target.value) || 150 })}
-              min={50} max={1000} step={50}
-            />
-            <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '停止输入后等待时间' : 'Wait time after typing stops'}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '最大 Token 数' : 'Max Tokens'}</label>
-            <Input
-              type="number"
-              value={settings.completionMaxTokens}
-              onChange={(e) => setSettings({ ...settings, completionMaxTokens: parseInt(e.target.value) || 256 })}
-              min={64} max={1024} step={64}
-            />
-            <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '补全建议的最大长度' : 'Maximum length of suggestions'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 高级性能设置 */}
-      <div className="pt-4 border-t border-border-subtle">
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center gap-2 text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
-        >
-          <span>{showAdvanced ? '▼' : '▶'}</span>
-          {language === 'zh' ? '高级性能设置' : 'Advanced Performance Settings'}
-        </button>
-
-        {showAdvanced && (
-          <div className="mt-4 space-y-4 animate-slide-in">
-            <p className="text-xs text-text-muted">
-              {language === 'zh' ? '这些设置会影响编辑器性能，请谨慎修改' : 'These settings affect editor performance, modify with caution'}
-            </p>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '最大项目文件数' : 'Max Project Files'}</label>
-                <Input
-                  type="number"
-                  value={advancedConfig.performance.maxProjectFiles}
-                  onChange={(e) => handleAdvancedChange('performance.maxProjectFiles', parseInt(e.target.value) || 500)}
-                  min={100} max={2000} step={100}
-                />
-                <p className="text-xs text-text-muted mt-1">{language === 'zh' ? 'LSP 扫描的最大文件数' : 'Max files for LSP scanning'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '文件树最大深度' : 'Max File Tree Depth'}</label>
-                <Input
-                  type="number"
-                  value={advancedConfig.performance.maxFileTreeDepth}
-                  onChange={(e) => handleAdvancedChange('performance.maxFileTreeDepth', parseInt(e.target.value) || 5)}
-                  min={2} max={10}
-                />
-              </div>
+        {settings.completionEnabled && (
+          <div className="grid grid-cols-2 gap-6 pt-2 animate-fade-in">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '触发延迟 (ms)' : 'Trigger Delay (ms)'}</label>
+              <Input
+                type="number"
+                value={settings.completionDebounceMs}
+                onChange={(e) => setSettings({ ...settings, completionDebounceMs: parseInt(e.target.value) || 150 })}
+                min={50} max={1000} step={50}
+              />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">{language === 'zh' ? 'Git 刷新间隔 (ms)' : 'Git Refresh Interval (ms)'}</label>
-                <Input
-                  type="number"
-                  value={advancedConfig.performance.gitStatusIntervalMs}
-                  onChange={(e) => handleAdvancedChange('performance.gitStatusIntervalMs', parseInt(e.target.value) || 5000)}
-                  min={1000} max={30000} step={1000}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '请求超时 (ms)' : 'Request Timeout (ms)'}</label>
-                <Input
-                  type="number"
-                  value={advancedConfig.performance.requestTimeoutMs}
-                  onChange={(e) => handleAdvancedChange('performance.requestTimeoutMs', parseInt(e.target.value) || 120000)}
-                  min={30000} max={300000} step={10000}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">{language === 'zh' ? 'Agent 最大循环次数' : 'Max Agent Tool Loops'}</label>
-                <Input
-                  type="number"
-                  value={advancedConfig.ai.maxToolLoops}
-                  onChange={(e) => handleAdvancedChange('ai.maxToolLoops', parseInt(e.target.value) || 15)}
-                  min={5} max={50}
-                />
-                <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '单次对话最大工具调用次数' : 'Max tool calls per conversation'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '终端缓冲区大小' : 'Terminal Buffer Size'}</label>
-                <Input
-                  type="number"
-                  value={advancedConfig.performance.terminalBufferSize}
-                  onChange={(e) => handleAdvancedChange('performance.terminalBufferSize', parseInt(e.target.value) || 500)}
-                  min={100} max={2000} step={100}
-                />
-              </div>
-            </div>
-
-            {/* 上下文限制设置 */}
-            <div className="pt-4 mt-4 border-t border-border-subtle">
-              <h4 className="text-sm font-medium mb-3">{language === 'zh' ? '上下文限制' : 'Context Limits'}</h4>
-              <p className="text-xs text-text-muted mb-3">
-                {language === 'zh' ? '控制发送给 AI 的上下文大小，避免超出模型限制' : 'Control context size sent to AI to avoid exceeding model limits'}
-              </p>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '最大上下文字符数' : 'Max Context Chars'}</label>
-                  <Input
-                    type="number"
-                    value={advancedConfig.ai.maxContextChars}
-                    onChange={(e) => handleAdvancedChange('ai.maxContextChars', parseInt(e.target.value) || 30000)}
-                    min={10000} max={200000} step={10000}
-                  />
-                  <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '文件和上下文的总字符限制' : 'Total char limit for files and context'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">{language === 'zh' ? '最大历史消息数' : 'Max History Messages'}</label>
-                  <Input
-                    type="number"
-                    value={advancedConfig.ai.maxHistoryMessages}
-                    onChange={(e) => handleAdvancedChange('ai.maxHistoryMessages', parseInt(e.target.value) || 10)}
-                    min={5} max={100}
-                  />
-                  <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '保留的最近对话轮数' : 'Number of recent messages to keep'}</p>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '最大 Token 数' : 'Max Tokens'}</label>
+              <Input
+                type="number"
+                value={settings.completionMaxTokens}
+                onChange={(e) => setSettings({ ...settings, completionMaxTokens: parseInt(e.target.value) || 256 })}
+                min={64} max={1024} step={64}
+              />
             </div>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* Terminal Settings */}
+      <section className="space-y-4">
+        <h4 className="flex items-center gap-2 text-sm font-medium text-text-secondary mb-4 uppercase tracking-wider text-xs">
+          <Terminal className="w-4 h-4" />
+          {language === 'zh' ? '终端' : 'Terminal'}
+        </h4>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '终端字体大小' : 'Terminal Font Size'}</label>
+            <Input
+              type="number"
+              value={advancedConfig.terminal.fontSize}
+              onChange={(e) => {
+                const newConfig = { ...advancedConfig, terminal: { ...advancedConfig.terminal, fontSize: parseInt(e.target.value) || 13 } }
+                setAdvancedConfig(newConfig)
+                saveEditorConfig(newConfig)
+              }}
+              min={10} max={24}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-primary">{language === 'zh' ? '终端行高' : 'Terminal Line Height'}</label>
+            <Input
+              type="number"
+              value={advancedConfig.terminal.lineHeight}
+              onChange={(e) => {
+                const newConfig = { ...advancedConfig, terminal: { ...advancedConfig.terminal, lineHeight: parseFloat(e.target.value) || 1.2 } }
+                setAdvancedConfig(newConfig)
+                saveEditorConfig(newConfig)
+              }}
+              min={1} max={2} step={0.1}
+            />
+          </div>
+        </div>
+        <div className="pt-2">
+          <Switch
+            label={language === 'zh' ? '光标闪烁' : 'Cursor Blink'}
+            checked={advancedConfig.terminal.cursorBlink}
+            onChange={(e) => {
+              const newConfig = { ...advancedConfig, terminal: { ...advancedConfig.terminal, cursorBlink: e.target.checked } }
+              setAdvancedConfig(newConfig)
+              saveEditorConfig(newConfig)
+            }}
+          />
+        </div>
+      </section>
     </div>
   )
 }
@@ -783,57 +751,63 @@ function AgentSettings({
   const templates = getPromptTemplates()
 
   return (
-    <div className="space-y-6 text-text-primary">
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? 'Agent 行为' : 'Agent Behavior'}</h3>
-        <div className="space-y-3">
-          <Checkbox
+    <div className="space-y-8 animate-fade-in">
+      <section className="space-y-4 p-5 bg-surface/30 rounded-xl border border-white/5">
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+          {language === 'zh' ? '自动化权限' : 'Automation Permissions'}
+        </h4>
+        <div className="space-y-4">
+          <Switch
             label={language === 'zh' ? '自动批准终端命令' : 'Auto-approve terminal commands'}
             checked={autoApprove.terminal}
             onChange={(e) => setAutoApprove({ ...autoApprove, terminal: e.target.checked })}
           />
-          <Checkbox
-            label={language === 'zh' ? '自动批准危险操作 (删除文件等)' : 'Auto-approve dangerous operations (delete files, etc.)'}
+          <Switch
+            label={language === 'zh' ? '自动批准危险操作 (删除文件等)' : 'Auto-approve dangerous operations'}
             checked={autoApprove.dangerous}
             onChange={(e) => setAutoApprove({ ...autoApprove, dangerous: e.target.checked })}
           />
-          <p className="text-xs text-text-muted ml-7">
+          <p className="text-xs text-text-muted pl-1">
             {language === 'zh'
-              ? '无需确认即可执行相应操作'
-              : 'Execute operations without confirmation'}
+              ? '开启后，Agent 将无需确认直接执行相应操作。请谨慎使用。'
+              : 'When enabled, the Agent will execute operations without confirmation. Use with caution.'}
           </p>
         </div>
-      </div>
+      </section>
 
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? 'Prompt 模板' : 'Prompt Template'}</h3>
+      <section className="space-y-4">
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+          {language === 'zh' ? 'Prompt 模板' : 'Prompt Template'}
+        </h4>
         <Select
           value={promptTemplateId}
           onChange={(value) => setPromptTemplateId(value)}
           options={templates.map(t => ({ value: t.id, label: t.name }))}
-          className="w-full mb-2"
+          className="w-full"
         />
-        <p className="text-xs text-text-muted">
+        <p className="text-xs text-text-muted bg-surface/50 p-3 rounded-lg border border-white/5">
           {templates.find(t => t.id === promptTemplateId)?.description}
         </p>
-      </div>
+      </section>
 
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '自定义系统指令' : 'Custom System Instructions'}</h3>
+      <section className="space-y-4">
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+          {language === 'zh' ? '自定义系统指令' : 'Custom System Instructions'}
+        </h4>
         <textarea
           value={aiInstructions}
           onChange={(e) => setAiInstructions(e.target.value)}
           placeholder={language === 'zh'
             ? '在此输入全局系统指令，例如："总是使用中文回答"、"代码风格偏好..."'
             : 'Enter global system instructions here, e.g., "Always answer in English", "Code style preferences..."'}
-          className="w-full h-32 bg-surface border border-border-subtle rounded-lg px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-accent resize-none"
+          className="w-full h-40 bg-surface/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all placeholder:text-text-muted/50"
         />
-        <p className="text-xs text-text-muted mt-2">
+        <p className="text-xs text-text-muted">
           {language === 'zh'
             ? '这些指令将附加到 System Prompt 中，影响所有 AI 回复'
             : 'These instructions will be appended to the System Prompt and affect all AI responses'}
         </p>
-      </div>
+      </section>
     </div>
   )
 }
@@ -841,7 +815,7 @@ function AgentSettings({
 // 安全设置组件
 function SecuritySettings({ language }: { language: Language }) {
   const [editorConfig, setEditorConfig] = useState<EditorConfig>(getEditorConfig())
-  const { autoApprove, setAutoApprove } = useStore()
+  const { securitySettings, setSecuritySettings } = useStore()
   const [newIgnoredDir, setNewIgnoredDir] = useState('')
 
   const handleAddIgnoredDir = () => {
@@ -862,43 +836,53 @@ function SecuritySettings({ language }: { language: Language }) {
   }
 
   return (
-    <div className="space-y-6 text-text-primary">
-      <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
-          <div>
-            <h3 className="text-sm font-medium text-yellow-500 mb-1">
-              {language === 'zh' ? '安全沙箱 (开发中)' : 'Security Sandbox (WIP)'}
-            </h3>
-            <p className="text-xs text-text-secondary leading-relaxed">
-              {language === 'zh'
-                ? 'Adnify 目前直接在您的系统上运行命令。请确保您只运行受信任的代码。未来版本将引入基于 Docker 的沙箱环境。'
-                : 'Adnify currently runs commands directly on your system. Ensure you only run trusted code. Future versions will introduce a Docker-based sandbox.'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Auto Approve */}
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '自动化权限' : 'Automation Permissions'}</h3>
-        <div className="space-y-3">
-          <Checkbox
-            label={language === 'zh' ? '自动批准危险操作 (删除文件等)' : 'Auto-approve dangerous operations (delete files, etc.)'}
-            checked={autoApprove.dangerous}
-            onChange={(e) => setAutoApprove({ ...autoApprove, dangerous: e.target.checked })}
-          />
-          <p className="text-xs text-text-muted ml-7">
+    <div className="space-y-8 animate-fade-in">
+      <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+        <div>
+          <h3 className="text-sm font-medium text-yellow-500 mb-1">
+            {language === 'zh' ? '安全沙箱 (开发中)' : 'Security Sandbox (WIP)'}
+          </h3>
+          <p className="text-xs text-text-secondary leading-relaxed opacity-80">
             {language === 'zh'
-              ? '无需确认即可执行相应操作，请谨慎开启'
-              : 'Execute operations without confirmation. Use with caution.'}
+              ? 'Adnify 目前直接在您的系统上运行命令。请确保您只运行受信任的代码。未来版本将引入基于 Docker 的沙箱环境。'
+              : 'Adnify currently runs commands directly on your system. Ensure you only run trusted code. Future versions will introduce a Docker-based sandbox.'}
           </p>
         </div>
       </div>
 
-      {/* Ignored Directories */}
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '忽略的目录' : 'Ignored Directories'}</h3>
+      <section className="space-y-4 p-5 bg-surface/30 rounded-xl border border-white/5">
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+          {language === 'zh' ? '安全选项' : 'Security Options'}
+        </h4>
+        <div className="space-y-4">
+          <Switch
+            label={language === 'zh' ? '启用操作确认' : 'Enable permission confirmation'}
+            checked={securitySettings.enablePermissionConfirm}
+            onChange={(e) => setSecuritySettings({ enablePermissionConfirm: e.target.checked })}
+          />
+          <Switch
+            label={language === 'zh' ? '启用审计日志' : 'Enable audit log'}
+            checked={securitySettings.enableAuditLog}
+            onChange={(e) => setSecuritySettings({ enableAuditLog: e.target.checked })}
+          />
+          <Switch
+            label={language === 'zh' ? '严格工作区模式' : 'Strict workspace mode'}
+            checked={securitySettings.strictWorkspaceMode}
+            onChange={(e) => setSecuritySettings({ strictWorkspaceMode: e.target.checked })}
+          />
+          <Switch
+            label={language === 'zh' ? '显示安全警告' : 'Show security warnings'}
+            checked={securitySettings.showSecurityWarnings}
+            onChange={(e) => setSecuritySettings({ showSecurityWarnings: e.target.checked })}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+          {language === 'zh' ? '忽略的目录' : 'Ignored Directories'}
+        </h4>
         <p className="text-xs text-text-muted mb-3">
           {language === 'zh'
             ? '这些目录将被文件索引和 AI 分析忽略'
@@ -911,6 +895,7 @@ function SecuritySettings({ language }: { language: Language }) {
             onChange={(e) => setNewIgnoredDir(e.target.value)}
             placeholder={language === 'zh' ? '输入目录名称 (例如: node_modules)' : 'Enter directory name (e.g., node_modules)'}
             onKeyDown={(e) => e.key === 'Enter' && handleAddIgnoredDir()}
+            className="flex-1"
           />
           <Button
             variant="secondary"
@@ -918,74 +903,91 @@ function SecuritySettings({ language }: { language: Language }) {
             disabled={!newIgnoredDir.trim()}
             className="px-3"
           >
-            <Plus className="w-4 h-4 text-accent" />
+            <Plus className="w-4 h-4" />
           </Button>
         </div>
 
-        <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1 border border-border-subtle rounded-lg p-2 bg-surface/30">
+        <div className="flex flex-wrap gap-2 p-4 bg-surface/30 rounded-xl border border-white/5 min-h-[100px]">
           {editorConfig.ignoredDirectories.map(dir => (
-            <div key={dir} className="flex items-center justify-between px-3 py-2 bg-surface rounded border border-border-subtle/50 text-xs group">
-              <span className="font-mono text-text-secondary">{dir}</span>
+            <div key={dir} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-lg border border-white/10 text-xs text-text-secondary group hover:border-red-500/30 transition-colors">
+              <span className="font-mono">{dir}</span>
               <button
                 onClick={() => handleRemoveIgnoredDir(dir)}
-                className="p-1 hover:text-red-400 text-text-muted transition-colors opacity-0 group-hover:opacity-100"
+                className="text-text-muted hover:text-red-400 transition-colors"
               >
                 <Trash className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Sensitive Files (Read-only for now) */}
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '敏感文件过滤' : 'Sensitive File Filtering'}</h3>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <Check className="w-4 h-4 text-accent" />
-            <span>.env, .npmrc, id_rsa (Always hidden)</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <Check className="w-4 h-4 text-accent" />
-            <span>node_modules, .git (Excluded from indexing)</span>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   )
 }
 
 // 系统设置组件
 function SystemSettings({ language }: { language: Language }) {
+  const [isClearing, setIsClearing] = useState(false)
+
   const handleClearCache = async () => {
-    // TODO: Implement clear cache
-    toast.success(language === 'zh' ? '缓存已清除' : 'Cache cleared')
+    setIsClearing(true)
+    try {
+      const keysToRemove = [
+        'adnify-editor-config',
+        'adnify-workspace',
+        'adnify-sessions',
+        'adnify-threads',
+      ]
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+
+      try {
+        // @ts-ignore
+        await (window.electronAPI as any).clearIndex?.()
+      } catch { }
+
+      await window.electronAPI.setSetting('editorConfig', undefined)
+      toast.success(language === 'zh' ? '缓存已清除' : 'Cache cleared')
+    } catch (error) {
+      console.error('Failed to clear cache:', error)
+      toast.error(language === 'zh' ? '清除缓存失败' : 'Failed to clear cache')
+    } finally {
+      setIsClearing(false)
+    }
   }
 
   const handleReset = async () => {
     if (confirm(language === 'zh' ? '确定要重置所有设置吗？这将丢失所有自定义配置。' : 'Are you sure you want to reset all settings? This will lose all custom configurations.')) {
       await window.electronAPI.setSetting('llmConfig', undefined)
       await window.electronAPI.setSetting('editorSettings', undefined)
+      await window.electronAPI.setSetting('editorConfig', undefined)
+      await window.electronAPI.setSetting('autoApprove', undefined)
+      await window.electronAPI.setSetting('providerConfigs', undefined)
+      await window.electronAPI.setSetting('promptTemplateId', undefined)
+      await window.electronAPI.setSetting('aiInstructions', undefined)
+      await window.electronAPI.setSetting('currentTheme', undefined)
+      localStorage.clear()
       window.location.reload()
     }
   }
 
   return (
-    <div className="space-y-6 text-text-primary">
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '存储与缓存' : 'Storage & Cache'}</h3>
+    <div className="space-y-8 animate-fade-in">
+      <section>
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-4">
+          {language === 'zh' ? '存储与缓存' : 'Storage & Cache'}
+        </h4>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-surface rounded-lg border border-border-subtle">
+          <div className="flex items-center justify-between p-5 bg-surface/30 rounded-xl border border-white/5">
             <div>
-              <div className="text-sm font-medium">{language === 'zh' ? '清除缓存' : 'Clear Cache'}</div>
+              <div className="text-sm font-medium text-text-primary">{language === 'zh' ? '清除缓存' : 'Clear Cache'}</div>
               <div className="text-xs text-text-muted mt-1">{language === 'zh' ? '清除编辑器缓存、索引数据和临时文件' : 'Clear editor cache, index data, and temporary files'}</div>
             </div>
-            <Button variant="secondary" size="sm" onClick={handleClearCache}>
-              {language === 'zh' ? '清除' : 'Clear'}
+            <Button variant="secondary" size="sm" onClick={handleClearCache} disabled={isClearing}>
+              {isClearing ? (language === 'zh' ? '清除中...' : 'Clearing...') : (language === 'zh' ? '清除' : 'Clear')}
             </Button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-surface rounded-lg border border-border-subtle">
+          <div className="flex items-center justify-between p-5 bg-red-500/5 rounded-xl border border-red-500/10">
             <div>
               <div className="text-sm font-medium text-red-400">{language === 'zh' ? '重置所有设置' : 'Reset All Settings'}</div>
               <div className="text-xs text-text-muted mt-1">{language === 'zh' ? '恢复出厂设置，不可撤销' : 'Restore factory settings, irreversible'}</div>
@@ -995,18 +997,23 @@ function SystemSettings({ language }: { language: Language }) {
             </Button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div>
-        <h3 className="text-sm font-medium mb-3">{language === 'zh' ? '关于' : 'About'}</h3>
-        <div className="p-4 bg-surface rounded-lg border border-border-subtle text-center">
-          <div className="text-lg font-bold text-accent mb-1">Adnify</div>
-          <div className="text-xs text-text-muted">v0.1.0-alpha</div>
-          <div className="text-xs text-text-secondary mt-4">
+      <section>
+        <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-4">
+          {language === 'zh' ? '关于' : 'About'}
+        </h4>
+        <div className="p-8 bg-surface/30 rounded-xl border border-white/5 text-center">
+          <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Monitor className="w-6 h-6 text-accent" />
+          </div>
+          <div className="text-xl font-bold text-text-primary mb-1">Adnify</div>
+          <div className="text-xs text-text-muted font-mono mb-6">v0.1.0-alpha</div>
+          <div className="text-xs text-text-secondary">
             Built with Electron, React, Monaco Editor & Tailwind CSS
           </div>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

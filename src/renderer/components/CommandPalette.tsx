@@ -349,15 +349,15 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
     >
       <div
         className="
-            w-[600px] max-h-[60vh] flex flex-col
-            bg-background/60 backdrop-blur-xl 
+            w-[640px] max-h-[60vh] flex flex-col
+            bg-background/80 backdrop-blur-2xl 
             border border-white/10 rounded-2xl shadow-2xl shadow-black/50
             overflow-hidden animate-scale-in ring-1 ring-white/5
         "
         onClick={e => e.stopPropagation()}
       >
         {/* Search Input */}
-        <div className="flex items-center gap-4 px-5 py-4 border-b border-white/5 bg-white/5">
+        <div className="flex items-center gap-4 px-6 py-5 border-b border-white/5 bg-white/5 relative">
           <Search className="w-5 h-5 text-accent drop-shadow-[0_0_8px_rgba(var(--accent)/0.5)]" />
           <input
             ref={inputRef}
@@ -366,7 +366,7 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('typeCommandOrSearch', language)}
-            className="flex-1 bg-transparent text-lg text-text-primary placeholder-text-muted/50 focus:outline-none"
+            className="flex-1 bg-transparent text-lg text-text-primary placeholder-text-muted/50 focus:outline-none font-medium tracking-wide"
           />
           {query && (
             <button
@@ -376,16 +376,19 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
               <X className="w-4 h-4 text-text-muted" />
             </button>
           )}
+
+          {/* Subtle glow line at bottom of header */}
+          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
         </div>
 
         {/* Command List */}
-        <div ref={listRef} className="flex-1 overflow-y-auto py-2 custom-scrollbar">
+        <div ref={listRef} className="flex-1 overflow-y-auto py-3 custom-scrollbar">
           {Object.entries(groupedCommands).map(([category, cmds]) => (
-            <div key={category} className="mb-2">
-              <div className="px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-text-muted/50 sticky top-0 bg-background/80 backdrop-blur-md z-10">
+            <div key={category} className="mb-3">
+              <div className="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-text-muted/50 sticky top-0 bg-background/90 backdrop-blur-md z-10 border-b border-white/5 mb-1">
                 {category}
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 px-2">
                 {cmds.map((cmd) => {
                   const idx = commandIndex++
                   return (
@@ -406,24 +409,24 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
           ))}
 
           {flatCommands.length === 0 && (
-            <div className="px-4 py-12 text-center text-text-muted flex flex-col items-center gap-4 opacity-60">
-              <div className="w-16 h-16 rounded-full bg-surface/50 flex items-center justify-center border border-white/5">
-                <Sparkles className="w-8 h-8 opacity-50" />
+            <div className="px-4 py-16 text-center text-text-muted flex flex-col items-center gap-4 opacity-60">
+              <div className="w-16 h-16 rounded-full bg-surface/50 flex items-center justify-center border border-white/5 shadow-inner">
+                <Sparkles className="w-8 h-8 opacity-50 text-accent" />
               </div>
-              <p>{t('noCommandsFound', language)}</p>
+              <p className="text-sm font-medium">{t('noCommandsFound', language)}</p>
             </div>
           )}
         </div>
 
         {/* Footer Hint */}
-        <div className="px-5 py-2.5 bg-background/40 border-t border-white/5 text-[10px] text-text-muted flex justify-between items-center backdrop-blur-md">
+        <div className="px-6 py-3 bg-background/40 border-t border-white/5 text-[10px] text-text-muted flex justify-between items-center backdrop-blur-md">
           <div className="flex gap-4">
-            <span className="flex items-center gap-1.5"><kbd className="font-mono bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-text-secondary">↑↓</kbd> to navigate</span>
-            <span className="flex items-center gap-1.5"><kbd className="font-mono bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-text-secondary">Enter</kbd> to select</span>
+            <span className="flex items-center gap-1.5"><kbd className="font-mono bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-text-secondary shadow-sm">↑↓</kbd> to navigate</span>
+            <span className="flex items-center gap-1.5"><kbd className="font-mono bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-text-secondary shadow-sm">Enter</kbd> to select</span>
           </div>
           <div className="flex items-center gap-2 opacity-50">
-            <Sparkles className="w-3 h-3" />
-            <span>Adnify AI</span>
+            <Sparkles className="w-3 h-3 text-accent" />
+            <span className="font-medium tracking-wide">Adnify AI</span>
           </div>
         </div>
       </div>

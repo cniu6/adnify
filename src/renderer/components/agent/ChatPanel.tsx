@@ -57,6 +57,7 @@ export default function ChatPanel() {
     setActiveDiff,
     inputPrompt,
     setInputPrompt,
+    selectedCode,
   } = useStore()
 
   const toast = useToast()
@@ -387,7 +388,7 @@ export default function ChatPanel() {
   const handleSlashCommand = useCallback((cmd: SlashCommand) => {
     const result = slashCommandService.parse('/' + cmd.name, {
       activeFilePath: activeFilePath || undefined,
-      selectedCode: undefined, // TODO: 从编辑器获取选中的代码
+      selectedCode: selectedCode || undefined,
       workspacePath: workspacePath || undefined,
     })
     if (result) {
@@ -489,14 +490,20 @@ export default function ChatPanel() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Header - Glassmorphism */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-background/40 backdrop-blur-md border-b border-border-subtle select-none">
-        <div className="flex items-center gap-1 bg-surface/50 rounded-lg p-0.5 border border-border-subtle/50">
+      {/* Background Decoration - Consistent with Editor */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[100px] opacity-20" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] opacity-20" />
+      </div>
+
+      {/* Header - Minimal & Glassmorphic */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-background/60 backdrop-blur-md border-b border-white/5 select-none">
+        <div className="flex items-center gap-1 bg-surface/30 rounded-lg p-0.5 border border-white/5">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setChatMode('chat')}
-            className={`h-7 px-3 gap-1.5 text-xs font-medium ${chatMode === 'chat'
+            className={`h-7 px-3 gap-1.5 text-xs font-medium transition-all duration-200 ${chatMode === 'chat'
               ? 'bg-surface text-text-primary shadow-sm hover:bg-surface'
               : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
               }`}
@@ -508,7 +515,7 @@ export default function ChatPanel() {
             variant="ghost"
             size="sm"
             onClick={() => setChatMode('agent')}
-            className={`h-7 px-3 gap-1.5 text-xs font-medium ${chatMode === 'agent'
+            className={`h-7 px-3 gap-1.5 text-xs font-medium transition-all duration-200 ${chatMode === 'agent'
               ? 'bg-accent/10 text-accent shadow-sm shadow-accent/5 hover:bg-accent/15'
               : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
               }`}
@@ -524,6 +531,7 @@ export default function ChatPanel() {
             size="icon"
             onClick={() => setShowThreads(!showThreads)}
             title="Chat history"
+            className="hover:bg-white/5 text-text-muted hover:text-text-primary"
           >
             <History className="w-4 h-4" />
           </Button>
@@ -532,15 +540,16 @@ export default function ChatPanel() {
             size="icon"
             onClick={() => createThread()}
             title="New chat"
+            className="hover:bg-white/5 text-text-muted hover:text-text-primary"
           >
             <Plus className="w-4 h-4" />
           </Button>
-          <div className="w-px h-4 bg-border-subtle mx-1" />
+          <div className="w-px h-4 bg-white/10 mx-1" />
           <Button
             variant="ghost"
             size="icon"
             onClick={clearMessages}
-            className="hover:bg-red-500/10 hover:text-red-500"
+            className="hover:bg-red-500/10 hover:text-red-500 text-text-muted"
             title="Clear chat"
           >
             <Trash2 className="w-4 h-4" />
@@ -565,9 +574,9 @@ export default function ChatPanel() {
               return (
                 <div
                   key={thread.id}
-                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-colors border ${currentThreadId === thread.id
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200 border ${currentThreadId === thread.id
                     ? 'bg-accent/10 border-accent/20 text-accent'
-                    : 'bg-surface/30 border-border-subtle hover:border-border-hover text-text-secondary'
+                    : 'bg-surface/30 border-white/5 hover:border-white/10 hover:bg-surface/50 text-text-secondary'
                     }`}
                   onClick={() => { switchThread(thread.id); setShowThreads(false) }}
                 >
@@ -581,7 +590,7 @@ export default function ChatPanel() {
                     variant="ghost"
                     size="icon"
                     onClick={(e) => { e.stopPropagation(); deleteThread(thread.id) }}
-                    className="hover:bg-red-500/10 hover:text-red-500"
+                    className="hover:bg-red-500/10 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -592,16 +601,17 @@ export default function ChatPanel() {
         </div>
       )}
 
-      {/* Drag Overlay - Subtle & Glassmorphic */}
+      {/* Drag Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-background/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none animate-fade-in transition-all duration-300">
-          <div className="flex flex-col items-center gap-3 p-8 rounded-2xl border border-accent/30 bg-surface/80 shadow-2xl shadow-accent/10 transform scale-100 animate-scale-in">
-            <div className="p-4 rounded-full bg-accent/10 border border-accent/20">
-              <Upload className="w-8 h-8 text-accent animate-bounce" />
+        <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center pointer-events-none animate-fade-in">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-3xl border border-accent/30 bg-surface/90 shadow-2xl shadow-accent/20 transform scale-100 animate-scale-in">
+            <div className="p-5 rounded-full bg-accent/10 border border-accent/20 relative">
+              <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full animate-pulse" />
+              <Upload className="w-10 h-10 text-accent relative z-10" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-text-primary">{language === 'zh' ? '拖放文件以添加上下文' : 'Drop files to add context'}</p>
-              <p className="text-xs text-text-muted mt-1">{language === 'zh' ? '支持代码文件和图片' : 'Support code files and images'}</p>
+              <p className="text-lg font-medium text-text-primary mb-1">{language === 'zh' ? '释放以添加文件' : 'Drop files to add context'}</p>
+              <p className="text-sm text-text-muted">{language === 'zh' ? '支持代码和图片' : 'Supports code and images'}</p>
             </div>
           </div>
         </div>
@@ -611,11 +621,11 @@ export default function ChatPanel() {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="absolute inset-0 overflow-y-auto custom-scrollbar bg-background pt-16 pb-48 z-0"
+        className="absolute inset-0 overflow-y-auto custom-scrollbar bg-transparent pt-16 pb-48 z-0"
       >
         {/* API Key Warning */}
         {!hasApiKey && (
-          <div className="m-4 p-4 border border-warning/20 bg-warning/5 rounded-lg flex gap-3">
+          <div className="m-4 p-4 border border-warning/20 bg-warning/5 rounded-xl flex gap-3 backdrop-blur-sm">
             <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
             <div>
               <span className="font-medium text-sm text-warning block mb-1">{t('setupRequired', language)}</span>
@@ -626,13 +636,16 @@ export default function ChatPanel() {
 
         {/* Empty State */}
         {messages.length === 0 && hasApiKey && (
-          <div className="h-full flex flex-col items-center justify-center gap-6 pb-20 opacity-50">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-surface to-surface-active border border-white/5 flex items-center justify-center shadow-2xl shadow-accent/5">
-              <Logo className="w-12 h-12 text-text-primary" glow />
+          <div className="h-full flex flex-col items-center justify-center gap-8 pb-20 opacity-60 animate-fade-in">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-surface to-surface-active border border-white/10 flex items-center justify-center shadow-2xl shadow-accent/5 relative z-10 transform group-hover:scale-105 transition-transform duration-500">
+                <Logo className="w-14 h-14 text-text-primary" glow />
+              </div>
             </div>
             <div className="text-center">
-              <h2 className="text-xl font-bold text-text-primary mb-1">Adnify Agent</h2>
-              <p className="text-sm text-text-muted">{t('howCanIHelp', language)}</p>
+              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 mb-2">Adnify Agent</h2>
+              <p className="text-sm text-text-muted max-w-xs mx-auto leading-relaxed">{t('howCanIHelp', language)}</p>
             </div>
           </div>
         )}
@@ -655,8 +668,8 @@ export default function ChatPanel() {
         />
       )}
 
-      {/* Bottom Input Area - Glassmorphism */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 bg-background/60 backdrop-blur-xl border-t border-border-subtle">
+      {/* Bottom Input Area - Enhanced Glassmorphism */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-xl border-t border-white/5 shadow-2xl shadow-black/50">
 
         {/* Status Bar */}
         <AgentStatusBar
