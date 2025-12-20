@@ -3,6 +3,7 @@
  */
 import { StateCreator } from 'zustand'
 import { SECURITY_DEFAULTS } from '../../../shared/constants'
+import { defaultEditorConfig } from '../../config/editorConfig'
 
 export type ProviderType = 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'groq' | 'mistral' | 'ollama' | 'custom'
 
@@ -42,6 +43,7 @@ export interface AgentConfig {
   maxToolResultChars: number    // 工具结果最大字符数
   maxFileContentChars: number   // 单个文件内容最大字符数
   maxTotalContextChars: number  // 总上下文最大字符数
+  enableAutoFix: boolean        // 是否启用自动检查和修复
 }
 
 export interface SettingsSlice {
@@ -112,6 +114,7 @@ const defaultAgentConfig: AgentConfig = {
   maxToolResultChars: 10000,
   maxFileContentChars: 15000,
   maxTotalContextChars: 50000,
+  enableAutoFix: true,
 }
 
 export const createSettingsSlice: StateCreator<SettingsSlice, [], [], SettingsSlice> = (set, get) => ({
@@ -122,7 +125,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice, [], [], SettingsSl
   providerConfigs: defaultProviderConfigs,
   securitySettings: defaultSecuritySettings,
   agentConfig: defaultAgentConfig,
-  editorConfig: require('../../config/editorConfig').getEditorConfig(),
+  editorConfig: defaultEditorConfig,
   onboardingCompleted: true, // 默认 true，加载后更新
   hasExistingConfig: true,
 

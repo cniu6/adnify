@@ -6,7 +6,7 @@ import { Button } from './ui'
 export default function TitleBar() {
   const { setShowQuickOpen, setShowAbout } = useStore()
   return (
-    <div className="h-9 flex items-center justify-between px-3 drag-region select-none border-b border-border-subtle z-50 bg-background/40 backdrop-blur-md">
+    <div className="h-9 flex items-center justify-between px-3 drag-region select-none border-b border-border-subtle z-50 bg-background-secondary">
 
       {/* Left Spacer / Logo */}
       <div className="flex items-center gap-3 no-drag w-1/3 pl-2 opacity-80 hover:opacity-100 transition-opacity cursor-default">

@@ -793,6 +793,11 @@ function AgentSettings({
             checked={autoApprove.dangerous}
             onChange={(e) => setAutoApprove({ ...autoApprove, dangerous: e.target.checked })}
           />
+          <Switch
+            label={language === 'zh' ? '启用自动检查与修复' : 'Enable Auto-check & Fix'}
+            checked={agentConfig.enableAutoFix}
+            onChange={(e) => setAgentConfig({ ...agentConfig, enableAutoFix: e.target.checked })}
+          />
           <p className="text-xs text-text-muted pl-1">
             {language === 'zh'
               ? '开启后，Agent 将无需确认直接执行相应操作。请谨慎使用。'
@@ -1526,7 +1531,8 @@ function IndexSettings({ language }: { language: Language }) {
 function DataPathDisplay() {
   const [path, setPath] = useState('')
   useEffect(() => {
-    window.electronAPI.getDataPath().then(setPath)
+    // @ts-ignore
+    window.electronAPI.getConfigPath?.().then(setPath)
   }, [])
   return <span>{path || '...'}</span>
 }
@@ -1587,13 +1593,14 @@ function SystemSettings({ language }: { language: Language }) {
           <div className="p-5 bg-surface/30 rounded-xl border border-border-subtle space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-text-primary">{language === 'zh' ? '应用数据存储路径' : 'App Data Storage Path'}</div>
-                <div className="text-xs text-text-muted mt-1">{language === 'zh' ? '管理配置、缓存和本地数据的存储位置' : 'Manage where config, cache, and local data are stored'}</div>
+                <div className="text-sm font-medium text-text-primary">{language === 'zh' ? '配置存储路径' : 'Config Storage Path'}</div>
+                <div className="text-xs text-text-muted mt-1">{language === 'zh' ? '仅更改配置文件的存储位置，不影响缓存' : 'Only changes where config files are stored, cache remains default'}</div>
               </div>
               <Button variant="secondary" size="sm" onClick={async () => {
                 const newPath = await window.electronAPI.openFolder()
                 if (newPath) {
-                  const success = await window.electronAPI.setDataPath(newPath)
+                  // @ts-ignore
+                  const success = await window.electronAPI.setConfigPath?.(newPath)
                   if (success) {
                     toast.success(language === 'zh' ? '路径已更新，重启后生效' : 'Path updated, restart required to take effect')
                   } else {

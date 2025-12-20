@@ -16,7 +16,7 @@ export default function ActivityBar() {
   ] as const
 
   return (
-    <div className="w-[50px] bg-background/60 backdrop-blur-xl flex flex-col items-center py-3 border-r border-white/5 z-30">
+    <div className="w-[50px] bg-background-secondary flex flex-col items-center py-3 border-r border-white/5 z-30">
       {/* Top Actions */}
       <div className="flex-1 flex flex-col gap-4 w-full px-2">
         {items.map((item) => (

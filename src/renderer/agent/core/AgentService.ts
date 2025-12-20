@@ -489,7 +489,8 @@ class AgentServiceClass {
       }
 
       // === Observe Phase ===
-      if (!userRejected && writeToolCalls.length > 0 && workspacePath) {
+      const { agentConfig } = useStore.getState()
+      if (agentConfig.enableAutoFix && !userRejected && writeToolCalls.length > 0 && workspacePath) {
         const observation = await this.observeChanges(workspacePath, writeToolCalls)
         if (observation.hasErrors && observation.errors.length > 0) {
           const observeMessage = `[Observation] 检测到以下代码问题，请修复：\n\n${observation.errors.slice(0, 3).join('\n\n')}`
@@ -1205,10 +1206,11 @@ class AgentServiceClass {
         if (lintResult.success && lintResult.result) {
           const result = lintResult.result.trim()
           if (result && result !== '[]' && result !== 'No diagnostics found') {
-            // 简单检查是否包含 "error" 关键字，避免警告触发
-            const hasActualError = result.toLowerCase().includes('error') ||
-              result.toLowerCase().includes('failed') ||
-              result.toLowerCase().includes('syntax')
+            // 精确检查是否包含 [error] 标记，避免警告触发
+            // get_lint_errors 的输出格式为 [severity] message ...
+            const hasActualError = /\[error\]/i.test(result) ||
+              result.toLowerCase().includes('failed to compile') ||
+              result.toLowerCase().includes('syntax error')
 
             if (hasActualError) {
               errors.push(`File: ${filePath}\n${result}`)

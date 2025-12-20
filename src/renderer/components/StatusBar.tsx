@@ -45,7 +45,7 @@ export default function StatusBar() {
   }
 
   return (
-    <div className="h-6 bg-background/40 border-t border-white/5 flex items-center justify-between px-3 text-[10px] select-none text-text-muted backdrop-blur-xl z-50 font-medium">
+    <div className="h-6 bg-background-secondary border-t border-white/5 flex items-center justify-between px-3 text-[10px] select-none text-text-muted z-50 font-medium">
       <div className="flex items-center gap-4">
         <button className="flex items-center gap-1.5 hover:text-text-primary transition-colors group">
           <GitBranch className="w-3 h-3 text-accent group-hover:drop-shadow-[0_0_5px_rgba(var(--accent)/0.5)] transition-all" />

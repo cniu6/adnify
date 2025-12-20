@@ -552,7 +552,7 @@ function ExplorerView() {
     ]
 
     return (
-        <div className="h-full flex flex-col bg-transparent">
+        <div className="h-full flex flex-col bg-background-secondary">
             <div className="h-10 px-3 flex items-center justify-between group border-b border-white/5 bg-transparent sticky top-0 z-10">
                 <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider opacity-80">
                     {t('explorer', language)}

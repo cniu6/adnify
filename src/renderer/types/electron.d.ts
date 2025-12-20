@@ -201,8 +201,8 @@ export interface ElectronAPI {
   // Settings
   getSetting: (key: string) => Promise<unknown>
   setSetting: (key: string, value: unknown) => Promise<boolean>
-  getDataPath: () => Promise<string>
-  setDataPath: (path: string) => Promise<boolean>
+  getConfigPath: () => Promise<string>
+  setConfigPath: (path: string) => Promise<boolean>
   onSettingsChanged: (callback: (event: { key: string; value: any }) => void) => () => void
   getWhitelist: () => Promise<{ shell: string[]; git: string[] }>
   resetWhitelist: () => Promise<{ shell: string[]; git: string[] }>

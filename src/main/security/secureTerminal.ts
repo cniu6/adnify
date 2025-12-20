@@ -444,6 +444,11 @@ export function registerSecureTerminalHandlers(
         }
       })
 
+      // Add error handler to prevent unhandled exceptions
+      ptyProcess.on('error', (err: any) => {
+        console.error(`[Terminal] PTY Error (id: ${id}):`, err)
+      })
+
       ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
         terminals.delete(id)
         if (mainWindow && !mainWindow.isDestroyed()) {
@@ -538,7 +543,11 @@ export function registerSecureTerminalHandlers(
   ipcMain.handle('terminal:input', async (_, { id, data }: { id: string; data: string }) => {
     const ptyProcess = terminals.get(id)
     if (ptyProcess) {
-      ptyProcess.write(data)
+      try {
+        ptyProcess.write(data)
+      } catch (err) {
+        console.error(`[Terminal] Write error (id: ${id}):`, err)
+      }
     }
   })
 
@@ -563,13 +572,26 @@ export function registerSecureTerminalHandlers(
     if (id) {
       const ptyProcess = terminals.get(id)
       if (ptyProcess) {
-        ptyProcess.kill()
+        try {
+          // Remove listeners to prevent race conditions during kill
+          ptyProcess.removeAllListeners('exit')
+          ptyProcess.removeAllListeners('data')
+          ptyProcess.kill()
+        } catch (err) {
+          console.error(`[Terminal] Kill error (id: ${id}):`, err)
+        }
         terminals.delete(id)
       }
     } else {
       // Kill all terminals
       for (const [termId, ptyProcess] of terminals) {
-        ptyProcess.kill()
+        try {
+          ptyProcess.removeAllListeners('exit')
+          ptyProcess.removeAllListeners('data')
+          ptyProcess.kill()
+        } catch (err) {
+          console.error(`[Terminal] Kill error (id: ${termId}):`, err)
+        }
         terminals.delete(termId)
       }
     }

@@ -164,8 +164,8 @@ export interface ElectronAPI {
   // Settings
   getSetting: (key: string) => Promise<unknown>
   setSetting: (key: string, value: unknown) => Promise<boolean>
-  getDataPath: () => Promise<string>
-  setDataPath: (path: string) => Promise<boolean>
+  getConfigPath: () => Promise<string>
+  setConfigPath: (path: string) => Promise<boolean>
   onSettingsChanged: (callback: (event: { key: string; value: unknown }) => void) => () => void
   getWhitelist: () => Promise<{ shell: string[]; git: string[] }>
   resetWhitelist: () => Promise<{ shell: string[]; git: string[] }>
@@ -310,8 +310,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   getSetting: (key: string) => ipcRenderer.invoke('settings:get', key),
   setSetting: (key: string, value: unknown) => ipcRenderer.invoke('settings:set', key, value),
-  getDataPath: () => ipcRenderer.invoke('settings:getDataPath'),
-  setDataPath: (path: string) => ipcRenderer.invoke('settings:setDataPath', path),
+  getConfigPath: () => ipcRenderer.invoke('settings:getConfigPath'),
+  setConfigPath: (path: string) => ipcRenderer.invoke('settings:setConfigPath', path),
   onSettingsChanged: (callback: (event: { key: string; value: unknown }) => void) => {
     const handler = (_: IpcRendererEvent, event: { key: string; value: unknown }) => callback(event)
     ipcRenderer.on('settings:changed', handler)

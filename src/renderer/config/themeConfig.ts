@@ -107,18 +107,18 @@ export const builtinThemes: Theme[] = [
     monacoTheme: 'vs',
     colors: {
       background: '255 255 255',
-      backgroundSecondary: '248 250 252',
+      backgroundSecondary: '255 255 255', // Pure White
       surface: '255 255 255',
-      surfaceHover: '241 245 249',
-      surfaceActive: '226 232 240',
-      textPrimary: '15 23 42',
-      textSecondary: '71 85 105',
-      textMuted: '148 163 184',
-      borderSubtle: '241 245 249',
-      borderStrong: '226 232 240',
+      surfaceHover: '248 250 252',        // Slate 50
+      surfaceActive: '241 245 249',       // Slate 100
+      textPrimary: '15 23 42',            // Slate 900
+      textSecondary: '71 85 105',         // Slate 600
+      textMuted: '148 163 184',           // Slate 400
+      borderSubtle: '226 232 240',        // Slate 200
+      borderStrong: '203 213 225',        // Slate 300
       accent: '79 70 229',
       accentHover: '67 56 202',
-      accentMuted: '79 70 229',
+      accentMuted: '129 140 248',
       statusSuccess: '22 163 74',
       statusWarning: '202 138 4',
       statusError: '220 38 38',

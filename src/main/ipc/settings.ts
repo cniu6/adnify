@@ -83,14 +83,13 @@ export function registerSettingsHandlers(
     return { shell: defaultShellCommands, git: defaultGitCommands }
   })
 
-  // 获取数据路径
-  ipcMain.handle('settings:getDataPath', () => {
-    const { app } = require('electron')
-    return app.getPath('userData')
+  // 获取配置路径
+  ipcMain.handle('settings:getConfigPath', () => {
+    return mainStore.path
   })
 
-  // 设置数据路径
-  ipcMain.handle('settings:setDataPath', async (_, newPath: string) => {
+  // 设置配置路径
+  ipcMain.handle('settings:setConfigPath', async (_, newPath: string) => {
     try {
       if (!fs.existsSync(newPath)) {
         fs.mkdirSync(newPath, { recursive: true })
@@ -99,7 +98,7 @@ export function registerSettingsHandlers(
       // 保存到 bootstrapStore (存储在默认位置)
       bootstrapStore.set('customConfigPath', newPath)
 
-      // 迁移当前配置到新位置 (可选，但为了用户体验建议保留)
+      // 迁移当前配置到新位置
       const currentData = mainStore.store
       const newStore = new Store({ name: 'config', cwd: newPath })
       newStore.store = currentData
@@ -107,7 +106,7 @@ export function registerSettingsHandlers(
 
       return true
     } catch (err) {
-      console.error('[Settings] Failed to set data path:', err)
+      console.error('[Settings] Failed to set config path:', err)
       return false
     }
   })

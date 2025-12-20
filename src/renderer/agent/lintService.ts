@@ -4,6 +4,7 @@
  */
 
 import { LintError } from './toolTypes'
+import { onDiagnostics, lspUriToPath } from '../services/lspService'
 
 // 支持的语言和对应的 lint 命令
 const LINT_COMMANDS: Record<string, { command: string; parser: (output: string, file: string) => LintError[] }> = {
@@ -145,13 +146,37 @@ function parsePylintOutput(output: string, file: string): LintError[] {
 
 class LintService {
 	private cache: Map<string, { errors: LintError[]; timestamp: number }> = new Map()
+	private lspDiagnostics: Map<string, LintError[]> = new Map()
 	private cacheTimeout = 30000 // 30秒缓存
+	private lspDisposer: (() => void) | null = null
+
+	constructor() {
+		// 订阅 LSP 诊断信息
+		this.lspDisposer = onDiagnostics((uri, diagnostics) => {
+			const filePath = lspUriToPath(uri)
+			const errors: LintError[] = diagnostics.map((d: any) => ({
+				code: d.code?.toString() || 'lsp',
+				message: d.message,
+				severity: d.severity === 1 ? 'error' : 'warning',
+				startLine: d.range.start.line + 1,
+				endLine: d.range.end.line + 1,
+				file: filePath,
+			}))
+			this.lspDiagnostics.set(filePath, errors)
+		})
+	}
 
 	/**
 	 * 获取文件的 lint 错误
 	 */
 	async getLintErrors(filePath: string, forceRefresh: boolean = false): Promise<LintError[]> {
-		// 检查缓存
+		// 1. 优先使用 LSP 诊断信息（最准确）
+		const lspErrors = this.lspDiagnostics.get(filePath)
+		if (lspErrors && lspErrors.length > 0) {
+			return lspErrors
+		}
+
+		// 2. 检查缓存
 		if (!forceRefresh) {
 			const cached = this.cache.get(filePath)
 			if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
@@ -172,9 +197,13 @@ class LintService {
 		}
 
 		try {
-			// 解析命令和参数，保持命令在当前目录执行
+			// 解析命令和参数
 			const [baseCommand, ...commandArgs] = lintConfig.command.split(' ')
-			const allArgs = [...commandArgs, `"${filePath}"`]
+
+			// 对于 TypeScript，尝试在工作区根目录运行以关联 tsconfig
+			const allArgs = lang === 'typescript'
+				? [...commandArgs, '--project', '.', '--file', `"${filePath}"`]
+				: [...commandArgs, `"${filePath}"`]
 
 			const result = await window.electronAPI.executeSecureCommand({
 				command: baseCommand,
@@ -323,6 +352,16 @@ class LintService {
 		}
 
 		return output
+	}
+
+	/**
+	 * 销毁服务
+	 */
+	dispose() {
+		if (this.lspDisposer) {
+			this.lspDisposer()
+			this.lspDisposer = null
+		}
 	}
 }
 

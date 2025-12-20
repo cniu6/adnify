@@ -57,7 +57,8 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
   // 加载当前数据路径
   useEffect(() => {
-    window.electronAPI.getDataPath().then(setDataPath)
+    // @ts-ignore
+    window.electronAPI.getConfigPath?.().then(setDataPath)
   }, [])
 
   const currentStepIndex = STEPS.indexOf(currentStep)
@@ -747,7 +748,8 @@ function DataPathStep({
     const newPath = await window.electronAPI.openFolder()
     if (newPath && newPath !== dataPath) {
       setLoading(true)
-      const success = await window.electronAPI.setDataPath(newPath)
+      // @ts-ignore
+      const success = await window.electronAPI.setConfigPath?.(newPath)
       setLoading(false)
       if (success) {
         setDataPath(newPath)
@@ -763,10 +765,10 @@ function DataPathStep({
         </div>
         <div>
           <h2 className="text-xl font-bold text-text-primary">
-            {isZh ? '数据存储' : 'Data Storage'}
+            {isZh ? '配置存储' : 'Config Storage'}
           </h2>
           <p className="text-sm text-text-muted">
-            {isZh ? '管理应用配置和缓存的位置' : 'Manage where app config and cache are stored'}
+            {isZh ? '仅更改配置文件的存储位置' : 'Only changes where config files are stored'}
           </p>
         </div>
       </div>

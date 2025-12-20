@@ -43,19 +43,31 @@ const SECURITY_DEFAULTS = {
 // 1. 优先初始化 bootstrapStore (存储在默认位置)
 const bootstrapStore = new Store({ name: 'bootstrap' })
 
-// 2. 检查是否有自定义数据路径
-const customDataPath = bootstrapStore.get('customConfigPath') as string | undefined
-if (customDataPath && fs.existsSync(customDataPath)) {
-  console.log('[Main] Setting custom userData path:', customDataPath)
-  app.setPath('userData', customDataPath)
-}
+// Debug logging
+console.log('[Main] UserData Path:', app.getPath('userData'))
+console.log('[Main] Bootstrap Store Path:', bootstrapStore.path)
+console.log('[Main] Bootstrap Store Content:', bootstrapStore.store)
+
+// 2. 检查是否有自定义配置路径
+const customConfigPath = bootstrapStore.get('customConfigPath') as string | undefined
+console.log('[Main] Read customConfigPath:', customConfigPath)
 
 let mainStore: Store
 
 function initStore() {
-  console.log('[Main] Initializing main store at:', app.getPath('userData'))
-  // 此时 new Store() 会自动使用 app.getPath('userData')
-  mainStore = new Store({ name: 'config' })
+  const options: any = { name: 'config' }
+
+  if (customConfigPath && fs.existsSync(customConfigPath)) {
+    console.log('[Main] Using custom config path:', customConfigPath)
+    options.cwd = customConfigPath
+  } else {
+    console.log('[Main] Using default config path:', app.getPath('userData'))
+    if (customConfigPath) {
+      console.log('[Main] Custom path exists?', fs.existsSync(customConfigPath))
+    }
+  }
+
+  mainStore = new Store(options)
 }
 
 initStore()
@@ -104,6 +116,11 @@ function createWindow(isEmpty: boolean = false) {
       contextIsolation: true,
       nodeIntegration: false,
     },
+  })
+
+  // 显示窗口
+  win.once('ready-to-show', () => {
+    win.show()
   })
 
   const windowId = win.id
