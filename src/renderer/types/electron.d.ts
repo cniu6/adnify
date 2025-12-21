@@ -188,6 +188,7 @@ export interface ElectronAPI {
   readDir: (path: string) => Promise<FileItem[]>
   getFileTree: (path: string, maxDepth?: number) => Promise<string>
   readFile: (path: string) => Promise<string | null>
+  readBinaryFile: (path: string) => Promise<string | null>
   writeFile: (path: string, content: string) => Promise<boolean>
   ensureDir: (path: string) => Promise<boolean>
   saveFile: (content: string, path?: string) => Promise<string | null>

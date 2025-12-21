@@ -948,17 +948,36 @@ export async function executeTool(
         const store = useAgentStore.getState()
         const plan = store.plan
 
+        // 调试日志
+        console.log('[update_plan] Received args:', JSON.stringify(validatedArgs, null, 2))
+        console.log('[update_plan] Current plan items:', plan?.items.map((p, i) => ({ index: i, id: p.id, title: p.title, status: p.status })))
+
         if (status) {
           store.updatePlanStatus(status as any)
         }
 
         if (items && plan) {
           for (const item of items) {
-            // 支持通过索引更新（如果 id 是纯数字字符串）
             let targetId = item.id
-            const maybeIndex = parseInt(item.id, 10)
-            if (!isNaN(maybeIndex) && maybeIndex >= 0 && maybeIndex < plan.items.length) {
-              targetId = plan.items[maybeIndex].id
+
+            // 优先检查是否直接匹配某个 item 的 id（UUID）
+            const directMatch = plan.items.find(p => p.id === item.id)
+            if (!directMatch) {
+              // 如果没有直接匹配，尝试作为数字索引解析
+              const maybeIndex = parseInt(item.id, 10)
+              if (!isNaN(maybeIndex)) {
+                // 支持 1-based 索引（AI 自然语言习惯）
+                // "1" -> 第1个项目 -> 索引 0
+                // "0" -> 也作为索引 0 处理
+                const adjustedIndex = maybeIndex > 0 && maybeIndex <= plan.items.length
+                  ? maybeIndex - 1  // 1-based 转 0-based
+                  : maybeIndex      // 已经是 0-based 或超界
+
+                if (adjustedIndex >= 0 && adjustedIndex < plan.items.length) {
+                  targetId = plan.items[adjustedIndex].id
+                  console.log(`[update_plan] Mapped "${item.id}" -> index ${adjustedIndex} -> id ${targetId}`)
+                }
+              }
             }
 
             store.updatePlanItem(targetId, {

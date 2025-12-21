@@ -796,12 +796,13 @@ export default function ChatPanel() {
           ) : (
             <Virtuoso
               ref={virtuosoRef}
-              data={messages}
+              data={messages.filter(m => m.role === 'user' || m.role === 'assistant')}
               atBottomStateChange={setAtBottom}
-              initialTopMostItemIndex={messages.length - 1}
+              initialTopMostItemIndex={Math.max(0, messages.filter(m => m.role === 'user' || m.role === 'assistant').length - 1)}
               followOutput={isStreaming ? 'smooth' : false}
               itemContent={(_, message) => renderMessage(message)}
               className="flex-1 custom-scrollbar"
+              style={{ minHeight: '100px' }}
             />
           )}
         </div>

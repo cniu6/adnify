@@ -298,6 +298,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDir: (path: string) => ipcRenderer.invoke('file:readDir', path),
   getFileTree: (path: string, maxDepth?: number) => ipcRenderer.invoke('file:getTree', path, maxDepth),
   readFile: (path: string) => ipcRenderer.invoke('file:read', path),
+  readBinaryFile: (path: string) => ipcRenderer.invoke('file:readBinary', path),
   writeFile: (path: string, content: string) => ipcRenderer.invoke('file:write', path, content),
   ensureDir: (path: string) => ipcRenderer.invoke('file:ensureDir', path),
   saveFile: (content: string, path?: string) => ipcRenderer.invoke('file:save', content, path),

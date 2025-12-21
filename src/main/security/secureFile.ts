@@ -337,6 +337,47 @@ export function registerSecureFileHandlers(
     }
   })
 
+  // 读取二进制文件为 base64 - 用于图片预览
+  ipcMain.handle('file:readBinary', async (_, filePath: string) => {
+    if (!filePath) return null
+    const workspace = getWorkspaceSessionFn()
+
+    // 强制工作区边界
+    if (workspace && !securityManager.validateWorkspacePath(filePath, workspace.roots)) {
+      securityManager.logOperation(OperationType.FILE_READ, filePath, false, {
+        reason: '安全底线：超出工作区边界',
+      })
+      return null
+    }
+
+    if (securityManager.isSensitivePath(filePath)) {
+      securityManager.logOperation(OperationType.FILE_READ, filePath, false, {
+        reason: '安全底线：敏感路径',
+      })
+      return null
+    }
+
+    try {
+      const stats = await fsPromises.stat(filePath)
+      // 限制文件大小为 50MB
+      if (stats.size > 50 * 1024 * 1024) {
+        return null
+      }
+
+      const buffer = await fsPromises.readFile(filePath)
+      const base64 = buffer.toString('base64')
+
+      securityManager.logOperation(OperationType.FILE_READ, filePath, true, {
+        size: stats.size,
+        binary: true
+      })
+      return base64
+    } catch (e: any) {
+      console.error('[File] read binary failed:', filePath, e.message)
+      return null
+    }
+  })
+
   // 写入文件 - 无弹窗
   ipcMain.handle('file:write', async (_, filePath: string, content: string) => {
     if (!filePath || typeof filePath !== 'string') return false
@@ -610,7 +651,7 @@ export function cleanupSecureFileWatcher() {
     console.log('[Watcher] 清理文件监听器...')
     const subscription = watcherSubscription
     watcherSubscription = null
-    subscription.unsubscribe().catch((e: any) => {
+    subscription.close().catch((e: any) => {
       console.log('[Watcher] 清理完成 (已忽略错误):', e.message)
     })
   }

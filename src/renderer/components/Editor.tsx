@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 import MonacoEditor, { DiffEditor, OnMount, loader } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
-import { FileCode, X, ChevronRight, AlertCircle, AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { FileCode, X, ChevronRight, AlertCircle, AlertTriangle, RefreshCw, Home, Eye, Edit, Columns } from 'lucide-react'
 import { useStore } from '../store'
 import { useAgent } from '../hooks/useAgent'
 import { t } from '../i18n'
@@ -14,6 +14,7 @@ import { lintService } from '../agent/lintService'
 import { streamingEditService } from '../agent/streamingEditService'
 import { LintError, StreamingEditState } from '@/renderer/agent/toolTypes'
 import { completionService } from '../services/completionService'
+import { getFileType, MarkdownPreview, ImagePreview, UnsupportedFile } from './FilePreview'
 
 import { initMonacoTypeService } from '../services/monacoTypeService'
 import {
@@ -142,6 +143,12 @@ export default function Editor() {
 
   const activeFile = openFiles.find((f: { path: string }) => f.path === activeFilePath)
   const activeLanguage = activeFile ? getLanguage(activeFile.path) : 'plaintext'
+
+  // 文件类型检测
+  const activeFileType = activeFile ? getFileType(activeFile.path) : 'text'
+
+  // Markdown 预览模式状态
+  const [markdownMode, setMarkdownMode] = useState<'edit' | 'preview' | 'split'>('edit')
 
   // 检测大文件
   const activeFileInfo = activeFile ? getFileInfo(activeFile.path, activeFile.content) : null
@@ -1162,121 +1169,180 @@ export default function Editor() {
       {/* Editor */}
       <div className="flex-1 relative">
         {activeFile && (
-          activeFile.originalContent ? (
-            <DiffEditor
-              height="100%"
-              language={activeLanguage}
-              original={activeFile.originalContent}
-              modified={activeFile.content}
-              theme="adnify-dynamic"
-              onMount={(editor, monaco) => {
-                // Hook up the modified editor to our existing refs so commands work
-                const modifiedEditor = editor.getModifiedEditor()
-                editorRef.current = modifiedEditor
-                monacoRef.current = monaco
+          <>
+            {/* Markdown 工具栏 */}
+            {activeFileType === 'markdown' && (
+              <div className="absolute top-0 right-0 z-10 flex items-center gap-1 px-2 py-1 bg-surface/80 backdrop-blur-sm rounded-bl-lg border-l border-b border-white/10">
+                <button
+                  onClick={() => setMarkdownMode('edit')}
+                  className={`p-1.5 rounded-md text-xs transition-colors ${markdownMode === 'edit' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary hover:bg-white/10'}`}
+                  title="编辑模式"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setMarkdownMode('split')}
+                  className={`p-1.5 rounded-md text-xs transition-colors ${markdownMode === 'split' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary hover:bg-white/10'}`}
+                  title="分屏模式"
+                >
+                  <Columns className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setMarkdownMode('preview')}
+                  className={`p-1.5 rounded-md text-xs transition-colors ${markdownMode === 'preview' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary hover:bg-white/10'}`}
+                  title="预览模式"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
-                // Listen for changes
-                modifiedEditor.onDidChangeModelContent(() => {
-                  const value = modifiedEditor.getValue()
-                  updateFileContent(activeFile.path, value)
-                })
-              }}
-              options={{
-                fontSize: getEditorConfig().fontSize,
-                fontFamily: getEditorConfig().fontFamily,
-                fontLigatures: true,
-                renderSideBySide: true,
-                readOnly: false,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-              }}
-            />
-          ) : (
-            <MonacoEditor
-              height="100%"
-              // 使用 key 强制在文件切换时重新创建编辑器实例
-              key={activeFile.path}
-              // 使用 monaco.Uri.file() 生成的 URI 字符串
-              // 这确保与 TypeScript 语言服务内部使用的格式一致
-              path={monaco.Uri.file(activeFile.path).toString()}
-              language={activeLanguage}
-              value={activeFile.content}
-              theme="adnify-dynamic"
-              beforeMount={(monacoInstance) => {
-                // 初始化 TypeScript 语言服务
-                initMonacoTypeService(monacoInstance)
-              }}
-              onMount={handleEditorMount}
-              onChange={(value) => {
-                if (value !== undefined) {
-                  updateFileContent(activeFile.path, value)
-                  // 通知 LSP 文档变更
-                  didChangeDocument(activeFile.path, value)
-                }
-              }}
-              loading={
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-text-muted text-sm">{t('loading', language)}</div>
+            {/* 图片文件预览 */}
+            {activeFileType === 'image' ? (
+              <ImagePreview path={activeFile.path} />
+            ) : activeFileType === 'binary' ? (
+              /* 二进制文件提示 */
+              <UnsupportedFile path={activeFile.path} fileType="binary" />
+            ) : activeFileType === 'markdown' && markdownMode === 'preview' ? (
+              /* Markdown 纯预览模式 */
+              <MarkdownPreview content={activeFile.content} fontSize={getEditorConfig().fontSize} />
+            ) : activeFileType === 'markdown' && markdownMode === 'split' ? (
+              /* Markdown 分屏模式 */
+              <div className="flex h-full">
+                <div className="flex-1 border-r border-white/10">
+                  <MonacoEditor
+                    height="100%"
+                    key={activeFile.path}
+                    path={monaco.Uri.file(activeFile.path).toString()}
+                    language={activeLanguage}
+                    value={activeFile.content}
+                    theme="adnify-dynamic"
+                    beforeMount={(monacoInstance) => initMonacoTypeService(monacoInstance)}
+                    onMount={handleEditorMount}
+                    onChange={(value) => {
+                      if (value !== undefined) {
+                        updateFileContent(activeFile.path, value)
+                        didChangeDocument(activeFile.path, value)
+                      }
+                    }}
+                    options={{
+                      fontSize: getEditorConfig().fontSize,
+                      fontFamily: getEditorConfig().fontFamily,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      padding: { top: 16 },
+                      contextmenu: false,
+                    }}
+                  />
                 </div>
-              }
-              options={{
-                fontSize: getEditorConfig().fontSize,
-                fontFamily: getEditorConfig().fontFamily,
-                fontLigatures: true,
-                minimap: { enabled: getEditorConfig().minimap, scale: getEditorConfig().minimapScale, renderCharacters: false },
-                scrollBeyondLastLine: false,
-                smoothScrolling: true,
-                cursorBlinking: 'smooth',
-                cursorSmoothCaretAnimation: 'on',
-                padding: { top: 16 },
-                lineNumbers: 'on',
-                renderLineHighlight: 'all',
-                bracketPairColorization: { enabled: true },
-                automaticLayout: true,
-                inlineSuggest: { enabled: true },
-                suggest: {
-                  showKeywords: true,
-                  showSnippets: true,
-                  showClasses: true,
-                  showFunctions: true,
-                  showVariables: true,
-                  showModules: true,
-                },
-                quickSuggestions: {
-                  other: true,
-                  comments: false,
-                  strings: true,
-                },
-                parameterHints: { enabled: true },
-                folding: true,
-                foldingStrategy: 'indentation',
-                showFoldingControls: 'mouseover',
-                matchBrackets: 'always',
-                renderWhitespace: 'selection',
-                guides: {
-                  bracketPairs: true,
-                  indentation: true,
-                },
-                stickyScroll: { enabled: true },
-                inlayHints: { enabled: 'on' },
-                // 链接点击支持
-                links: true,
-                // 跳转到定义
-                gotoLocation: {
-                  multiple: 'goto',
-                  multipleDefinitions: 'goto',
-                  multipleTypeDefinitions: 'goto',
-                  multipleDeclarations: 'goto',
-                  multipleImplementations: 'goto',
-                  multipleReferences: 'goto',
-                },
-                // 禁用 Monaco 内置右键菜单，使用自定义国际化菜单
-                contextmenu: false,
-                // 大文件优化
-                ...(activeFileInfo ? getLargeFileEditorOptions(activeFileInfo) : {}),
-              }}
-            />
-          )
+                <div className="flex-1 relative overflow-hidden">
+                  <MarkdownPreview content={activeFile.content} fontSize={getEditorConfig().fontSize} />
+                </div>
+              </div>
+            ) : activeFile.originalContent ? (
+              <DiffEditor
+                height="100%"
+                language={activeLanguage}
+                original={activeFile.originalContent}
+                modified={activeFile.content}
+                theme="adnify-dynamic"
+                onMount={(editor, monaco) => {
+                  const modifiedEditor = editor.getModifiedEditor()
+                  editorRef.current = modifiedEditor
+                  monacoRef.current = monaco
+                  modifiedEditor.onDidChangeModelContent(() => {
+                    const value = modifiedEditor.getValue()
+                    updateFileContent(activeFile.path, value)
+                  })
+                }}
+                options={{
+                  fontSize: getEditorConfig().fontSize,
+                  fontFamily: getEditorConfig().fontFamily,
+                  fontLigatures: true,
+                  renderSideBySide: true,
+                  readOnly: false,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                }}
+              />
+            ) : (
+              <MonacoEditor
+                height="100%"
+                key={activeFile.path}
+                path={monaco.Uri.file(activeFile.path).toString()}
+                language={activeLanguage}
+                value={activeFile.content}
+                theme="adnify-dynamic"
+                beforeMount={(monacoInstance) => {
+                  initMonacoTypeService(monacoInstance)
+                }}
+                onMount={handleEditorMount}
+                onChange={(value) => {
+                  if (value !== undefined) {
+                    updateFileContent(activeFile.path, value)
+                    didChangeDocument(activeFile.path, value)
+                  }
+                }}
+                loading={
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-text-muted text-sm">{t('loading', language)}</div>
+                  </div>
+                }
+                options={{
+                  fontSize: getEditorConfig().fontSize,
+                  fontFamily: getEditorConfig().fontFamily,
+                  fontLigatures: true,
+                  minimap: { enabled: getEditorConfig().minimap, scale: getEditorConfig().minimapScale, renderCharacters: false },
+                  scrollBeyondLastLine: false,
+                  smoothScrolling: true,
+                  cursorBlinking: 'smooth',
+                  cursorSmoothCaretAnimation: 'on',
+                  padding: { top: 16 },
+                  lineNumbers: 'on',
+                  renderLineHighlight: 'all',
+                  bracketPairColorization: { enabled: true },
+                  automaticLayout: true,
+                  inlineSuggest: { enabled: true },
+                  suggest: {
+                    showKeywords: true,
+                    showSnippets: true,
+                    showClasses: true,
+                    showFunctions: true,
+                    showVariables: true,
+                    showModules: true,
+                  },
+                  quickSuggestions: {
+                    other: true,
+                    comments: false,
+                    strings: true,
+                  },
+                  parameterHints: { enabled: true },
+                  folding: true,
+                  foldingStrategy: 'indentation',
+                  showFoldingControls: 'mouseover',
+                  matchBrackets: 'always',
+                  renderWhitespace: 'selection',
+                  guides: {
+                    bracketPairs: true,
+                    indentation: true,
+                  },
+                  stickyScroll: { enabled: true },
+                  inlayHints: { enabled: 'on' },
+                  links: true,
+                  gotoLocation: {
+                    multiple: 'goto',
+                    multipleDefinitions: 'goto',
+                    multipleTypeDefinitions: 'goto',
+                    multipleDeclarations: 'goto',
+                    multipleImplementations: 'goto',
+                    multipleReferences: 'goto',
+                  },
+                  contextmenu: false,
+                  ...(activeFileInfo ? getLargeFileEditorOptions(activeFileInfo) : {}),
+                }}
+              />
+            )}
+          </>
         )}
 
         {/* 自定义右键菜单 */}
