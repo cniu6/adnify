@@ -53,15 +53,21 @@ const CORE_TOOLS = `## Available Tools
    - More efficient than multiple read_file calls
 
 ### File Editing
-7. **edit_file** - Edit file using SEARCH/REPLACE blocks (PREFERRED)
+7. **replace_file_content** - Replace specific lines in a file (PREFERRED)
+   - Parameters: path (required), start_line, end_line, content, allow_multiple
+   - **Use this for precise edits** when you know the line numbers
+   - Always read_file first to get line numbers
+
+8. **edit_file** - Edit file using SEARCH/REPLACE blocks
    - Parameters: path (required), search_replace_blocks (required)
+   - Use when you need to match context rather than line numbers
    - **CRITICAL FORMAT**: You MUST use exactly this format:
    \`\`\`
-<<<<<<< SEARCH
-[exact original code to find - must match exactly]
-=======
-[new code to replace with]
->>>>>>> REPLACE
+   <<<<<<< SEARCH
+   [exact original code to find - must match exactly]
+   =======
+   [new code to replace with]
+   >>>>>>> REPLACE
    \`\`\`
    - **RULES**:
      - The 7 angle brackets (<<<<<<< and >>>>>>>) are REQUIRED
@@ -70,63 +76,63 @@ const CORE_TOOLS = `## Available Tools
      - Multiple SEARCH/REPLACE blocks can be used for multiple changes
    - **Example**:
    \`\`\`
-<<<<<<< SEARCH
-function hello() {
-  console.log("Hello");
-}
-=======
-function hello() {
-  console.log("Hello World!");
-}
->>>>>>> REPLACE
+   <<<<<<< SEARCH
+   function hello() {
+     console.log("Hello");
+   }
+   =======
+   function hello() {
+     console.log("Hello World!");
+   }
+   >>>>>>> REPLACE
    \`\`\`
 
-8. **write_file** - Write or overwrite entire file
+9. **write_file** - Write or overwrite entire file
    - Parameters: path (required), content (required)
 
-9. **create_file_or_folder** - Create new file or folder
+10. **create_file_or_folder** - Create new file or folder
    - Parameters: path (required), content (optional)
 
-10. **delete_file_or_folder** - Delete file or folder
+11. **delete_file_or_folder** - Delete file or folder
     - Parameters: path (required), recursive (optional)
     - WARNING: Requires approval for dangerous operations
 
 ### Terminal & Execution
-11. **run_command** - Execute shell command
+12. **run_command** - Execute shell command
     - Parameters: command (required), cwd, timeout
     - WARNING: Requires approval for terminal commands
 
-12. **get_lint_errors** - Get lint/compile errors
+13. **get_lint_errors** - Get lint/compile errors
     - Parameters: path (required), refresh (optional)
 
 ### Code Intelligence
-13. **find_references** - Find all references to a symbol
+14. **find_references** - Find all references to a symbol
     - Parameters: path (required), line (required), column (required)
 
-14. **go_to_definition** - Get definition location
+15. **go_to_definition** - Get definition location
     - Parameters: path (required), line (required), column (required)
 
-15. **get_hover_info** - Get type info and docs
+16. **get_hover_info** - Get type info and docs
     - Parameters: path (required), line (required), column (required)
 
-16. **get_document_symbols** - Get all symbols in file
+17. **get_document_symbols** - Get all symbols in file
     - Parameters: path (required)
 
 ### Advanced Tools
-17. **codebase_search** - Semantic search across codebase
+18. **codebase_search** - Semantic search across codebase
     - Parameters: query (required), top_k (default: 10)
 
-18. **web_search** - Search the web
+19. **web_search** - Search the web
     - Parameters: query (required), max_results (default: 5)
 
-19. **read_url** - Fetch URL content
+20. **read_url** - Fetch URL content
     - Parameters: url (required), timeout (default: 30)
 
 ### Planning Tools
-20. **create_plan** - Create execution plan
+21. **create_plan** - Create execution plan
     - Parameters: items (required array with title, description)
 
-21. **update_plan** - Update plan status/items
+22. **update_plan** - Update plan status/items
     - Parameters: status, items, currentStepId
 
 ## Tool Usage Guidelines

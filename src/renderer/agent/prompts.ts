@@ -105,7 +105,7 @@ If a plan exists (see "Current Plan" above):
 	// Chat 模式简化（移除工具定义，只保留基本指导）
 	if (mode === 'chat') {
 		// 移除工具定义部分，保留核心身份和沟通风格
-		const toolsStart = systemPrompt.indexOf('## Available Tools')
+		const toolsStart = systemPrompt.indexOf('## Tool Usage Guide')
 		if (toolsStart !== -1) {
 			// 找到下一个大章节的开始
 			const nextSection = systemPrompt.indexOf('\n\n## ', toolsStart)

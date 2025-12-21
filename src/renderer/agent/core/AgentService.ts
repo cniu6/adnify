@@ -328,6 +328,59 @@ class AgentServiceClass {
   // ===== 私有方法：核心逻辑 =====
 
   /**
+   * 压缩上下文以节省 Token
+   */
+  private async compressContext(messages: OpenAIMessage[]): Promise<void> {
+    const MAX_CHARS = 40000
+    let totalChars = 0
+
+    for (const msg of messages) {
+      if (typeof msg.content === 'string') {
+        totalChars += msg.content.length
+      } else if (Array.isArray(msg.content)) {
+        totalChars += 1000 // 简略估算
+      }
+    }
+
+    if (totalChars <= MAX_CHARS) return
+
+    console.log(`[Agent] Context size ${totalChars} exceeds limit ${MAX_CHARS}, compressing...`)
+
+    // 保留最后 3 轮对话 (User + Assistant + Tools)
+    // 倒序寻找第 3 个 User 消息的位置
+    let userCount = 0
+    let cutOffIndex = messages.length
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        userCount++
+        if (userCount === 3) {
+          cutOffIndex = i
+          break
+        }
+      }
+    }
+
+    // 压缩 cutOffIndex 之前的消息
+    for (let i = 0; i < cutOffIndex; i++) {
+      const msg = messages[i]
+
+      // 1. 压缩工具输出
+      if (msg.role === 'tool' && typeof msg.content === 'string' && msg.content.length > 100) {
+        msg.content = '[Tool output removed to save context]'
+      }
+
+      // 2. 压缩助手回复 (保留思维链/工具调用，仅压缩文本)
+      if (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.length > 500) {
+        // 如果包含 tool_calls，通常 content 为 null 或简短说明，但如果有长思维链，可以压缩
+        if (!msg.tool_calls || msg.tool_calls.length === 0) {
+          msg.content = msg.content.slice(0, 200) + '\n...[Content truncated]...\n' + msg.content.slice(-200)
+        }
+      }
+    }
+  }
+
+  /**
    * Agent 主循环
    */
   private async runAgentLoop(
@@ -350,6 +403,9 @@ class AgentServiceClass {
       shouldContinue = false
 
       console.log(`[Agent] Loop iteration ${loopCount}`)
+
+      // 压缩上下文
+      await this.compressContext(llmMessages)
 
       // 调用 LLM（带自动重试）
       const result = await this.callLLMWithRetry(config, llmMessages)

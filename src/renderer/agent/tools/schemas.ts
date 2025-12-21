@@ -63,6 +63,17 @@ export const WriteFileSchema = z.object({
     content: z.string()
 })
 
+export const ReplaceFileContentSchema = z.object({
+    path: z.string().min(1, 'File path is required'),
+    start_line: z.number().int().positive('Start line must be positive'),
+    end_line: z.number().int().positive('End line must be positive'),
+    content: z.string(),
+    allow_multiple: z.boolean().optional().default(false)
+}).refine(
+    data => data.start_line <= data.end_line,
+    { message: 'start_line must be <= end_line' }
+)
+
 export const CreateFileOrFolderSchema = z.object({
     path: z.string().min(1, 'Path is required'),
     content: z.string().optional()
@@ -179,6 +190,7 @@ export const toolSchemas: Record<string, z.ZodSchema> = {
     // 文件编辑
     edit_file: EditFileSchema,
     write_file: WriteFileSchema,
+    replace_file_content: ReplaceFileContentSchema,
     create_file_or_folder: CreateFileOrFolderSchema,
     delete_file_or_folder: DeleteFileOrFolderSchema,
 

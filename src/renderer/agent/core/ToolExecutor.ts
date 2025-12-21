@@ -108,6 +108,20 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
   {
+    name: 'replace_file_content',
+    description: 'Replace a specific range of lines in a file with new content.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'File path' },
+        start_line: { type: 'number', description: 'Start line (1-indexed)' },
+        end_line: { type: 'number', description: 'End line (inclusive)' },
+        content: { type: 'string', description: 'New content' },
+      },
+      required: ['path', 'start_line', 'end_line', 'content'],
+    },
+  },
+  {
     name: 'create_file_or_folder',
     description: 'Create a new file or folder. Path ending with / creates folder.',
     // 文件操作不需要审批（可通过Checkpoint撤销）
@@ -316,6 +330,7 @@ const APPROVAL_TYPE_MAP: Record<string, ToolApprovalType> = {
   // 文件编辑不需要审批 - Cursor 风格
   // edit_file: 不需要审批
   // write_file: 不需要审批
+  // replace_file_content: 不需要审批
   // create_file_or_folder: 不需要审批
 
   // 危险操作需要审批
@@ -341,6 +356,7 @@ export const TOOL_DISPLAY_NAMES: Record<string, string> = {
   get_dir_tree: 'Tree',
   search_files: 'Search',
   edit_file: 'Edit',
+  replace_file_content: 'Replace',
   write_file: 'Write',
   create_file_or_folder: 'Create',
   delete_file_or_folder: 'Delete',
@@ -354,7 +370,7 @@ export const TOOL_DISPLAY_NAMES: Record<string, string> = {
 }
 
 // 写入类工具（需要显示代码预览）
-export const WRITE_TOOLS = ['edit_file', 'write_file', 'create_file_or_folder']
+export const WRITE_TOOLS = ['edit_file', 'write_file', 'replace_file_content', 'create_file_or_folder']
 
 
 // ===== 目录树构建 =====
@@ -673,6 +689,56 @@ export async function executeTool(
             filePath: path,
             oldContent: originalContent,
             newContent: content,
+            linesAdded: lineChanges.added,
+            linesRemoved: lineChanges.removed
+          }
+        }
+      }
+
+      case 'replace_file_content': {
+        const path = resolvePath(validatedArgs.path)
+        const { start_line, end_line, content } = validatedArgs
+
+        // 验证文件是否已读取
+        const { AgentService } = await import('./AgentService')
+        if (!AgentService.hasReadFile(path)) {
+          return {
+            success: false,
+            result: '',
+            error: 'Read-before-write required: You must read the file using read_file before editing it.'
+          }
+        }
+
+        const originalContent = await window.electronAPI.readFile(path)
+        if (originalContent === null) {
+          return { success: false, result: '', error: `File not found: ${path}` }
+        }
+
+        const lines = originalContent.split('\n')
+        // 验证行号范围
+        if (start_line < 1 || end_line > lines.length || start_line > end_line) {
+          return { success: false, result: '', error: `Invalid line range: ${start_line}-${end_line}. File has ${lines.length} lines.` }
+        }
+
+        // 替换行
+        // splice 参数: start index (0-indexed), delete count, items to add
+        lines.splice(start_line - 1, end_line - start_line + 1, ...content.split('\n'))
+        const newContent = lines.join('\n')
+
+        const success = await window.electronAPI.writeFile(path, newContent)
+        if (!success) {
+          return { success: false, result: '', error: 'Failed to write file' }
+        }
+
+        const lineChanges = calculateLineChanges(originalContent, newContent)
+
+        return {
+          success: true,
+          result: 'File updated successfully',
+          meta: {
+            filePath: path,
+            oldContent: originalContent,
+            newContent: newContent,
             linesAdded: lineChanges.added,
             linesRemoved: lineChanges.removed
           }
