@@ -33,6 +33,7 @@ export interface IPCContext {
   // 窗口-工作区管理（用于单项目单窗口模式）
   findWindowByWorkspace?: (roots: string[]) => BrowserWindow | null
   setWindowWorkspace?: (windowId: number, roots: string[]) => void
+  getWindowWorkspace?: (windowId: number) => string[] | null
 }
 
 /**
@@ -62,10 +63,10 @@ export function registerAllHandlers(context: IPCContext) {
     getWhitelist
   })
 
-  // 终端（安全版）
+  // 终端（安全版）- 传入窗口工作区获取函数实现多窗口隔离
   registerSecureTerminalHandlers(getMainWindow, () => {
     return mainStore.get('lastWorkspaceSession') as { roots: string[] } | null
-  })
+  }, context.getWindowWorkspace)
 
   // 搜索
   registerSearchHandlers()

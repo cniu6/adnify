@@ -5,6 +5,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { spawn, execSync } from 'child_process'
 import { securityManager, OperationType } from './securityModule'
+import { SECURITY_DEFAULTS } from '../../shared/constants'
 
 
 interface SecureShellRequest {
@@ -20,19 +21,10 @@ interface CommandWhitelist {
   git: Set<string>
 }
 
-// 白名单配置（从配置中动态加载）
+// 白名单配置（已统一到 constants.ts）
 let WHITELIST: CommandWhitelist = {
-  shell: new Set([
-    'npm', 'yarn', 'pnpm', 'node', 'npx',
-    'git', // 允许 git 调用，但会在 git ipc 中进一步限制
-    'pwd', 'ls', 'cat', 'echo', 'mkdir', 'touch', 'rm', 'mv', 'cd',
-    'python', 'python3', 'java', 'go', 'rust', 'cargo', 'make', 'gcc', 'clang',
-  ]),
-  git: new Set([
-    'status', 'log', 'diff', 'add', 'commit', 'push', 'pull',
-    'branch', 'checkout', 'merge', 'rebase', 'clone',
-    'remote', 'fetch', 'show', 'rev-parse', 'init', 'status',
-  ]),
+  shell: new Set(SECURITY_DEFAULTS.SHELL_COMMANDS.map(cmd => cmd.toLowerCase())),
+  git: new Set(SECURITY_DEFAULTS.GIT_SUBCOMMANDS.map(cmd => cmd.toLowerCase())),
 }
 
 // 更新白名单配置
@@ -159,7 +151,8 @@ class SecureCommandParser {
  */
 export function registerSecureTerminalHandlers(
   getMainWindow: () => BrowserWindow | null,
-  getWorkspace: () => { roots: string[] } | null
+  getWorkspace: () => { roots: string[] } | null,
+  getWindowWorkspace?: (windowId: number) => string[] | null
 ) {
   /**
    * 安全的命令执行（白名单 + 工作区边界）
@@ -274,7 +267,7 @@ export function registerSecureTerminalHandlers(
    * 替代原来的 git:exec（移除 exec 拼接）
    */
   ipcMain.handle('git:execSecure', async (
-    _,
+    event,
     args: string[],
     cwd: string
   ): Promise<{
@@ -284,21 +277,25 @@ export function registerSecureTerminalHandlers(
     exitCode?: number
     error?: string
   }> => {
-    const workspace = getWorkspace()
+    // 优先使用请求来源窗口的工作区（支持多窗口隔离）
+    const windowId = event.sender.id
+    const windowRoots = getWindowWorkspace?.(windowId)
+    const workspace = windowRoots ? { roots: windowRoots } : getWorkspace()
 
-    // 1. 工作区检查（Git 命令需要工作区）
-    if (!workspace) {
-      return { success: false, error: 'Git 命令需要设置工作区' }
-    }
-
-    // 2. 验证工作区边界
-    if (!securityManager.validateWorkspacePath(cwd, workspace.roots)) {
-      securityManager.logOperation(OperationType.GIT_EXEC, args.join(' '), false, {
-        reason: '路径在工作区外',
-        cwd,
-        workspace: workspace.roots,
-      })
-      return { success: false, error: '不允许在工作区外执行Git命令' }
+    // 1. 工作区检查（允许无工作区模式以支持新窗口）
+    if (!workspace || workspace.roots.length === 0) {
+      // 无工作区时信任传入的cwd路径
+      console.log('[Git] No workspace set, trusting cwd:', cwd)
+    } else {
+      // 2. 验证工作区边界
+      if (!securityManager.validateWorkspacePath(cwd, workspace.roots)) {
+        securityManager.logOperation(OperationType.GIT_EXEC, args.join(' '), false, {
+          reason: '路径在工作区外',
+          cwd,
+          workspace: workspace.roots,
+        })
+        return { success: false, error: '不允许在工作区外执行Git命令' }
+      }
     }
 
     // 2. Git 子命令白名单验证
@@ -307,6 +304,7 @@ export function registerSecureTerminalHandlers(
     }
 
     const gitSubCommand = args[0].toLowerCase()
+    console.log('[Git] Executing:', gitSubCommand, 'Whitelist:', Array.from(WHITELIST.git))
     const whitelistCheck = SecureCommandParser.validateCommand(gitSubCommand, 'git')
 
     if (!whitelistCheck.safe) {

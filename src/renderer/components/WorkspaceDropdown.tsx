@@ -5,6 +5,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Plus, FolderOpen, History, Folder } from 'lucide-react'
 import { useStore } from '../store'
+import { adnifyDir } from '../services/adnifyDirService'
 
 interface RecentWorkspace {
     path: string
@@ -59,6 +60,7 @@ export default function WorkspaceDropdown() {
         const result = await window.electronAPI.openFolder()
         if (result && typeof result === 'string') {
             // 正常打开文件夹
+            await adnifyDir.setPrimaryRoot(result)
             setWorkspace({ configPath: null, roots: [result] })
             const items = await window.electronAPI.readDir(result)
             setFiles(items)
@@ -71,6 +73,9 @@ export default function WorkspaceDropdown() {
         setIsOpen(false)
         const result = await window.electronAPI.openWorkspace()
         if (result && !('redirected' in result)) {
+            if (result.roots.length > 0) {
+                await adnifyDir.setPrimaryRoot(result.roots[0])
+            }
             setWorkspace(result)
             if (result.roots.length > 0) {
                 const items = await window.electronAPI.readDir(result.roots[0])
@@ -85,10 +90,25 @@ export default function WorkspaceDropdown() {
         window.electronAPI.newWindow()
     }
 
-    // 打开最近工作区
+    // 添加文件夹到工作区
+    const handleAddFolder = async () => {
+        setIsOpen(false)
+        const path = await window.electronAPI.addFolderToWorkspace()
+        if (path) {
+            const { addRoot } = useStore.getState()
+            addRoot(path)
+            // 初始化新根目录的 .adnify
+            await adnifyDir.initialize(path)
+        }
+    }
+
     const handleOpenRecent = async (path: string) => {
         setIsOpen(false)
-        // 直接设置工作区（不经过对话框）
+        // 切换主根目录，确保状态保存到正确的 .adnify 目录
+        await adnifyDir.setPrimaryRoot(path)
+        // 通知主进程保存活动工作区并设置窗口映射
+        await window.electronAPI.setActiveWorkspace([path])
+        // 设置渲染进程状态
         setWorkspace({ configPath: null, roots: [path] })
         try {
             const items = await window.electronAPI.readDir(path)
@@ -141,6 +161,14 @@ export default function WorkspaceDropdown() {
                     >
                         <Folder className="w-4 h-4" />
                         <span>打开工作区</span>
+                    </button>
+
+                    <button
+                        onClick={handleAddFolder}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>添加文件夹到工作区</span>
                     </button>
 
                     {/* 分隔线 */}

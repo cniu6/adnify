@@ -377,9 +377,10 @@ function FileTreeItem({
 }
 
 function ExplorerView() {
-    const { workspacePath, workspace, setWorkspacePath, setFiles, language, triggerFileTreeRefresh } = useStore()
-    const [gitStatus, setGitStatus] = useState<GitStatus | null>(null)
-    const [isGitRepo, setIsGitRepo] = useState(false)
+    const {
+        workspacePath, workspace, setWorkspacePath, setFiles, language, triggerFileTreeRefresh,
+        gitStatus, setGitStatus, isGitRepo, setIsGitRepo
+    } = useStore()
     // 内联创建状态：记录在哪个文件夹创建什么类型
     const [creatingIn, setCreatingIn] = useState<{ path: string; type: 'file' | 'folder' } | null>(null)
     // 根目录右键菜单
@@ -487,16 +488,6 @@ function ExplorerView() {
         }
     }
 
-    const handleAddFolder = async () => {
-        const path = await window.electronAPI.addFolderToWorkspace()
-        if (path) {
-            const { addRoot } = useStore.getState()
-            addRoot(path)
-            // 初始化新根目录的 .adnify
-            await adnifyDir.initialize(path)
-            toast.success(`Added ${path} to workspace`)
-        }
-    }
 
     // 开始在指定文件夹创建
     const handleStartCreate = useCallback((path: string, type: 'file' | 'folder') => {
@@ -571,16 +562,6 @@ function ExplorerView() {
                     <Tooltip content={t('refresh', language)}>
                         <Button variant="icon" size="icon" onClick={refreshFiles} className="w-6 h-6">
                             <RefreshCw className="w-3.5 h-3.5" />
-                        </Button>
-                    </Tooltip>
-                    <Tooltip content={t('openFolder', language)}>
-                        <Button variant="icon" size="icon" onClick={handleOpenFolder} className="w-6 h-6">
-                            <FolderOpen className="w-3.5 h-3.5" />
-                        </Button>
-                    </Tooltip>
-                    <Tooltip content="Add Folder to Workspace">
-                        <Button variant="icon" size="icon" onClick={handleAddFolder} className="w-6 h-6">
-                            <FolderPlus className="w-3.5 h-3.5" />
                         </Button>
                     </Tooltip>
                 </div>

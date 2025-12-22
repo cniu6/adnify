@@ -2,6 +2,7 @@
  * UI 相关状态切片
  */
 import { StateCreator } from 'zustand'
+import { GitStatus } from '../../agent/gitService'
 
 export type SidePanel = 'explorer' | 'search' | 'git' | 'problems' | 'outline' | 'history' | 'extensions' | null
 
@@ -28,6 +29,8 @@ export interface UISlice {
   cursorPosition: { line: number; column: number }
   toast: ((message: string, type?: 'success' | 'error' | 'info' | 'warning') => void) | null
   selectedCode: string // 编辑器当前选中的代码
+  gitStatus: GitStatus | null
+  isGitRepo: boolean
 
   setIsInitialized: (initialized: boolean) => void
   setActiveSidePanel: (panel: SidePanel) => void
@@ -47,6 +50,8 @@ export interface UISlice {
   setIsLspReady: (ready: boolean) => void
   setToast: (toast: ((message: string, type?: 'success' | 'error' | 'info' | 'warning') => void) | null) => void
   setSelectedCode: (code: string) => void
+  setGitStatus: (status: GitStatus | null) => void
+  setIsGitRepo: (isRepo: boolean) => void
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -67,6 +72,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   cursorPosition: { line: 1, column: 1 },
   toast: null,
   selectedCode: '',
+  gitStatus: null,
+  isGitRepo: false,
 
   setIsInitialized: (initialized) => set({ isInitialized: initialized }),
   setIsLspReady: (ready) => set({ isLspReady: ready }),
@@ -85,4 +92,6 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setCursorPosition: (pos) => set({ cursorPosition: pos }),
   setToast: (toast) => set({ toast }),
   setSelectedCode: (code) => set({ selectedCode: code }),
+  setGitStatus: (status) => set({ gitStatus: status }),
+  setIsGitRepo: (isRepo) => set({ isGitRepo: isRepo }),
 })

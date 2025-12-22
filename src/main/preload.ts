@@ -299,6 +299,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addFolderToWorkspace: () => ipcRenderer.invoke('workspace:addFolder'),
   saveWorkspace: (configPath: string, roots: string[]) => ipcRenderer.invoke('workspace:save', configPath, roots),
   restoreWorkspace: () => ipcRenderer.invoke('workspace:restore'),
+  setActiveWorkspace: (roots: string[]) => ipcRenderer.invoke('workspace:setActive', roots),
   getRecentWorkspaces: () => ipcRenderer.invoke('workspace:getRecent'),
   clearRecentWorkspaces: () => ipcRenderer.invoke('workspace:clearRecent'),
   readDir: (path: string) => ipcRenderer.invoke('file:readDir', path),

@@ -73,9 +73,16 @@ export const SECURITY_DEFAULTS = {
     ],
     /** 允许的 Git 子命令 */
     GIT_SUBCOMMANDS: [
-        'status', 'log', 'diff', 'add', 'commit', 'push', 'pull',
-        'branch', 'checkout', 'merge', 'rebase', 'clone', 'remote',
-        'fetch', 'show', 'rev-parse', 'init', 'stash', 'tag',
+        // 查询命令
+        'status', 'log', 'diff', 'show', 'ls-files', 'rev-parse', 'rev-list', 'blame',
+        // 暂存和提交
+        'add', 'commit', 'reset', 'restore',
+        // 远程同步
+        'push', 'pull', 'fetch', 'remote',
+        // 分支管理
+        'branch', 'checkout', 'switch', 'merge', 'rebase', 'cherry-pick',
+        // 其他
+        'clone', 'init', 'stash', 'tag', 'config',
     ],
 } as const
 

@@ -5,6 +5,7 @@
 
 import Store from 'electron-store'
 import * as path from 'path'
+import { SECURITY_DEFAULTS } from '../../shared/constants'
 
 // 敏感操作类型
 export enum OperationType {
@@ -115,17 +116,10 @@ const SENSITIVE_PATHS = [
   /\/password|secret|credential/i,
 ]
 
-// 命令白名单
-const ALLOWED_SHELL_COMMANDS = new Set([
-  'git', 'npm', 'yarn', 'pnpm', 'node', 'npx',
-  'pwd', 'ls', 'cat', 'echo', 'mkdir', 'rmdir', 'cd',
-])
+// 命令白名单（已统一到 constants.ts）
+const ALLOWED_SHELL_COMMANDS = new Set(SECURITY_DEFAULTS.SHELL_COMMANDS.map(cmd => cmd.toLowerCase()))
 
-const ALLOWED_GIT_SUBCOMMANDS = new Set([
-  'status', 'log', 'diff', 'add', 'commit', 'push', 'pull',
-  'branch', 'checkout', 'merge', 'rebase', 'clone',
-  'remote', 'fetch', 'show', 'rev-parse', 'init',
-])
+const ALLOWED_GIT_SUBCOMMANDS = new Set(SECURITY_DEFAULTS.GIT_SUBCOMMANDS.map(cmd => cmd.toLowerCase()))
 
 class SecurityManager implements SecurityModule {
   private sessionStorage: Map<string, boolean> = new Map()

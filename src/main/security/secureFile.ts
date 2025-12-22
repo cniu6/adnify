@@ -157,10 +157,8 @@ export function registerSecureFileHandlers(
         windowManager.setWindowWorkspace(webContentsId, [folderPath])
       }
 
-      // Update legacy store
-      const store = new Store({ name: 'main' })
+      // 保存到 config store（支持自定义路径）
       store.set('lastWorkspacePath', folderPath)
-      // Update new store
       store.set('lastWorkspaceSession', { configPath: null, roots: [folderPath] })
       // 添加到最近工作区
       addRecentWorkspace(folderPath)
@@ -184,7 +182,6 @@ export function registerSecureFileHandlers(
 
     if (!result.canceled && result.filePaths[0]) {
       const targetPath = result.filePaths[0]
-      const store = new Store({ name: 'main' })
 
       let roots: string[] = []
 
@@ -277,10 +274,15 @@ export function registerSecureFileHandlers(
   })
 
   // 恢复工作区
-  ipcMain.handle('workspace:restore', async () => {
+  ipcMain.handle('workspace:restore', async (event) => {
     const session = store.get('lastWorkspaceSession') as { configPath: string | null; roots: string[] } | null
 
     if (session) {
+      // 设置窗口工作区映射
+      const webContentsId = event.sender.id
+      if (windowManager?.setWindowWorkspace && session.roots.length > 0) {
+        windowManager.setWindowWorkspace(webContentsId, session.roots)
+      }
       // 自动启动文件监听
       setupFileWatcher(getWorkspaceSessionFn, (data: FileWatcherEvent) => {
         const win = getMainWindowFn()
@@ -294,6 +296,11 @@ export function registerSecureFileHandlers(
     // Fallback to legacy
     const legacyPath = store.get('lastWorkspacePath') as string | null
     if (legacyPath) {
+      // 设置窗口工作区映射
+      const webContentsId = event.sender.id
+      if (windowManager?.setWindowWorkspace) {
+        windowManager.setWindowWorkspace(webContentsId, [legacyPath])
+      }
       // 自动启动文件监听
       setupFileWatcher(getWorkspaceSessionFn, (data: FileWatcherEvent) => {
         const win = getMainWindowFn()
@@ -305,6 +312,27 @@ export function registerSecureFileHandlers(
     }
 
     return null
+  })
+
+  // 设置活动工作区（渲染进程打开最近工作区时调用）
+  ipcMain.handle('workspace:setActive', async (event, roots: string[]) => {
+    if (!roots || roots.length === 0) return false
+
+    // 设置窗口工作区映射
+    const webContentsId = event.sender.id
+    if (windowManager?.setWindowWorkspace) {
+      windowManager.setWindowWorkspace(webContentsId, roots)
+    }
+
+    // 保存到 config store
+    store.set('lastWorkspacePath', roots[0])
+    store.set('lastWorkspaceSession', { configPath: null, roots })
+
+    // 添加到最近工作区
+    roots.forEach(r => addRecentWorkspace(r))
+
+    console.log('[SecureFile] Active workspace set:', roots)
+    return true
   })
 
   // 读取目录

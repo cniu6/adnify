@@ -6,7 +6,10 @@ import { IndexStatus } from '../types/electron'
 import { indexWorkerService, IndexProgress } from '../services/indexWorkerService'
 
 export default function StatusBar() {
-  const { activeFilePath, isStreaming, workspacePath, setShowSettings, language, terminalVisible, setTerminalVisible, cursorPosition } = useStore()
+  const {
+    activeFilePath, isStreaming, workspacePath, setShowSettings, language,
+    terminalVisible, setTerminalVisible, cursorPosition, isGitRepo, gitStatus
+  } = useStore()
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
   const [workerProgress, setWorkerProgress] = useState<IndexProgress | null>(null)
 
@@ -47,10 +50,12 @@ export default function StatusBar() {
   return (
     <div className="h-6 bg-background-secondary border-t border-white/5 flex items-center justify-between px-3 text-[10px] select-none text-text-muted z-50 font-medium">
       <div className="flex items-center gap-4">
-        <button className="flex items-center gap-1.5 hover:text-text-primary transition-colors group">
-          <GitBranch className="w-3 h-3 text-accent group-hover:drop-shadow-[0_0_5px_rgba(var(--accent)/0.5)] transition-all" />
-          <span className="group-hover:text-accent transition-colors">main</span>
-        </button>
+        {isGitRepo && gitStatus && (
+          <button className="flex items-center gap-1.5 hover:text-text-primary transition-colors group">
+            <GitBranch className="w-3 h-3 text-accent group-hover:drop-shadow-[0_0_5px_rgba(var(--accent)/0.5)] transition-all" />
+            <span className="group-hover:text-accent transition-colors">{gitStatus.branch}</span>
+          </button>
+        )}
 
         {/* Diagnostics */}
         <div className="flex items-center gap-3">

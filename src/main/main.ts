@@ -10,31 +10,9 @@ import Store from 'electron-store'
 import { registerAllHandlers, cleanupAllHandlers, updateLLMServiceWindow } from './ipc'
 import { lspManager } from './lspManager'
 import { securityManager, updateWhitelist } from './security'
+import { SECURITY_DEFAULTS } from '../shared/constants'
 
-// 共享安全常量（与 renderer 保持一致）
-const SECURITY_DEFAULTS = {
-  SHELL_COMMANDS: [
-    // 包管理器
-    'npm', 'yarn', 'pnpm', 'bun',
-    // 运行时
-    'node', 'npx', 'deno',
-    // 版本控制
-    'git',
-    // 编程语言
-    'python', 'python3', 'pip', 'pip3',
-    'java', 'javac', 'mvn', 'gradle',
-    'go', 'rust', 'cargo',
-    // 构建工具
-    'make', 'gcc', 'clang', 'cmake',
-    // 常用命令
-    'pwd', 'ls', 'dir', 'cat', 'type', 'echo', 'mkdir', 'touch', 'rm', 'mv', 'cp', 'cd',
-  ],
-  GIT_SUBCOMMANDS: [
-    'status', 'log', 'diff', 'add', 'commit', 'push', 'pull',
-    'branch', 'checkout', 'merge', 'rebase', 'clone', 'remote',
-    'fetch', 'show', 'rev-parse', 'init', 'stash', 'tag',
-  ],
-} as const
+// 移除硬编码的 SECURITY_DEFAULTS，已从 ../shared/constants 导入
 
 // ==========================================
 // Store & Path 初始化
@@ -115,6 +93,10 @@ function setWindowWorkspace(windowId: number, roots: string[]) {
 // 清理窗口工作区
 function clearWindowWorkspace(windowId: number) {
   windowWorkspaces.delete(windowId)
+}
+// 获取指定窗口的工作区
+function getWindowWorkspace(windowId: number): string[] | null {
+  return windowWorkspaces.get(windowId) || null
 }
 
 // 单例锁定
@@ -255,6 +237,7 @@ app.whenReady().then(() => {
     // 窗口-工作区管理函数
     findWindowByWorkspace,
     setWindowWorkspace,
+    getWindowWorkspace,
   })
 
   // 创建应用菜单
