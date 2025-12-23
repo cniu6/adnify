@@ -25,6 +25,14 @@ export interface PromptTemplate {
   tags: string[]
 }
 
+export const PLANNING_TOOLS_DESC = `### Planning Tools
+21. **create_plan** - Create execution plan
+    - Parameters: items (required array with title, description)
+
+22. **update_plan** - Update plan status/items
+    - Parameters: status, items, currentStepId
+`
+
 /**
  * 核心工具定义（所有模板共享）
  * 这些定义会被注入到每个模板的系统提示中
@@ -128,12 +136,8 @@ const CORE_TOOLS = `## Available Tools
 20. **read_url** - Fetch URL content
     - Parameters: url (required), timeout (default: 30)
 
-### Planning Tools
-21. **create_plan** - Create execution plan
-    - Parameters: items (required array with title, description)
 
-22. **update_plan** - Update plan status/items
-    - Parameters: status, items, currentStepId
+{{PLANNING_TOOLS}}
 
 ## Tool Usage Guidelines
 

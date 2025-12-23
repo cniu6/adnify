@@ -44,7 +44,7 @@ export async function buildSystemPrompt(
 	const projectRules = await rulesService.getRules()
 
 	// 获取提示词模板
-	const { getPromptTemplateById, getDefaultPromptTemplate } = await import('./promptTemplates')
+	const { getPromptTemplateById, getDefaultPromptTemplate, PLANNING_TOOLS_DESC } = await import('./promptTemplates')
 	const template = promptTemplateId
 		? getPromptTemplateById(promptTemplateId) || getDefaultPromptTemplate()
 		: getDefaultPromptTemplate()
@@ -56,7 +56,11 @@ export async function buildSystemPrompt(
 	const os = typeof navigator !== 'undefined' ? ((navigator as any).userAgentData?.platform || navigator.platform || 'Unknown') : 'Unknown'
 	const date = new Date().toLocaleDateString()
 
+	// 注入 Plan 工具描述（仅在 Plan 模式下）
+	const planningTools = mode === 'plan' ? PLANNING_TOOLS_DESC : ''
+
 	systemPrompt = systemPrompt
+		.replace('{{PLANNING_TOOLS}}', planningTools)
 		.replace('[Determined at runtime]', os)
 		.replace('[Current workspace path]', workspacePath || 'No workspace open')
 		.replace('[Currently open file]', activeFile || 'None')
@@ -105,14 +109,23 @@ If a plan exists (see "Current Plan" above):
 	// Chat 模式简化（移除工具定义，只保留基本指导）
 	if (mode === 'chat') {
 		// 移除工具定义部分，保留核心身份和沟通风格
-		const toolsStart = systemPrompt.indexOf('## Tool Usage Guide')
+		// 注意：promptTemplates.ts 中定义的是 "## Available Tools"
+		const toolsStart = systemPrompt.indexOf('## Available Tools')
 		if (toolsStart !== -1) {
-			// 找到下一个大章节的开始
-			const nextSection = systemPrompt.indexOf('\n\n## ', toolsStart)
+			// 找到下一个大章节的开始 (通常是 ## Environment 或 ## Project Rules)
+			// 我们尝试找到工具部分之后的第一个 "## "
+			// CORE_TOOLS 结尾通常紧接 BASE_SYSTEM_INFO，它以 "## Environment" 开头
+			const nextSection = systemPrompt.indexOf('\n\n## Environment', toolsStart)
 			if (nextSection !== -1) {
 				systemPrompt = systemPrompt.substring(0, toolsStart) + systemPrompt.substring(nextSection)
 			} else {
-				systemPrompt = systemPrompt.substring(0, toolsStart)
+				// 如果没找到 Environment，尝试找任意下一个章节
+				const nextAnySection = systemPrompt.indexOf('\n\n## ', toolsStart + 20)
+				if (nextAnySection !== -1) {
+					systemPrompt = systemPrompt.substring(0, toolsStart) + systemPrompt.substring(nextAnySection)
+				} else {
+					systemPrompt = systemPrompt.substring(0, toolsStart)
+				}
 			}
 		}
 	}
