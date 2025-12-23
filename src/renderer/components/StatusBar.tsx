@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { GitBranch, AlertCircle, XCircle, Database, Loader2, Cpu, Terminal, CheckCircle2 } from 'lucide-react'
+import { GitBranch, AlertCircle, XCircle, Database, Loader2, Cpu, Terminal, CheckCircle2, ScrollText } from 'lucide-react'
 import { useStore } from '../store'
 import { t } from '../i18n'
 import { IndexStatus } from '../types/electron'
 import { indexWorkerService, IndexProgress } from '../services/indexWorkerService'
+import BottomBarPopover from './ui/BottomBarPopover'
+import ToolCallLogContent, { getToolCallLogCount } from './ToolCallLogContent'
 
 export default function StatusBar() {
   const {
@@ -117,6 +119,19 @@ export default function StatusBar() {
           >
             <Terminal className={`w-3 h-3 ${terminalVisible ? 'text-accent drop-shadow-[0_0_5px_rgba(var(--accent)/0.5)]' : ''}`} />
           </button>
+
+          {/* 工具调用日志 */}
+          <BottomBarPopover
+            icon={<ScrollText className="w-3 h-3" />}
+            tooltip={language === 'zh' ? '工具调用日志' : 'Tool Call Logs'}
+            title={language === 'zh' ? '工具调用日志' : 'Tool Call Logs'}
+            width={380}
+            height={280}
+            badge={getToolCallLogCount() || undefined}
+            language={language as 'en' | 'zh'}
+          >
+            <ToolCallLogContent language={language as 'en' | 'zh'} />
+          </BottomBarPopover>
 
           {activeFilePath && (
             <span className="font-medium text-accent/80">{activeFilePath.split('.').pop()?.toUpperCase() || 'TXT'}</span>

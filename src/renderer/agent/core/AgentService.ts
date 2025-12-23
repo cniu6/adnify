@@ -17,6 +17,7 @@ import { buildOpenAIMessages, validateOpenAIMessages, OpenAIMessage } from './Me
 import { MessageContent, ToolStatus, ContextItem, TextContent, UserMessage, AssistantMessage, ToolResultMessage, ToolDefinition, ToolExecutionResult } from './types'
 import { LLMStreamChunk, LLMToolCall } from '@/renderer/types/electron'
 import { parsePartialJson, truncateToolResult } from '@/renderer/utils/partialJson'
+import { addToolCallLog } from '@/renderer/components/ToolCallLogContent'
 
 // 读取类工具（可以并行执行）
 const READ_TOOLS = [
@@ -55,6 +56,70 @@ const getConfig = () => {
 
 // 保留旧的 CONFIG 引用以兼容现有代码
 const CONFIG = getConfig()
+
+/**
+ * 智能消息压缩函数
+ * 策略：
+ * 1. 保留最近 N 条消息完整
+ * 2. 中间消息的工具结果截断
+ * 3. 超长的 assistant 回复也截断
+ * @internal 供 buildMessagesForLLM 调用，暂未集成
+ */
+type AnyMessage = UserMessage | AssistantMessage | ToolResultMessage
+export function compressMessages(messages: AnyMessage[], maxChars: number): AnyMessage[] {
+  const recentKeepCount = 6  // 保留最近 6 条消息完整
+  const toolResultMaxChars = 2000  // 中间消息的工具结果最大长度
+  const assistantMaxChars = 4000  // 中间消息的 assistant 回复最大长度
+
+  if (messages.length <= recentKeepCount) {
+    return messages
+  }
+
+  let totalChars = 0
+  const compressed: AnyMessage[] = []
+
+  // 先计算最近消息的长度
+  const recentMessages = messages.slice(-recentKeepCount)
+  const olderMessages = messages.slice(0, -recentKeepCount)
+
+  // 处理较早的消息
+  for (const msg of olderMessages) {
+    let content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+
+    if (msg.role === 'tool') {
+      // 截断工具结果
+      if (content.length > toolResultMaxChars) {
+        content = content.slice(0, toolResultMaxChars) + '\n...[truncated]'
+      }
+    } else if (msg.role === 'assistant') {
+      // 截断 assistant 回复（但保留工具调用信息）
+      const assistantMsg = msg as AssistantMessage
+      if (content.length > assistantMaxChars && !assistantMsg.toolCalls?.length) {
+        content = content.slice(0, assistantMaxChars) + '\n...[truncated]'
+      }
+    }
+
+    const compressedMsg = { ...msg, content } as AnyMessage
+    totalChars += content.length
+
+    // 如果超过限制，只保留摘要
+    if (totalChars > maxChars * 0.6) {
+      compressed.push({
+        ...msg,
+        content: msg.role === 'tool'
+          ? '[Tool result truncated due to context limit]'
+          : `[Message truncated: ${content.slice(0, 100)}...]`
+      } as AnyMessage)
+    } else {
+      compressed.push(compressedMsg)
+    }
+  }
+
+  // 添加最近消息（保持完整）
+  compressed.push(...recentMessages)
+
+  return compressed
+}
 
 // 可重试的错误代码
 const RETRYABLE_ERROR_CODES = new Set([
@@ -829,6 +894,25 @@ class AgentServiceClass {
   }
 
   /**
+   * 判断错误是否可重试
+   */
+  private isRetryableError(error: string): boolean {
+    const retryablePatterns = [
+      /timeout/i,
+      /ECONNRESET/i,
+      /ETIMEDOUT/i,
+      /ENOTFOUND/i,
+      /network/i,
+      /temporarily unavailable/i,
+      /rate limit/i,
+      /429/,
+      /503/,
+      /502/,
+    ]
+    return retryablePatterns.some(pattern => pattern.test(error))
+  }
+
+  /**
    * 执行单个工具调用
    */
   private async executeToolCall(
@@ -867,6 +951,10 @@ class AgentServiceClass {
 
     store.setStreamPhase('tool_running', { id, name, arguments: args, status: 'running' })
 
+    // 记录工具调用请求日志
+    const startTime = Date.now()
+    addToolCallLog({ type: 'request', toolName: name, data: { name, arguments: args } })
+
     let originalContent: string | null = null
     let fullPath: string | null = null
     if (WRITE_TOOLS.includes(name) || name === 'delete_file_or_folder') {
@@ -880,19 +968,56 @@ class AgentServiceClass {
 
     // 添加 60 秒超时保护
     const timeoutMs = 60000
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Tool execution timed out after ${timeoutMs / 1000}s`)), timeoutMs)
-    )
+    const maxRetries = 3
+    const retryDelayMs = 1000
+
+    const executeWithTimeout = () => Promise.race([
+      executeTool(name, args, workspacePath || undefined),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Tool execution timed out after ${timeoutMs / 1000}s`)), timeoutMs)
+      )
+    ])
 
     let result: ToolExecutionResult
-    try {
-      result = await Promise.race([
-        executeTool(name, args, workspacePath || undefined),
-        timeoutPromise
-      ])
-    } catch (error: any) {
-      result = { success: false, result: '', error: error.message }
+    let lastError: string = ''
+
+    // 重试机制
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        result = await executeWithTimeout()
+        if (result.success) break
+        lastError = result.error || 'Unknown error'
+
+        // 只对特定可恢复错误重试
+        if (attempt < maxRetries && this.isRetryableError(lastError)) {
+          console.log(`[AgentService] Tool ${name} failed (attempt ${attempt}/${maxRetries}), retrying...`)
+          await new Promise(resolve => setTimeout(resolve, retryDelayMs * attempt))
+        } else {
+          break
+        }
+      } catch (error: any) {
+        lastError = error.message
+        if (attempt < maxRetries && this.isRetryableError(lastError)) {
+          console.log(`[AgentService] Tool ${name} error (attempt ${attempt}/${maxRetries}): ${lastError}, retrying...`)
+          await new Promise(resolve => setTimeout(resolve, retryDelayMs * attempt))
+        } else {
+          result = { success: false, result: '', error: lastError }
+          break
+        }
+      }
     }
+
+    if (!result!) {
+      result = { success: false, result: '', error: lastError }
+    }
+
+    // 记录工具调用响应日志
+    addToolCallLog({
+      type: 'response',
+      toolName: name,
+      data: { success: result.success, result: result.result?.slice?.(0, 500), error: result.error },
+      duration: Date.now() - startTime
+    })
 
     const status: ToolStatus = result.success ? 'success' : 'error'
     if (this.currentAssistantId) {

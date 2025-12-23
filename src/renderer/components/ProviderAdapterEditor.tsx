@@ -201,6 +201,29 @@ export default function ProviderAdapterEditor({
         setTimeout(() => setCopied(false), 2000)
     }
 
+    const handleImport = async () => {
+        try {
+            const text = await navigator.clipboard.readText()
+            const imported = JSON.parse(text)
+            if (imported.adapterId && imported.responseFormat) {
+                setLocalConfig({
+                    responseFormat: imported.responseFormat || 'json',
+                    toolCallPath: imported.toolCallPath || 'tool_calls',
+                    toolNamePath: imported.toolNamePath || 'function.name',
+                    toolArgsPath: imported.toolArgsPath || 'function.arguments',
+                    argsIsObject: imported.argsIsObject || false,
+                    autoGenerateId: imported.autoGenerateId || false,
+                    xmlToolCallTag: imported.xmlToolCallTag,
+                    xmlNameSource: imported.xmlNameSource,
+                    xmlArgsTag: imported.xmlArgsTag,
+                })
+                onAdapterChange('custom', imported)
+            }
+        } catch (err) {
+            console.error('Import failed:', err)
+        }
+    }
+
     return (
         <div className="space-y-4 mt-4 p-4 bg-surface/20 rounded-lg border border-border-subtle">
             {/* 标题 */}
@@ -211,13 +234,22 @@ export default function ProviderAdapterEditor({
                         {language === 'zh' ? '工具调用适配器' : 'Tool Call Adapter'}
                     </span>
                 </div>
-                <button
-                    onClick={handleCopyConfig}
-                    className="flex items-center gap-1.5 px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
-                >
-                    {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                    {copied ? (language === 'zh' ? '已复制' : 'Copied') : (language === 'zh' ? '复制' : 'Copy')}
-                </button>
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={handleImport}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+                        title={language === 'zh' ? '从剪贴板导入' : 'Import from clipboard'}
+                    >
+                        {language === 'zh' ? '导入' : 'Import'}
+                    </button>
+                    <button
+                        onClick={handleCopyConfig}
+                        className="flex items-center gap-1.5 px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+                    >
+                        {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                        {copied ? (language === 'zh' ? '已复制' : 'Copied') : (language === 'zh' ? '导出' : 'Export')}
+                    </button>
+                </div>
             </div>
 
             {/* 适配器选择 - 网格布局 */}
@@ -245,134 +277,136 @@ export default function ProviderAdapterEditor({
             </div>
 
             {/* 自定义配置 - 只在选择 Custom 时显示 */}
-            {isCustomMode && (
-                <div className="space-y-4 p-4 bg-surface/30 rounded-lg border border-accent/20 animate-fade-in">
-                    <div className="flex items-center gap-2 text-xs text-accent font-medium">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {language === 'zh' ? '自定义配置' : 'Custom Configuration'}
-                    </div>
-
-                    {/* 响应格式 */}
-                    <div className="space-y-2">
-                        <label className="flex items-center gap-1.5 text-xs text-text-secondary">
-                            <FileJson className="w-3 h-3" />
-                            {language === 'zh' ? '响应格式' : 'Response Format'}
-                        </label>
-                        <Select
-                            value={localConfig.responseFormat}
-                            onChange={(value) => handleConfigChange({ responseFormat: value as 'json' | 'xml' | 'mixed' })}
-                            options={[
-                                { value: 'json', label: 'JSON' },
-                                { value: 'xml', label: 'XML' },
-                                { value: 'mixed', label: language === 'zh' ? '混合 (JSON + XML)' : 'Mixed (JSON + XML)' },
-                            ]}
-                            className="w-full"
-                        />
-                    </div>
-
-                    {/* JSON 配置 */}
-                    {(localConfig.responseFormat === 'json' || localConfig.responseFormat === 'mixed') && (
-                        <>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-1.5 text-xs text-text-secondary">
-                                    <Code2 className="w-3 h-3" />
-                                    {language === 'zh' ? '工具调用路径' : 'Tool Call Path'}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={localConfig.toolCallPath}
-                                    onChange={(e) => handleConfigChange({ toolCallPath: e.target.value })}
-                                    className="w-full px-3 py-2 text-sm bg-surface/50 border border-border-subtle rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
-                                    placeholder="e.g., tool_calls, function_call"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                    <label className="text-xs text-text-secondary">
-                                        {language === 'zh' ? '名称路径' : 'Name Path'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.toolNamePath}
-                                        onChange={(e) => handleConfigChange({ toolNamePath: e.target.value })}
-                                        className="w-full px-3 py-2 text-sm bg-surface/50 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:border-accent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs text-text-secondary">
-                                        {language === 'zh' ? '参数路径' : 'Args Path'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.toolArgsPath}
-                                        onChange={(e) => handleConfigChange({ toolArgsPath: e.target.value })}
-                                        className="w-full px-3 py-2 text-sm bg-surface/50 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:border-accent"
-                                    />
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* XML 配置 */}
-                    {(localConfig.responseFormat === 'xml' || localConfig.responseFormat === 'mixed') && (
-                        <div className="space-y-3 p-3 bg-surface/20 rounded-lg border border-border-subtle">
-                            <label className="text-xs text-text-secondary font-medium">
-                                {language === 'zh' ? 'XML 配置' : 'XML Configuration'}
-                            </label>
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] text-text-muted">
-                                        {language === 'zh' ? '标签名' : 'Tag'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.xmlToolCallTag || 'tool_call'}
-                                        onChange={(e) => handleConfigChange({ xmlToolCallTag: e.target.value })}
-                                        className="w-full px-2 py-1.5 text-xs bg-surface/50 border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] text-text-muted">
-                                        {language === 'zh' ? '名称' : 'Name'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.xmlNameSource || 'name'}
-                                        onChange={(e) => handleConfigChange({ xmlNameSource: e.target.value })}
-                                        className="w-full px-2 py-1.5 text-xs bg-surface/50 border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] text-text-muted">
-                                        {language === 'zh' ? '参数' : 'Args'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.xmlArgsTag || 'arguments'}
-                                        onChange={(e) => handleConfigChange({ xmlArgsTag: e.target.value })}
-                                        className="w-full px-2 py-1.5 text-xs bg-surface/50 border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent"
-                                    />
-                                </div>
-                            </div>
+            {
+                isCustomMode && (
+                    <div className="space-y-4 p-4 bg-surface/30 rounded-lg border border-accent/20 animate-fade-in">
+                        <div className="flex items-center gap-2 text-xs text-accent font-medium">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            {language === 'zh' ? '自定义配置' : 'Custom Configuration'}
                         </div>
-                    )}
 
-                    {/* 选项 */}
-                    <div className="flex flex-wrap gap-4">
-                        <Switch
-                            label={language === 'zh' ? '参数已是对象' : 'Args is object'}
-                            checked={localConfig.argsIsObject}
-                            onChange={(e) => handleConfigChange({ argsIsObject: e.target.checked })}
-                        />
-                        <Switch
-                            label={language === 'zh' ? '自动生成 ID' : 'Auto generate ID'}
-                            checked={localConfig.autoGenerateId}
-                            onChange={(e) => handleConfigChange({ autoGenerateId: e.target.checked })}
-                        />
+                        {/* 响应格式 */}
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                                <FileJson className="w-3 h-3" />
+                                {language === 'zh' ? '响应格式' : 'Response Format'}
+                            </label>
+                            <Select
+                                value={localConfig.responseFormat}
+                                onChange={(value) => handleConfigChange({ responseFormat: value as 'json' | 'xml' | 'mixed' })}
+                                options={[
+                                    { value: 'json', label: 'JSON' },
+                                    { value: 'xml', label: 'XML' },
+                                    { value: 'mixed', label: language === 'zh' ? '混合 (JSON + XML)' : 'Mixed (JSON + XML)' },
+                                ]}
+                                className="w-full"
+                            />
+                        </div>
+
+                        {/* JSON 配置 */}
+                        {(localConfig.responseFormat === 'json' || localConfig.responseFormat === 'mixed') && (
+                            <>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                                        <Code2 className="w-3 h-3" />
+                                        {language === 'zh' ? '工具调用路径' : 'Tool Call Path'}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig.toolCallPath}
+                                        onChange={(e) => handleConfigChange({ toolCallPath: e.target.value })}
+                                        className="w-full px-3 py-2 text-sm bg-surface/50 border border-border-subtle rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
+                                        placeholder="e.g., tool_calls, function_call"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-2">
+                                        <label className="text-xs text-text-secondary">
+                                            {language === 'zh' ? '名称路径' : 'Name Path'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={localConfig.toolNamePath}
+                                            onChange={(e) => handleConfigChange({ toolNamePath: e.target.value })}
+                                            className="w-full px-3 py-2 text-sm bg-surface/50 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs text-text-secondary">
+                                            {language === 'zh' ? '参数路径' : 'Args Path'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={localConfig.toolArgsPath}
+                                            onChange={(e) => handleConfigChange({ toolArgsPath: e.target.value })}
+                                            className="w-full px-3 py-2 text-sm bg-surface/50 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* XML 配置 */}
+                        {(localConfig.responseFormat === 'xml' || localConfig.responseFormat === 'mixed') && (
+                            <div className="space-y-3 p-3 bg-surface/20 rounded-lg border border-border-subtle">
+                                <label className="text-xs text-text-secondary font-medium">
+                                    {language === 'zh' ? 'XML 配置' : 'XML Configuration'}
+                                </label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-text-muted">
+                                            {language === 'zh' ? '标签名' : 'Tag'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={localConfig.xmlToolCallTag || 'tool_call'}
+                                            onChange={(e) => handleConfigChange({ xmlToolCallTag: e.target.value })}
+                                            className="w-full px-2 py-1.5 text-xs bg-surface/50 border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-text-muted">
+                                            {language === 'zh' ? '名称' : 'Name'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={localConfig.xmlNameSource || 'name'}
+                                            onChange={(e) => handleConfigChange({ xmlNameSource: e.target.value })}
+                                            className="w-full px-2 py-1.5 text-xs bg-surface/50 border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-text-muted">
+                                            {language === 'zh' ? '参数' : 'Args'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={localConfig.xmlArgsTag || 'arguments'}
+                                            onChange={(e) => handleConfigChange({ xmlArgsTag: e.target.value })}
+                                            className="w-full px-2 py-1.5 text-xs bg-surface/50 border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 选项 */}
+                        <div className="flex flex-wrap gap-4">
+                            <Switch
+                                label={language === 'zh' ? '参数已是对象' : 'Args is object'}
+                                checked={localConfig.argsIsObject}
+                                onChange={(e) => handleConfigChange({ argsIsObject: e.target.checked })}
+                            />
+                            <Switch
+                                label={language === 'zh' ? '自动生成 ID' : 'Auto generate ID'}
+                                checked={localConfig.autoGenerateId}
+                                onChange={(e) => handleConfigChange({ autoGenerateId: e.target.checked })}
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }

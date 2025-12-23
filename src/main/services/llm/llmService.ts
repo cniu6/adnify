@@ -111,6 +111,8 @@ export class LLMService {
         // Thinking 模式配置
         thinkingEnabled: config.thinkingEnabled,
         thinkingBudget: config.thinkingBudget,
+        // 适配器配置
+        adapterId: config.adapterId,
 
         onStream: (chunk) => {
           if (!this.window.isDestroyed()) {

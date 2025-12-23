@@ -109,6 +109,8 @@ export interface ChatParams {
   // Thinking 模式配置
   thinkingEnabled?: boolean
   thinkingBudget?: number
+  // 适配器配置
+  adapterId?: string
   onStream: (chunk: StreamChunk) => void
   onToolCall: (toolCall: ToolCall) => void
   onComplete: (result: ChatResult) => void

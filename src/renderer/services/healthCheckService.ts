@@ -1,0 +1,101 @@
+/**
+ * Provider 健康检查服务
+ * 检测 LLM API 连通性和配置有效性
+ */
+
+export interface HealthCheckResult {
+    provider: string
+    status: 'healthy' | 'unhealthy' | 'unknown'
+    latency?: number
+    error?: string
+    checkedAt: Date
+}
+
+// 健康检查结果缓存
+const healthCache: Map<string, HealthCheckResult> = new Map()
+
+/**
+ * 检查单个 Provider 的健康状态
+ */
+export async function checkProviderHealth(
+    provider: string,
+    apiKey: string,
+    baseUrl?: string
+): Promise<HealthCheckResult> {
+    const startTime = Date.now()
+
+    const defaultUrls: Record<string, string> = {
+        openai: 'https://api.openai.com/v1',
+        anthropic: 'https://api.anthropic.com/v1',
+        deepseek: 'https://api.deepseek.com/v1',
+        groq: 'https://api.groq.com/openai/v1',
+        mistral: 'https://api.mistral.ai/v1',
+        ollama: 'http://localhost:11434/v1'
+    }
+
+    const url = baseUrl || defaultUrls[provider] || defaultUrls.openai
+
+    try {
+        const response = await fetch(`${url}/models`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            signal: AbortSignal.timeout(10000)  // 10 秒超时
+        })
+
+        const latency = Date.now() - startTime
+
+        if (response.ok) {
+            const result: HealthCheckResult = {
+                provider,
+                status: 'healthy',
+                latency,
+                checkedAt: new Date()
+            }
+            healthCache.set(provider, result)
+            return result
+        } else {
+            const result: HealthCheckResult = {
+                provider,
+                status: 'unhealthy',
+                latency,
+                error: `HTTP ${response.status}`,
+                checkedAt: new Date()
+            }
+            healthCache.set(provider, result)
+            return result
+        }
+    } catch (err: any) {
+        const result: HealthCheckResult = {
+            provider,
+            status: 'unhealthy',
+            error: err.message || 'Connection failed',
+            checkedAt: new Date()
+        }
+        healthCache.set(provider, result)
+        return result
+    }
+}
+
+/**
+ * 获取缓存的健康检查结果
+ */
+export function getCachedHealthStatus(provider: string): HealthCheckResult | null {
+    return healthCache.get(provider) || null
+}
+
+/**
+ * 清除健康检查缓存
+ */
+export function clearHealthCache() {
+    healthCache.clear()
+}
+
+/**
+ * 获取所有缓存的健康检查结果
+ */
+export function getAllHealthStatus(): HealthCheckResult[] {
+    return Array.from(healthCache.values())
+}

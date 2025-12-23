@@ -6,6 +6,7 @@
 import OpenAI from 'openai'
 import { BaseProvider } from './base'
 import { ChatParams, ToolDefinition, ToolCall, MessageContent } from '../types'
+import { adapterService } from '../adapterService'
 
 export class OpenAIProvider extends BaseProvider {
   private client: OpenAI
@@ -39,16 +40,11 @@ export class OpenAIProvider extends BaseProvider {
     })
   }
 
-  private convertTools(tools?: ToolDefinition[]): OpenAI.ChatCompletionTool[] | undefined {
+  private convertTools(tools?: ToolDefinition[], adapterId?: string): unknown[] | undefined {
     if (!tools?.length) return undefined
-    return tools.map((tool) => ({
-      type: 'function' as const,
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-      },
-    }))
+    // 使用适配器服务根据 adapterId 转换工具定义
+    // 如果没有指定 adapterId，使用默认的 OpenAI 格式
+    return adapterService.convertTools(tools, adapterId || 'openai')
   }
 
   async chat(params: ChatParams): Promise<void> {
@@ -61,6 +57,7 @@ export class OpenAIProvider extends BaseProvider {
       signal,
       thinkingEnabled,
       thinkingBudget,
+      adapterId,
       onStream,
       onToolCall,
       onComplete,
@@ -121,7 +118,7 @@ export class OpenAIProvider extends BaseProvider {
         }
       }
 
-      const convertedTools = this.convertTools(tools)
+      const convertedTools = this.convertTools(tools, adapterId)
 
       // 构建请求体，使用 any 以支持扩展参数（如 reasoning_effort）
       const requestBody: Record<string, unknown> = {

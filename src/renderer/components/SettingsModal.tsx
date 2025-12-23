@@ -311,6 +311,82 @@ export default function SettingsModal() {
 }
 
 
+// 测试连接按钮组件
+function TestConnectionButton({ localConfig, language }: { localConfig: LLMConfig, language: 'en' | 'zh' }) {
+  const [testing, setTesting] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const handleTest = async () => {
+    if (!localConfig.apiKey && localConfig.provider !== 'ollama') {
+      setStatus('error')
+      setErrorMsg(language === 'zh' ? '请先输入 API Key' : 'Please enter API Key first')
+      return
+    }
+
+    setTesting(true)
+    setStatus('idle')
+    setErrorMsg('')
+
+    try {
+      // 使用健康检查服务
+      const { checkProviderHealth } = await import('@/renderer/services/healthCheckService')
+      const result = await checkProviderHealth(
+        localConfig.provider,
+        localConfig.apiKey,
+        localConfig.baseUrl
+      )
+
+      if (result.status === 'healthy') {
+        setStatus('success')
+        toast.success(language === 'zh' ? `连接成功！延迟: ${result.latency}ms` : `Connected! Latency: ${result.latency}ms`)
+      } else {
+        setStatus('error')
+        setErrorMsg(result.error || 'Connection failed')
+      }
+    } catch (err: any) {
+      setStatus('error')
+      setErrorMsg(err.message || 'Connection failed')
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={handleTest}
+        disabled={testing}
+        className="h-8 px-3 text-xs"
+      >
+        {testing ? (
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            {language === 'zh' ? '测试中...' : 'Testing...'}
+          </span>
+        ) : (
+          language === 'zh' ? '测试连接' : 'Test Connection'
+        )}
+      </Button>
+      {status === 'success' && (
+        <span className="flex items-center gap-1 text-xs text-green-500">
+          <Check className="w-3.5 h-3.5" />
+          {language === 'zh' ? '连接正常' : 'Connected'}
+        </span>
+      )}
+      {status === 'error' && (
+        <span className="flex items-center gap-1 text-xs text-red-400" title={errorMsg}>
+          <AlertTriangle className="w-3.5 h-3.5" />
+          {errorMsg.length > 30 ? errorMsg.slice(0, 30) + '...' : errorMsg}
+        </span>
+      )}
+    </div>
+  )
+}
+
+
 // Provider 设置组件
 interface ProviderSettingsProps {
   localConfig: LLMConfig
@@ -455,6 +531,9 @@ function ProviderSettings({
             </div>
           )}
         </div>
+
+        {/* Test Connection Button */}
+        <TestConnectionButton localConfig={localConfig} language={language} />
 
         {/* Advanced Options Toggle */}
         <div className="pt-2">
