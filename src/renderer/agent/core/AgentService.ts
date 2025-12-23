@@ -12,45 +12,38 @@
 
 import { useAgentStore } from './AgentStore'
 import { useStore } from '../../store'  // 用于读取 autoApprove 配置
-import { executeTool, getToolDefinitions, getToolApprovalType, WRITE_TOOLS } from './ToolExecutor'
+import { executeTool, getToolDefinitions, getToolApprovalType } from './ToolExecutor'
 import { buildOpenAIMessages, validateOpenAIMessages, OpenAIMessage } from './MessageConverter'
 import { MessageContent, ToolStatus, ContextItem, TextContent, UserMessage, AssistantMessage, ToolResultMessage, ToolDefinition, ToolExecutionResult } from './types'
 import { LLMStreamChunk, LLMToolCall } from '@/renderer/types/electron'
 import { parsePartialJson, truncateToolResult } from '@/renderer/utils/partialJson'
 import { addToolCallLog } from '@/renderer/components/ToolCallLogContent'
+import { AGENT_DEFAULTS, READ_ONLY_TOOLS, isFileModifyingTool } from '@/shared/constants'
 
-// 读取类工具（可以并行执行）
-const READ_TOOLS = [
-  'read_file',
-  'read_multiple_files',
-  'list_directory',
-  'get_dir_tree',
-  'search_files',
-  'codebase_search',
-  'find_references',
-  'go_to_definition',
-  'get_hover_info',
-  'get_document_symbols',
-  'get_lint_errors',
-  'web_search',
-  'read_url',
-]
+// 读取类工具（可以并行执行）- 使用 constants.ts 的统一定义
+const READ_TOOLS = READ_ONLY_TOOLS as readonly string[]
 
 // ===== 配置 =====
 
-// 从 store 获取动态配置
+// 从 store 获取动态配置（使用 AGENT_DEFAULTS 作为默认值）
 const getConfig = () => {
   const agentConfig = useStore.getState().agentConfig || {}
   return {
-    maxToolLoops: agentConfig.maxToolLoops ?? 25,
+    // 用户可配置的值
+    maxToolLoops: agentConfig.maxToolLoops ?? AGENT_DEFAULTS.MAX_TOOL_LOOPS,
     maxHistoryMessages: agentConfig.maxHistoryMessages ?? 50,
     maxToolResultChars: agentConfig.maxToolResultChars ?? 10000,
-    maxFileContentChars: agentConfig.maxFileContentChars ?? 15000,
+    maxFileContentChars: agentConfig.maxFileContentChars ?? AGENT_DEFAULTS.MAX_FILE_CONTENT_CHARS,
     maxTotalContextChars: agentConfig.maxTotalContextChars ?? 50000,
-    // 重试配置（保持硬编码，不太需要用户调整）
-    maxRetries: 2,
-    retryDelayMs: 1000,
-    retryBackoffMultiplier: 2,
+    // 重试配置（使用统一默认值）
+    maxRetries: AGENT_DEFAULTS.MAX_RETRIES,
+    retryDelayMs: AGENT_DEFAULTS.RETRY_DELAY_MS,
+    retryBackoffMultiplier: AGENT_DEFAULTS.RETRY_BACKOFF_MULTIPLIER,
+    // 工具执行超时
+    toolTimeoutMs: AGENT_DEFAULTS.TOOL_TIMEOUT_MS,
+    // 上下文压缩阈值
+    contextCompressThreshold: AGENT_DEFAULTS.CONTEXT_COMPRESS_THRESHOLD,
+    keepRecentTurns: AGENT_DEFAULTS.KEEP_RECENT_TURNS,
   }
 }
 
@@ -397,7 +390,8 @@ class AgentServiceClass {
    * 压缩上下文以节省 Token
    */
   private async compressContext(messages: OpenAIMessage[]): Promise<void> {
-    const MAX_CHARS = 40000
+    const config = getConfig()
+    const MAX_CHARS = config.contextCompressThreshold
     let totalChars = 0
 
     for (const msg of messages) {
@@ -957,7 +951,8 @@ class AgentServiceClass {
 
     let originalContent: string | null = null
     let fullPath: string | null = null
-    if (WRITE_TOOLS.includes(name) || name === 'delete_file_or_folder') {
+    // 使用智能函数判断是否需要创建文件快照
+    if (isFileModifyingTool(name)) {
       const filePath = args.path as string
       if (filePath && workspacePath) {
         fullPath = filePath.startsWith(workspacePath) ? filePath : `${workspacePath}/${filePath}`
@@ -966,10 +961,11 @@ class AgentServiceClass {
       }
     }
 
-    // 添加 60 秒超时保护
-    const timeoutMs = 60000
-    const maxRetries = 3
-    const retryDelayMs = 1000
+    // 使用配置的超时和重试参数
+    const config = getConfig()
+    const timeoutMs = config.toolTimeoutMs
+    const maxRetries = config.maxRetries
+    const retryDelayMs = config.retryDelayMs
 
     const executeWithTimeout = () => Promise.race([
       executeTool(name, args, workspacePath || undefined),
@@ -1029,7 +1025,8 @@ class AgentServiceClass {
       })
     }
 
-    if (result.success && fullPath && (WRITE_TOOLS.includes(name) || name === 'delete_file_or_folder')) {
+    // 使用智能函数判断是否需要记录文件修改
+    if (result.success && fullPath && isFileModifyingTool(name)) {
       const meta = result.meta as { linesAdded?: number; linesRemoved?: number; newContent?: string; isNewFile?: boolean } | undefined
       store.addPendingChange({
         filePath: fullPath,

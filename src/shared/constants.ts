@@ -121,3 +121,137 @@ export const PERFORMANCE_DEFAULTS = {
     /** 命令执行超时 (ms) */
     COMMAND_TIMEOUT_MS: 30000,
 } as const
+
+// ==========================================
+// Agent 相关默认值（原 AgentService.ts 硬编码）
+// ==========================================
+
+export const AGENT_DEFAULTS = {
+    /** 工具执行默认超时 (ms) */
+    TOOL_TIMEOUT_MS: 60000,
+    /** 最大工具循环次数 */
+    MAX_TOOL_LOOPS: 15,
+    /** 重试延迟基础值 (ms) */
+    RETRY_DELAY_MS: 1000,
+    /** 最大重试次数 */
+    MAX_RETRIES: 3,
+    /** 重试退避倍数 */
+    RETRY_BACKOFF_MULTIPLIER: 1.5,
+    /** 上下文压缩阈值 (chars) */
+    CONTEXT_COMPRESS_THRESHOLD: 40000,
+    /** 保留最近对话轮数 (用于压缩) */
+    KEEP_RECENT_TURNS: 3,
+    /** 重复调用检测窗口大小 */
+    MAX_RECENT_CALLS: 5,
+    /** 最大连续重复次数 */
+    MAX_CONSECUTIVE_REPEATS: 2,
+    /** 单个文件内容最大长度 (用于上下文) */
+    MAX_FILE_CONTENT_CHARS: 100000,
+} as const
+
+// ==========================================
+// 工具分类（用于工具注册表）
+// ==========================================
+
+export const TOOL_CATEGORIES = {
+    READ: 'read',
+    WRITE: 'write',
+    TERMINAL: 'terminal',
+    SEARCH: 'search',
+    LSP: 'lsp',
+    NETWORK: 'network',
+    PLAN: 'plan',
+} as const
+
+/** 只读类工具列表（可并行执行） */
+export const READ_ONLY_TOOLS = [
+    'read_file',
+    'read_multiple_files',
+    'list_directory',
+    'get_dir_tree',
+    'search_files',
+    'codebase_search',
+    'find_references',
+    'go_to_definition',
+    'get_hover_info',
+    'get_document_symbols',
+    'get_lint_errors',
+    'web_search',
+    'read_url',
+] as const
+
+/** 写入类工具列表（需要预览） */
+export const WRITE_TOOLS = [
+    'edit_file',
+    'write_file',
+    'replace_file_content',
+    'create_file_or_folder',
+] as const
+
+// ==========================================
+// 服务层默认值（统一各服务的超时和间隔）
+// ==========================================
+
+export const SERVICE_DEFAULTS = {
+    /** LSP 请求超时 (ms) */
+    LSP_TIMEOUT_MS: 30000,
+    /** HTTP 请求超时 (ms) */
+    HTTP_TIMEOUT_MS: 30000,
+    /** 终端命令超时 (ms) */
+    TERMINAL_TIMEOUT_MS: 30000,
+    /** 缓存 TTL (ms) */
+    CACHE_TTL_MS: 60000,
+    /** Lint 缓存超时 (ms) */
+    LINT_CACHE_TIMEOUT_MS: 30000,
+    /** 文件监听间隔 (ms) */
+    FILE_WATCH_INTERVAL_MS: 5000,
+    /** 数据刷新间隔 (ms) */
+    FLUSH_INTERVAL_MS: 5000,
+    /** LSP 崩溃冷却时间 (ms) */
+    LSP_CRASH_COOLDOWN_MS: 5000,
+    /** 终端输出最大行数 */
+    MAX_TERMINAL_OUTPUT_LINES: 1000,
+} as const
+
+// ==========================================
+// 工具分类辅助函数
+// ==========================================
+
+/** 检查工具是否需要用户审批 */
+export const isApprovalRequired = (toolName: string): boolean => {
+    return toolName === 'delete_file_or_folder' || toolName === 'run_command'
+}
+
+/** 检查工具是否为文件写入类（需要代码预览） */
+export const isFileWriteTool = (toolName: string): boolean => {
+    return WRITE_TOOLS.includes(toolName as typeof WRITE_TOOLS[number])
+}
+
+/** 检查工具是否会修改文件系统（写入或删除） */
+export const isFileModifyingTool = (toolName: string): boolean => {
+    return isFileWriteTool(toolName) || toolName === 'delete_file_or_folder'
+}
+
+/** 检查工具是否为只读类（可并行执行） */
+export const isReadOnlyTool = (toolName: string): boolean => {
+    return READ_ONLY_TOOLS.includes(toolName as typeof READ_ONLY_TOOLS[number])
+}
+
+/** 检查工具是否需要显示代码差异（写入+删除+终端） */
+export const shouldShowToolPreview = (toolName: string): boolean => {
+    return isFileWriteTool(toolName) ||
+        toolName === 'run_command' ||
+        toolName === 'delete_file_or_folder'
+}
+
+/** 检查工具是否需要创建文件快照（用于撤销） */
+export const shouldCreateSnapshot = (toolName: string): boolean => {
+    return isFileModifyingTool(toolName)
+}
+
+/** 获取工具的审批类型 */
+export const getToolApprovalType = (toolName: string): 'dangerous' | 'terminal' | undefined => {
+    if (toolName === 'delete_file_or_folder') return 'dangerous'
+    if (toolName === 'run_command') return 'terminal'
+    return undefined
+}

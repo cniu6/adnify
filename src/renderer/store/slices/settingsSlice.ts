@@ -2,7 +2,7 @@
  * 设置相关状态切片
  */
 import { StateCreator } from 'zustand'
-import { SECURITY_DEFAULTS } from '../../../shared/constants'
+import { SECURITY_DEFAULTS, AGENT_DEFAULTS } from '../../../shared/constants'
 import { defaultEditorConfig } from '../../config/editorConfig'
 
 export type ProviderType = 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'groq' | 'mistral' | 'ollama' | 'custom'
@@ -128,15 +128,15 @@ const defaultSecuritySettings: SecuritySettings = {
   showSecurityWarnings: true,
 }
 
-// 默认 Agent 配置
+// 默认 Agent 配置（使用 AGENT_DEFAULTS 作为默认值来源）
 const defaultAgentConfig: AgentConfig = {
-  maxToolLoops: 25,
+  maxToolLoops: AGENT_DEFAULTS.MAX_TOOL_LOOPS,
   maxHistoryMessages: 50,
   maxToolResultChars: 10000,
-  maxFileContentChars: 15000,
+  maxFileContentChars: AGENT_DEFAULTS.MAX_FILE_CONTENT_CHARS,
   maxTotalContextChars: 50000,
   enableAutoFix: true,
-  // 上下文限制（从 editorConfig.ai 迁移）
+  // 上下文限制
   maxContextFiles: 6,
   maxSemanticResults: 5,
   maxTerminalChars: 3000,

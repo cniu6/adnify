@@ -10,7 +10,7 @@ import Store from 'electron-store'
 import { registerAllHandlers, cleanupAllHandlers, updateLLMServiceWindow } from './ipc'
 import { lspManager } from './lspManager'
 import { securityManager, updateWhitelist } from './security'
-import { SECURITY_DEFAULTS } from '../shared/constants'
+import { SECURITY_DEFAULTS, WINDOW_DEFAULTS } from '../shared/constants'
 
 // 移除硬编码的 SECURITY_DEFAULTS，已从 ../shared/constants 导入
 
@@ -116,15 +116,15 @@ function createWindow(isEmpty: boolean = false) {
     : path.join(__dirname, '../../public/icon.png')
 
   const win = new BrowserWindow({
-    width: 1600,
-    height: 1000,
-    minWidth: 1200,
-    minHeight: 700,
+    width: WINDOW_DEFAULTS.WIDTH,
+    height: WINDOW_DEFAULTS.HEIGHT,
+    minWidth: WINDOW_DEFAULTS.MIN_WIDTH,
+    minHeight: WINDOW_DEFAULTS.MIN_HEIGHT,
     frame: false,
     titleBarStyle: 'hidden',
     icon: iconPath,
     trafficLightPosition: { x: 15, y: 15 },
-    backgroundColor: '#09090b',
+    backgroundColor: WINDOW_DEFAULTS.BACKGROUND_COLOR,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
