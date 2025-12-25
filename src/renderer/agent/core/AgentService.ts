@@ -476,7 +476,7 @@ class AgentServiceClass {
     const recentToolCalls: string[] = []
     const MAX_RECENT_CALLS = 5
     let consecutiveRepeats = 0
-    const MAX_CONSECUTIVE_REPEATS = 2
+    const MAX_CONSECUTIVE_REPEATS = 3  // 允许2次重复后停止
 
     const agentLoopConfig = getConfig()
 
