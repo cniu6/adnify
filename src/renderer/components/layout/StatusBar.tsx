@@ -1,6 +1,6 @@
 import { logger } from '@utils/Logger'
-import { useEffect, useState } from 'react'
-import { GitBranch, AlertCircle, XCircle, Database, Loader2, Cpu, Terminal, CheckCircle2, ScrollText } from 'lucide-react'
+import { useEffect, useState, useMemo } from 'react'
+import { GitBranch, AlertCircle, XCircle, Database, Loader2, Cpu, Terminal, CheckCircle2, ScrollText, Coins } from 'lucide-react'
 import { useStore } from '@store'
 import { t } from '@renderer/i18n'
 import { IndexStatus } from '@app-types/electron'
@@ -8,6 +8,8 @@ import { indexWorkerService, IndexProgress } from '@services/indexWorkerService'
 import BottomBarPopover from '../ui/BottomBarPopover'
 import ToolCallLogContent from '../panels/ToolCallLogContent'
 import { PlanListPopover } from '../panels/PlanListContent'
+import { useAgentStore, selectMessages } from '@renderer/agent/core/AgentStore'
+import { isAssistantMessage, TokenUsage } from '@renderer/agent/core/types'
 
 export default function StatusBar() {
   const {
@@ -16,6 +18,24 @@ export default function StatusBar() {
   } = useStore()
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
   const [workerProgress, setWorkerProgress] = useState<IndexProgress | null>(null)
+
+  // 获取消息列表并计算 token 统计
+  const messages = useAgentStore(selectMessages)
+  const tokenStats = useMemo(() => {
+    let totalUsage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+    let lastUsage: TokenUsage | undefined
+
+    for (const msg of messages) {
+      if (isAssistantMessage(msg) && msg.usage) {
+        totalUsage.promptTokens += msg.usage.promptTokens
+        totalUsage.completionTokens += msg.usage.completionTokens
+        totalUsage.totalTokens += msg.usage.totalTokens
+        lastUsage = msg.usage
+      }
+    }
+
+    return { totalUsage, lastUsage }
+  }, [messages])
 
   // 初始化 Worker 并监听进度
   useEffect(() => {
@@ -111,6 +131,21 @@ export default function StatusBar() {
           <div className="flex items-center gap-2 text-accent animate-pulse-glow px-2 py-0.5 rounded-full bg-accent/5 border border-accent/10">
             <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
             <span className="font-medium">AI Processing</span>
+          </div>
+        )}
+
+        {/* Token 统计 */}
+        {tokenStats.totalUsage.totalTokens > 0 && (
+          <div
+            className="flex items-center gap-1.5 text-text-muted hover:text-text-primary transition-colors cursor-default group"
+            title={`Prompt: ${tokenStats.totalUsage.promptTokens.toLocaleString()} | Completion: ${tokenStats.totalUsage.completionTokens.toLocaleString()} | Total: ${tokenStats.totalUsage.totalTokens.toLocaleString()}`}
+          >
+            <Coins className="w-3 h-3 group-hover:text-accent transition-colors" />
+            <span className="font-mono text-[10px]">
+              {tokenStats.totalUsage.totalTokens >= 1000
+                ? `${(tokenStats.totalUsage.totalTokens / 1000).toFixed(1)}k`
+                : tokenStats.totalUsage.totalTokens}
+            </span>
           </div>
         )}
 

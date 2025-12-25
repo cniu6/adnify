@@ -477,3 +477,280 @@ AgentService.ts (~1656 行) 拆分完成：
 - [x] 冗余代码清理完成
 - [x] SettingsModal.tsx 拆分完成 (1936 → 170 行)
 - [x] AgentService.ts 拆分完成 (1656 → 705 行，新增 3 个模块)
+
+---
+
+## 八、Phase 7: 架构优化 ✅ 已完成
+
+### 7.1 模式状态统一 ✅
+
+**问题：** `chatMode` 状态在 `chatSlice` 和 `modeStore` 两处维护，导致状态不一致风险。
+
+**解决方案：**
+- ✅ 移除 `chatSlice` 中的 `chatMode` 状态和 `setChatMode` 方法
+- ✅ 统一使用 `useModeStore` 管理模式状态
+- ✅ 更新所有组件使用 `useModeStore`
+- ✅ 将 `ChatMode` 类型替换为 `WorkMode`
+
+**修改的文件：**
+- `src/renderer/store/slices/chatSlice.ts` - 移除 chatMode
+- `src/renderer/store/index.ts` - 导出 useModeStore 和 WorkMode
+- `src/renderer/components/agent/ChatPanel.tsx`
+- `src/renderer/components/chat/ChatInput.tsx`
+- `src/renderer/components/chat/ChatHeader.tsx`
+- `src/renderer/components/panels/TerminalPanel.tsx`
+- `src/renderer/components/panels/SessionList.tsx`
+- `src/renderer/components/dialogs/CommandPalette.tsx`
+- `src/renderer/hooks/useAgent.ts`
+- `src/renderer/agent/core/AgentService.ts`
+- `src/renderer/agent/sessionService.ts`
+- `src/renderer/agent/prompts.ts`
+- `src/renderer/types/index.ts`
+
+### 7.2 组件目录整理 ✅
+
+**问题：** `components/` 根目录有 30+ 文件未分类。
+
+**解决方案：** 按功能分组到子目录：
+
+```
+components/
+├── common/          # 通用组件 (4 files)
+│   ├── ConfirmDialog.tsx
+│   ├── ErrorBoundary.tsx
+│   ├── ToastProvider.tsx
+│   └── Logo.tsx
+│
+├── layout/          # 布局组件 (4 files)
+│   ├── TitleBar.tsx
+│   ├── StatusBar.tsx
+│   ├── ActivityBar.tsx
+│   └── WorkspaceDropdown.tsx
+│
+├── editor/          # 编辑器相关 (7 files)
+│   ├── Editor.tsx
+│   ├── EditorContextMenu.tsx
+│   ├── DiffViewer.tsx
+│   ├── InlineEdit.tsx
+│   ├── GhostTextWidget.ts
+│   ├── FilePreview.tsx
+│   └── ThemeManager.tsx
+│
+├── panels/          # 面板组件 (7 files)
+│   ├── TerminalPanel.tsx
+│   ├── CheckpointPanel.tsx
+│   ├── ComposerPanel.tsx
+│   ├── KeybindingPanel.tsx
+│   ├── SessionList.tsx
+│   ├── PlanListContent.tsx
+│   └── ToolCallLogContent.tsx
+│
+├── dialogs/         # 对话框组件 (7 files)
+│   ├── AboutDialog.tsx
+│   ├── CommandPalette.tsx
+│   ├── QuickOpen.tsx
+│   ├── OnboardingWizard.tsx
+│   ├── KeyboardShortcuts.tsx
+│   ├── LLMAdapterConfigEditor.tsx
+│   └── RequestBodyEditor.tsx
+│
+├── tree/            # 树形组件 (1 file)
+│   └── VirtualFileTree.tsx
+│
+├── agent/           # Agent UI (已存在)
+├── chat/            # Chat UI (已存在)
+├── settings/        # 设置 (已存在)
+├── sidebar/         # 侧边栏 (已存在)
+└── ui/              # 基础 UI (已存在)
+```
+
+**统计：**
+- 移动文件数：30
+- 更新导入路径：20+ 文件
+- 新建目录：6 (common, layout, editor, panels, dialogs, tree)
+
+### 7.3 重构脚本
+
+创建了以下自动化脚本：
+- `scripts/refactor/organize-components.js` - 组件目录整理
+- `scripts/refactor/update-component-imports.js` - 更新导入路径
+- `scripts/refactor/fix-all-imports.js` - 修复 @components 别名
+- `scripts/refactor/fix-relative-imports.js` - 修复相对路径导入
+
+---
+
+## 十、Phase 8: 数据流优化 ✅ 已完成
+
+### 8.1 Reasoning 内容分离 ✅
+
+**问题：** 推理/思考内容被嵌入到 `content` 字符串中，使用 `<thinking>` 标签包裹，UI 需要解析标签来提取显示。
+
+**解决方案：**
+- ✅ 在 `StreamHandlerState` 中添加 `reasoning` 和 `reasoningStartTime` 字段
+- ✅ 在 `AssistantMessage` 类型中添加 `reasoning`、`reasoningStartTime` 和 `usage` 字段
+- ✅ 修改 `handleReasoningChunk()` 独立存储推理内容，不再嵌入 content
+- ✅ 修改 `handleLLMDone()` 返回独立的 reasoning 和 usage
+- ✅ 更新 `ChatMessage.tsx` 直接使用 `message.reasoning` 字段渲染
+- ✅ 移除 `extractThinkingBlocks()` 解析函数（不再需要）
+
+**修改的文件：**
+- `src/renderer/agent/core/types.ts` - 添加 TokenUsage 类型和 AssistantMessage 字段
+- `src/renderer/agent/core/LLMStreamHandler.ts` - 独立存储 reasoning
+- `src/renderer/agent/core/AgentService.ts` - 传递 reasoning 和 usage 到 store
+- `src/renderer/components/agent/ChatMessage.tsx` - 直接使用 reasoning 字段
+
+### 8.2 Token 统计显示 ✅
+
+**问题：** LLM 调用的 token 使用统计没有传递到前端显示。
+
+**解决方案：**
+- ✅ 在 `AssistantMessage` 中添加 `usage` 字段存储 token 统计
+- ✅ 从 `handleLLMDone()` 返回 usage 信息
+- ✅ 在 `AgentService.callLLM()` 中更新 store 的 usage
+- ✅ 在 `StatusBar.tsx` 中显示累计 token 使用量
+- ✅ 悬停显示详细统计（Prompt/Completion/Total）
+
+**新增类型：**
+```typescript
+// src/renderer/agent/core/types.ts
+export interface TokenUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
+
+export interface AssistantMessage {
+  // ... 现有字段
+  reasoning?: string           // 独立存储的推理内容
+  reasoningStartTime?: number  // 推理开始时间
+  usage?: TokenUsage           // Token 使用统计
+}
+```
+
+**UI 显示：**
+- StatusBar 右侧显示累计 token 数（如 `12.5k`）
+- 悬停显示详细：`Prompt: 8,000 | Completion: 4,500 | Total: 12,500`
+
+---
+
+## 十一、Phase 9: 性能优化 ✅ 已完成
+
+### 9.1 Provider 缓存优化 ✅
+
+**问题：** 每次 LLM 请求都可能创建新的 Provider 实例，浪费资源。
+
+**解决方案：**
+- ✅ 添加 Provider 缓存条目结构（包含 lastUsed、useCount）
+- ✅ 实现 TTL 过期机制（30 分钟）
+- ✅ 实现 LRU 淘汰策略（最多缓存 10 个）
+- ✅ 定时清理过期 Provider（每 5 分钟）
+- ✅ 简化缓存 key 生成（adapter:baseUrl:apiKey后8位）
+
+**修改的文件：**
+- `src/main/services/llm/llmService.ts`
+
+### 9.2 工具结果动态截断 ✅
+
+**问题：** 工具结果截断策略过于简单，不同工具需要不同的截断策略。
+
+**解决方案：**
+- ✅ 为每种工具定义独立的截断配置（maxLength、headRatio、tailRatio）
+- ✅ 搜索类工具保留更多开头（最相关结果）
+- ✅ 命令输出保留更多结尾（错误信息通常在最后）
+- ✅ 在行边界截断（更友好的输出）
+- ✅ 新增 `grep_search`、`execute_command`、`get_definition` 等工具配置
+
+**修改的文件：**
+- `src/renderer/utils/partialJson.ts`
+
+### 9.3 循环检测增强 ✅
+
+**问题：** 原有循环检测只能检测精确重复，无法检测语义级别的循环。
+
+**解决方案：**
+- ✅ 创建 `LoopDetector` 类，支持多种检测策略
+- ✅ 精确重复检测 - 完全相同的工具调用（2 次触发）
+- ✅ 语义重复检测 - 相同工具+相同目标文件（写操作 2 次，读操作 3 次）
+- ✅ 模式检测 - 检测 A→B→A→B 等循环模式
+- ✅ 参数哈希用于快速比较
+
+**新增类：**
+```typescript
+class LoopDetector {
+  checkLoop(toolCalls: LLMToolCall[]): LoopCheckResult
+  // 检测策略：
+  // 1. checkExactRepeat() - 精确重复
+  // 2. checkSemanticRepeat() - 语义重复
+  // 3. checkPatternLoop() - 模式循环
+}
+```
+
+**修改的文件：**
+- `src/renderer/agent/core/AgentConfig.ts` - 添加 LoopDetector 类
+- `src/renderer/agent/core/AgentService.ts` - 使用新的循环检测器
+
+---
+
+## 十二、验收标准更新
+
+- [x] 所有测试通过
+- [x] 构建成功
+- [x] TypeScript 无错误 (`npx tsc --noEmit` 通过)
+- [x] 所有导入使用路径别名
+- [x] Sidebar.tsx 拆分完成 (1938 → 30 行)
+- [x] SettingsModal.tsx 拆分完成 (1936 → 180 行)
+- [x] AgentService.ts 拆分完成 (1656 → 705 行)
+- [x] 冗余代码清理完成
+- [x] 模式状态统一到 modeStore
+- [x] 组件目录整理完成
+- [x] Reasoning 内容独立存储
+- [x] Token 统计显示在 StatusBar
+- [x] Provider 缓存优化（TTL + LRU）
+- [x] 工具结果动态截断
+- [x] 循环检测增强（语义级别）
+
+```
+src/renderer/
+├── App.tsx
+├── main.tsx
+├── monacoWorker.ts
+│
+├── agent/                    # Agent 功能
+│   ├── core/                 # 核心逻辑
+│   │   ├── AgentService.ts
+│   │   ├── AgentStore.ts
+│   │   ├── AgentConfig.ts
+│   │   ├── LLMStreamHandler.ts
+│   │   ├── ContextBuilder.ts
+│   │   ├── MessageConverter.ts
+│   │   ├── XMLToolParser.ts
+│   │   ├── ToolExecutor.ts
+│   │   └── store/
+│   └── tools/
+│
+├── components/               # UI 组件 (按功能分组)
+│   ├── common/               # 通用组件
+│   ├── layout/               # 布局组件
+│   ├── editor/               # 编辑器相关
+│   ├── panels/               # 面板组件
+│   ├── dialogs/              # 对话框组件
+│   ├── tree/                 # 树形组件
+│   ├── agent/                # Agent UI
+│   ├── chat/                 # Chat UI
+│   ├── settings/             # 设置
+│   ├── sidebar/              # 侧边栏
+│   └── ui/                   # 基础 UI
+│
+├── modes/                    # 模式管理 (统一)
+│   ├── modeStore.ts
+│   └── types.ts
+│
+├── services/                 # 服务层
+├── store/                    # 状态管理
+├── hooks/                    # Hooks
+├── config/                   # 配置
+├── i18n/                     # 国际化
+├── types/                    # 类型定义
+├── utils/                    # 工具函数
+└── styles/                   # 样式
+```

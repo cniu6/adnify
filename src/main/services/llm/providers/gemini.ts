@@ -231,9 +231,25 @@ export class GeminiProvider extends BaseProvider {
         toolCallCount: toolCalls.length,
       })
 
+      // 尝试获取 usage 信息
+      let usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined
+      try {
+        const response = await result.response
+        if (response.usageMetadata) {
+          usage = {
+            promptTokens: response.usageMetadata.promptTokenCount || 0,
+            completionTokens: response.usageMetadata.candidatesTokenCount || 0,
+            totalTokens: response.usageMetadata.totalTokenCount || 0,
+          }
+        }
+      } catch {
+        // 忽略获取 usage 失败
+      }
+
       onComplete({
         content: fullContent,
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        usage,
       })
     } catch (error: unknown) {
       const llmError = this.parseError(error)

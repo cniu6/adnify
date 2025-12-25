@@ -92,10 +92,17 @@ export interface UserMessage {
   contextItems?: ContextItem[]
 }
 
-// Assistant 消息内容部分（支持文字和工具调用交错）
+// Assistant 消息内容部分（支持文字、推理和工具调用交错）
 export interface TextPart {
   type: 'text'
   content: string
+}
+
+export interface ReasoningPart {
+  type: 'reasoning'
+  content: string
+  startTime?: number
+  isStreaming?: boolean
 }
 
 export interface ToolCallPart {
@@ -103,7 +110,14 @@ export interface ToolCallPart {
   toolCall: ToolCall
 }
 
-export type AssistantPart = TextPart | ToolCallPart
+export type AssistantPart = TextPart | ReasoningPart | ToolCallPart
+
+// Token 使用统计
+export interface TokenUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
 
 // 助手消息
 export interface AssistantMessage {
@@ -117,6 +131,11 @@ export interface AssistantMessage {
   parts: AssistantPart[]
   // 兼容：所有工具调用的列表
   toolCalls?: ToolCall[]
+  // 推理/思考内容（独立存储，不嵌入 content）
+  reasoning?: string
+  reasoningStartTime?: number
+  // Token 使用统计
+  usage?: TokenUsage
 }
 
 // 工具结果消息（参考 Void 的 ToolMessage）
@@ -349,6 +368,10 @@ export function isInterruptedToolMessage(msg: ChatMessage): msg is InterruptedTo
 
 export function isTextPart(part: AssistantPart): part is TextPart {
   return part.type === 'text'
+}
+
+export function isReasoningPart(part: AssistantPart): part is ReasoningPart {
+  return part.type === 'reasoning'
 }
 
 export function isToolCallPart(part: AssistantPart): part is ToolCallPart {

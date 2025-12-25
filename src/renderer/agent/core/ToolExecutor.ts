@@ -824,10 +824,14 @@ export async function executeTool(
             }
 
             if (matchedItem) {
-              store.updatePlanItem(targetId!, {
+              const updates: { status: any; title?: string } = {
                 status: item.status as any,
-                title: item.title
-              })
+              }
+              // 只有当 title 有值时才更新
+              if (item.title) {
+                updates.title = item.title
+              }
+              store.updatePlanItem(targetId!, updates)
             } else {
               logger.agent.warn(`[update_plan] Could not find item for identifier: ${item.id}`)
             }

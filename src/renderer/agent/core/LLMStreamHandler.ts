@@ -21,6 +21,9 @@ export interface StreamHandlerState {
   isReasoning: boolean
   contentBuffer: string
   activeStreamingToolCalls: Set<string>
+  // 当前 reasoning part 的 id（用于追加内容）
+  currentReasoningPartId: string | null
+  reasoningStartTime: number | null
 }
 
 /**
@@ -44,6 +47,8 @@ export function createStreamHandlerState(): StreamHandlerState {
     isReasoning: false,
     contentBuffer: '',
     activeStreamingToolCalls: new Set(),
+    currentReasoningPartId: null,
+    reasoningStartTime: null,
   }
 }
 
@@ -77,6 +82,7 @@ export function handleTextChunk(
 
 /**
  * 处理推理/思考内容
+ * 作为独立的 part 插入到 parts 数组中，按流式顺序显示
  */
 export function handleReasoningChunk(
   chunk: LLMStreamChunk,
@@ -90,34 +96,35 @@ export function handleReasoningChunk(
 
   if (currentAssistantId) {
     if (!state.isReasoning) {
+      // 新的推理开始，创建新的 reasoning part
       state.isReasoning = true
-      const startTime = Date.now()
-      const openTag = `\n<thinking startTime="${startTime}">\n`
-      state.content += openTag
-      store.appendToAssistant(currentAssistantId, openTag)
+      state.reasoningStartTime = Date.now()
+      state.currentReasoningPartId = store.addReasoningPart(currentAssistantId)
     }
-    state.content += chunk.content
-    store.appendToAssistant(currentAssistantId, chunk.content)
+    // 追加到当前 reasoning part
+    if (state.currentReasoningPartId) {
+      store.updateReasoningPart(currentAssistantId, state.currentReasoningPartId, chunk.content, true)
+    }
   }
 }
 
 /**
- * 关闭推理标签（如果正在推理）
+ * 关闭推理（如果正在推理）
+ * 标记当前 reasoning part 为完成状态
  */
 export function closeReasoningIfNeeded(
   state: StreamHandlerState,
   currentAssistantId: string | null
 ): void {
   if (!state.isReasoning) return
-
+  
   const store = useAgentStore.getState()
-  state.isReasoning = false
-  const closeTag = '\n</thinking>\n'
-  state.content += closeTag
-
-  if (currentAssistantId) {
-    store.appendToAssistant(currentAssistantId, closeTag)
+  if (currentAssistantId && state.currentReasoningPartId) {
+    store.finalizeReasoningPart(currentAssistantId, state.currentReasoningPartId)
   }
+  
+  state.isReasoning = false
+  state.currentReasoningPartId = null
 }
 
 /**
@@ -287,12 +294,14 @@ export function handleLLMToolCall(
 
 /**
  * 处理 LLM 完成事件
+ * 返回内容、工具调用和 token 使用统计
+ * 注意：reasoning 已经作为 part 存储，不再单独返回
  */
 export function handleLLMDone(
-  result: { content?: string; toolCalls?: LLMToolCall[] },
+  result: { content?: string; toolCalls?: LLMToolCall[]; reasoning?: string; usage?: { promptTokens: number; completionTokens: number; totalTokens: number } },
   state: StreamHandlerState,
   currentAssistantId: string | null
-): { content: string; toolCalls: LLMToolCall[] } {
+): { content: string; toolCalls: LLMToolCall[]; usage?: { promptTokens: number; completionTokens: number; totalTokens: number } } {
   closeReasoningIfNeeded(state, currentAssistantId)
 
   // 合并结果中的工具调用
@@ -330,7 +339,11 @@ export function handleLLMDone(
     }
   }
 
-  return { content: finalContent, toolCalls: state.toolCalls }
+  return {
+    content: finalContent,
+    toolCalls: state.toolCalls,
+    usage: result.usage,
+  }
 }
 
 /**

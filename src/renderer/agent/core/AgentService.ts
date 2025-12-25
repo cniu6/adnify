@@ -33,6 +33,7 @@ import {
   READ_TOOLS,
   RETRYABLE_ERROR_CODES,
   isRetryableError,
+  LoopDetector,
 } from './AgentConfig'
 import {
   createStreamHandlerState,
@@ -267,10 +268,8 @@ class AgentServiceClass {
     let loopCount = 0
     let shouldContinue = true
 
-    const recentToolCalls: string[] = []
-    const MAX_RECENT_CALLS = 5
-    let consecutiveRepeats = 0
-    const MAX_CONSECUTIVE_REPEATS = 2
+    // 增强的循环检测器
+    const loopDetector = new LoopDetector()
 
     const agentLoopConfig = getAgentConfig()
 
@@ -305,27 +304,33 @@ class AgentServiceClass {
       }
 
       if (!result.toolCalls || result.toolCalls.length === 0) {
-        const hasWriteOps = llmMessages.some(m => m.role === 'assistant' && m.tool_calls?.some((tc: any) => !READ_ONLY_TOOLS.includes(tc.function.name)))
-        const hasUpdatePlan = llmMessages.some(m => m.role === 'assistant' && m.tool_calls?.some((tc: any) => tc.function.name === 'update_plan'))
+        // 只有在 plan 模式下才提醒更新 plan
+        if (chatMode === 'plan' && store.plan) {
+          const hasWriteOps = llmMessages.some(m => m.role === 'assistant' && m.tool_calls?.some((tc: any) => !READ_ONLY_TOOLS.includes(tc.function.name)))
+          const hasUpdatePlan = llmMessages.some(m => m.role === 'assistant' && m.tool_calls?.some((tc: any) => tc.function.name === 'update_plan'))
 
-        if (store.plan && hasWriteOps && !hasUpdatePlan && loopCount < agentLoopConfig.maxToolLoops) {
-          logger.agent.info('[Agent] Plan mode detected: Reminding AI to update plan status')
-          llmMessages.push({
-            role: 'user' as const,
-            content: 'Reminder: You have performed some actions. Please use `update_plan` to update the plan status (e.g., mark the current step as completed) before finishing your response.',
-          })
-          shouldContinue = true
-          continue
+          if (hasWriteOps && !hasUpdatePlan && loopCount < agentLoopConfig.maxToolLoops) {
+            logger.agent.info('[Agent] Plan mode detected: Reminding AI to update plan status')
+            llmMessages.push({
+              role: 'user' as const,
+              content: 'Reminder: You have performed some actions. Please use `update_plan` to update the plan status (e.g., mark the current step as completed) before finishing your response.',
+            })
+            shouldContinue = true
+            continue
+          }
         }
 
         logger.agent.info('[Agent] No tool calls, task complete')
         break
       }
 
-      const currentCallSignature = result.toolCalls
-        .map(tc => `${tc.name}:${JSON.stringify(tc.arguments)}`)
-        .sort()
-        .join('|')
+      // 使用增强的循环检测
+      const loopResult = loopDetector.checkLoop(result.toolCalls)
+      if (loopResult.isLoop) {
+        logger.agent.error(`[Agent] Loop detected: ${loopResult.reason}`)
+        store.appendToAssistant(this.currentAssistantId!, `\n\n⚠️ ${loopResult.reason} Stopping to prevent infinite loop.`)
+        break
+      }
 
       if (this.currentAssistantId) {
         const currentMsg = store.getMessages().find(m => m.id === this.currentAssistantId)
@@ -345,24 +350,6 @@ class AgentServiceClass {
             }
           }
         }
-      }
-
-      if (recentToolCalls.includes(currentCallSignature)) {
-        consecutiveRepeats++
-        logger.agent.warn(`[Agent] Detected repeated tool call (${consecutiveRepeats}/${MAX_CONSECUTIVE_REPEATS}):`, currentCallSignature.slice(0, 100))
-
-        if (consecutiveRepeats >= MAX_CONSECUTIVE_REPEATS) {
-          logger.agent.error('[Agent] Too many repeated calls, stopping loop')
-          store.appendToAssistant(this.currentAssistantId!, '\n\n⚠️ Detected repeated operations. Stopping to prevent infinite loop.')
-          break
-        }
-      } else {
-        consecutiveRepeats = 0
-      }
-
-      recentToolCalls.push(currentCallSignature)
-      if (recentToolCalls.length > MAX_RECENT_CALLS) {
-        recentToolCalls.shift()
       }
 
       llmMessages.push({
@@ -504,7 +491,7 @@ class AgentServiceClass {
     config: LLMCallConfig,
     messages: OpenAIMessage[],
     chatMode: WorkMode
-  ): Promise<{ content?: string; toolCalls?: LLMToolCall[]; error?: string }> {
+  ): Promise<{ content?: string; toolCalls?: LLMToolCall[]; reasoning?: string; reasoningStartTime?: number; usage?: { promptTokens: number; completionTokens: number; totalTokens: number }; error?: string }> {
     return new Promise((resolve) => {
       // 重置流式状态
       this.streamState = createStreamHandlerState()
@@ -549,6 +536,12 @@ class AgentServiceClass {
         window.electronAPI.onLLMDone((result) => {
           cleanupListeners()
           const finalResult = handleLLMDone(result, this.streamState, this.currentAssistantId)
+          // 更新 store 中的 usage 信息
+          if (this.currentAssistantId && finalResult.usage) {
+            useAgentStore.getState().updateMessage(this.currentAssistantId, {
+              usage: finalResult.usage,
+            } as any)
+          }
           resolve(finalResult)
         })
       )

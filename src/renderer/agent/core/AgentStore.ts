@@ -23,6 +23,7 @@ import {
   AssistantPart,
   PendingChange,
   MessageCheckpoint,
+  ReasoningPart,
   // 类型守卫
   isAssistantMessage,
   isTextPart,
@@ -79,6 +80,11 @@ interface AgentActions {
   // 工具调用操作（Cursor 风格：内联到 parts）
   addToolCallPart: (messageId: string, toolCall: Omit<ToolCall, 'status'>) => void
   updateToolCall: (messageId: string, toolCallId: string, updates: Partial<ToolCall>) => void
+
+  // Reasoning 操作（内联到 parts）
+  addReasoningPart: (messageId: string) => string  // 返回 reasoning part 的 id
+  updateReasoningPart: (messageId: string, partId: string, content: string, isStreaming?: boolean) => void
+  finalizeReasoningPart: (messageId: string, partId: string) => void
 
   // 上下文操作
   addContextItem: (item: ContextItem) => void
@@ -621,6 +627,112 @@ export const useAgentStore = create<AgentStore>()(
                 parts: newParts,
                 toolCalls: newToolCalls,
               }
+            }
+            return msg
+          })
+
+          return {
+            threads: {
+              ...state.threads,
+              [threadId]: { ...thread, messages },
+            },
+          }
+        })
+      },
+
+      // Reasoning 操作
+      addReasoningPart: (messageId) => {
+        const state = get()
+        const threadId = state.currentThreadId
+        if (!threadId) return ''
+
+        const partId = `reasoning-${Date.now()}`
+
+        set(state => {
+          const thread = state.threads[threadId]
+          if (!thread) return state
+
+          const messages = thread.messages.map(msg => {
+            if (msg.id === messageId && msg.role === 'assistant') {
+              const assistantMsg = msg as AssistantMessage
+              const newPart: ReasoningPart = {
+                type: 'reasoning',
+                content: '',
+                startTime: Date.now(),
+                isStreaming: true,
+              }
+              // 给 part 添加 id 用于后续更新（通过扩展类型）
+              ;(newPart as any).id = partId
+              return {
+                ...assistantMsg,
+                parts: [...assistantMsg.parts, newPart],
+              }
+            }
+            return msg
+          })
+
+          return {
+            threads: {
+              ...state.threads,
+              [threadId]: { ...thread, messages },
+            },
+          }
+        })
+
+        return partId
+      },
+
+      updateReasoningPart: (messageId, partId, content, isStreaming = true) => {
+        const state = get()
+        const threadId = state.currentThreadId
+        if (!threadId) return
+
+        set(state => {
+          const thread = state.threads[threadId]
+          if (!thread) return state
+
+          const messages = thread.messages.map(msg => {
+            if (msg.id === messageId && msg.role === 'assistant') {
+              const assistantMsg = msg as AssistantMessage
+              const newParts = assistantMsg.parts.map(part => {
+                if (part.type === 'reasoning' && (part as any).id === partId) {
+                  return { ...part, content: (part as ReasoningPart).content + content, isStreaming }
+                }
+                return part
+              })
+              return { ...assistantMsg, parts: newParts }
+            }
+            return msg
+          })
+
+          return {
+            threads: {
+              ...state.threads,
+              [threadId]: { ...thread, messages },
+            },
+          }
+        })
+      },
+
+      finalizeReasoningPart: (messageId, partId) => {
+        const state = get()
+        const threadId = state.currentThreadId
+        if (!threadId) return
+
+        set(state => {
+          const thread = state.threads[threadId]
+          if (!thread) return state
+
+          const messages = thread.messages.map(msg => {
+            if (msg.id === messageId && msg.role === 'assistant') {
+              const assistantMsg = msg as AssistantMessage
+              const newParts = assistantMsg.parts.map(part => {
+                if (part.type === 'reasoning' && (part as any).id === partId) {
+                  return { ...part, isStreaming: false }
+                }
+                return part
+              })
+              return { ...assistantMsg, parts: newParts }
             }
             return msg
           })

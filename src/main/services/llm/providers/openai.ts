@@ -123,6 +123,7 @@ export class OpenAIProvider extends BaseProvider {
         model,
         messages: openaiMessages,
         stream: true,
+        stream_options: { include_usage: true }, // 请求返回 usage 信息
         max_tokens: maxTokens || 8192,
       }
 
@@ -149,12 +150,23 @@ export class OpenAIProvider extends BaseProvider {
 
       let fullContent = ''
       let fullReasoning = ''
+      let usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined
 
       // 从适配器配置获取 reasoning 字段名
       const toolCalls: ToolCall[] = []
       let currentToolCall: { id?: string; name?: string; argsString: string } | null = null
 
       for await (const chunk of stream) {
+        // 捕获 usage 信息（在最后一个 chunk 中）
+        if ((chunk as any).usage) {
+          const u = (chunk as any).usage
+          usage = {
+            promptTokens: u.prompt_tokens || 0,
+            completionTokens: u.completion_tokens || 0,
+            totalTokens: u.total_tokens || 0,
+          }
+        }
+
         // 动态 delta 类型，支持不同厂商的字段名
         interface ExtendedDelta {
           content?: string
@@ -247,12 +259,14 @@ export class OpenAIProvider extends BaseProvider {
       this.log('info', 'Chat complete', {
         contentLength: fullContent.length,
         toolCallCount: toolCalls.length,
+        usage,
       })
 
       onComplete({
         content: finalContent,
         reasoning: fullReasoning || undefined,
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        usage,
       })
     } catch (error: unknown) {
       const llmError = this.parseError(error)
