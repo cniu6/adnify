@@ -8,9 +8,9 @@ import { BrowserWindow } from 'electron'
 import { OpenAIProvider } from './providers/openai'
 import { AnthropicProvider } from './providers/anthropic'
 import { GeminiProvider } from './providers/gemini'
+import { CustomProvider } from './providers/custom'
 import { LLMProvider, LLMMessage, LLMConfig, ToolDefinition, LLMErrorCode } from './types'
 
-// Provider 缓存条目
 interface ProviderCacheEntry {
   provider: LLMProvider
   lastUsed: number
@@ -77,17 +77,20 @@ export class LLMService {
    * 生成 Provider 缓存 key
    */
   private getProviderKey(config: LLMConfig): string {
+    // 根据 adapterConfig.isBuiltin 和 id 生成唯一 key
     const adapterKey = config.adapterConfig?.id || config.adapterId || config.provider
-    // 简化 key，只包含必要信息
-    return `${adapterKey}:${config.baseUrl || 'default'}:${config.apiKey?.slice(-8) || 'nokey'}`
+    const isCustom = config.adapterConfig?.isBuiltin === false
+    return `${isCustom ? 'custom:' : ''}${adapterKey}:${config.baseUrl || 'default'}:${config.apiKey?.slice(-8) || 'nokey'}`
   }
 
   /**
    * 获取或创建 Provider 实例
-   * 根据 adapter 类型选择实现：
-   * - anthropic → AnthropicProvider
-   * - gemini → GeminiProvider
-   * - 其他（openai, deepseek, qwen, zhipu, groq, mistral, ollama, custom）→ OpenAIProvider
+   * 
+   * 路由规则（基于 adapterConfig.isBuiltin）：
+   * 1. adapterConfig.isBuiltin === false → CustomProvider (完全自定义)
+   * 2. adapterId = 'anthropic' → AnthropicProvider
+   * 3. adapterId = 'gemini' → GeminiProvider
+   * 4. 其他 → OpenAIProvider (兼容模式)
    */
   private getProvider(config: LLMConfig): LLMProvider {
     const key = this.getProviderKey(config)
@@ -99,27 +102,35 @@ export class LLMService {
       return cached.provider
     }
 
-    const adapterKey = config.adapterConfig?.id || config.adapterId || config.provider
-    logger.system.info('[LLMService] Creating new provider:', config.provider, 'adapter:', adapterKey, 'timeout:', config.timeout)
-
     let provider: LLMProvider
+    const adapterConfig = config.adapterConfig
+    const adapterKey = adapterConfig?.id || config.adapterId || config.provider
 
-    // 根据 adapter 类型选择实现
-    switch (adapterKey) {
-      case 'anthropic':
-        provider = new AnthropicProvider(config.apiKey, config.baseUrl, config.timeout)
-        break
-      case 'gemini':
-        provider = new GeminiProvider(config.apiKey, config.baseUrl, config.timeout)
-        break
-      default:
-        // 所有 OpenAI 兼容的 provider：openai, deepseek, qwen, zhipu, groq, mistral, ollama, custom 等
-        provider = new OpenAIProvider(
-          config.apiKey || 'ollama', // Ollama 不需要 API key
-          config.baseUrl,
-          config.timeout
-        )
-        break
+    // 判断是否完全自定义模式
+    if (adapterConfig?.isBuiltin === false) {
+      // 完全自定义模式：使用 CustomProvider
+      logger.system.info('[LLMService] Creating custom provider:', adapterConfig.name, 'adapter:', adapterKey)
+      provider = new CustomProvider(adapterConfig, config.apiKey, config.baseUrl || '', config.timeout)
+    } else {
+      // 内置 Provider 路由（兼容模式）
+      logger.system.info('[LLMService] Creating builtin provider:', config.provider, 'adapter:', adapterKey, 'timeout:', config.timeout)
+
+      switch (adapterKey) {
+        case 'anthropic':
+          provider = new AnthropicProvider(config.apiKey, config.baseUrl, config.timeout)
+          break
+        case 'gemini':
+          provider = new GeminiProvider(config.apiKey, config.baseUrl, config.timeout)
+          break
+        default:
+          // 所有 OpenAI 兼容的 provider
+          provider = new OpenAIProvider(
+            config.apiKey || 'ollama',
+            config.baseUrl,
+            config.timeout
+          )
+          break
+      }
     }
 
     this.providerCache.set(key, {

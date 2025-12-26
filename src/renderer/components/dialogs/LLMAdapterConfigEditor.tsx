@@ -3,7 +3,7 @@
  * 全可视化的 LLM 适配器配置编辑器
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
     Code2, Sparkles, RotateCcw,
     ChevronDown, ChevronRight, AlertTriangle, HelpCircle,
@@ -13,7 +13,6 @@ import { Input } from '../ui'
 import {
     type LLMAdapterConfig,
     getBuiltinAdapter,
-    getBuiltinAdapters,
     getAdapterConfig,
 } from '@/shared/config/providers'
 
@@ -32,7 +31,6 @@ export default function LLMAdapterConfigEditor({
     language,
     hasConfiguredAI = false,
 }: LLMAdapterConfigEditorProps) {
-    const builtinAdapters = useMemo(() => getBuiltinAdapters(), [])
     const defaultAdapter = getAdapterConfig('openai')
 
     const [localConfig, setLocalConfig] = useState<LLMAdapterConfig>(
@@ -100,45 +98,28 @@ export default function LLMAdapterConfigEditor({
         onChange(preset.id, preset)
     }, [adapterId, onChange, defaultAdapter])
 
-    const handlePresetSelect = useCallback((presetId: string) => {
-        const preset = getBuiltinAdapter(presetId)
-        if (preset) {
-            setLocalConfig(preset)
-            setBodyJsonText(JSON.stringify(preset.request.bodyTemplate, null, 2))
-            setJsonError(null)
-            onChange(presetId, preset)
-        }
-    }, [onChange])
-
     return (
         <div className="space-y-4">
-            {/* 预设选择 */}
-            <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-                    <Zap className="w-3.5 h-3.5 text-accent" />
-                    {language === 'zh' ? '适配器预设' : 'Adapter Preset'}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                    {builtinAdapters.map((adapter) => (
-                        <button
-                            key={adapter.id}
-                            onClick={() => handlePresetSelect(adapter.id)}
-                            className={`
-                                relative flex flex-col items-center justify-center p-2.5 rounded-lg border text-center transition-all duration-200
-                                ${adapterId === adapter.id
-                                    ? 'border-accent bg-accent/10 text-accent shadow-sm'
-                                    : 'border-border-subtle bg-surface/30 text-text-muted hover:bg-surface hover:border-border hover:text-text-primary'
-                                }
-                            `}
-                        >
-                            <span className="text-xs font-medium">{adapter.name}</span>
-                            <span className="text-[9px] text-text-muted mt-0.5 truncate w-full">{adapter.description}</span>
-                            {adapterId === adapter.id && (
-                                <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" />
-                            )}
-                        </button>
-                    ))}
+            {/* 当前适配器信息 (只读，由顶部 Provider 选择决定) */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-medium text-text-primary">
+                        {localConfig.name || adapterId}
+                    </span>
+                    {localConfig.description && (
+                        <span className="text-xs text-text-muted">
+                            ({localConfig.description})
+                        </span>
+                    )}
                 </div>
+                <button
+                    onClick={handleReset}
+                    className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary"
+                >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    {language === 'zh' ? '重置' : 'Reset'}
+                </button>
             </div>
 
             {/* AI 智能配置提示 */}
@@ -319,8 +300,8 @@ export default function LLMAdapterConfigEditor({
                             <div className="flex items-center gap-4">
                                 <label className="inline-flex items-center cursor-pointer gap-3">
                                     <div className="relative">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             className="w-9 h-5 appearance-none bg-surface-active rounded-full checked:bg-accent transition-colors cursor-pointer"
                                             checked={localConfig.response?.argsIsObject || false}
                                             onChange={(e) => updateResponse({ argsIsObject: e.target.checked })}

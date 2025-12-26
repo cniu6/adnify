@@ -258,6 +258,9 @@ export const createSettingsSlice: StateCreator<SettingsSlice, [], [], SettingsSl
         editorConfig: getEditorConfig(),
       })
 
+      // 加载自定义 Provider（从 localStorage）
+      await (get() as any).loadCustomProviders()
+
       if (!isEmptyWindow) {
         const workspace = await window.electronAPI.restoreWorkspace()
         if (workspace) {

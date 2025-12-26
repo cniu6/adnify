@@ -201,100 +201,10 @@ const GEMINI_ADAPTER: LLMAdapterConfig = {
     }
 }
 
-const DEEPSEEK_ADAPTER: LLMAdapterConfig = {
-    id: 'deepseek',
-    name: 'DeepSeek',
-    description: 'DeepSeek API 格式 (支持 Reasoning)',
-    isBuiltin: true,
-    request: {
-        endpoint: '/chat/completions',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
-            stream: true,
-            max_tokens: 8192,
-        }
-    },
-    response: {
-        contentField: 'delta.content',
-        reasoningField: 'delta.reasoning',
-        toolCallField: 'delta.tool_calls',
-        toolNamePath: 'function.name',
-        toolArgsPath: 'function.arguments',
-        toolIdPath: 'id',
-        argsIsObject: false,
-        finishReasonField: 'finish_reason',
-        doneMarker: '[DONE]',
-    }
-}
-
-const ZHIPU_ADAPTER: LLMAdapterConfig = {
-    id: 'zhipu',
-    name: '智谱 GLM',
-    description: 'GLM API 格式 (支持 Thinking)',
-    isBuiltin: true,
-    request: {
-        endpoint: '/chat/completions',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
-            stream: true,
-            max_tokens: 8192,
-        }
-    },
-    response: {
-        contentField: 'delta.content',
-        reasoningField: 'delta.reasoning_content',
-        toolCallField: 'delta.tool_calls',
-        toolNamePath: 'function.name',
-        toolArgsPath: 'function.arguments',
-        toolIdPath: 'id',
-        argsIsObject: true,
-        finishReasonField: 'finish_reason',
-        doneMarker: '[DONE]',
-    }
-}
-
-const OLLAMA_ADAPTER: LLMAdapterConfig = {
-    id: 'ollama',
-    name: 'Ollama',
-    description: '本地模型 API',
-    isBuiltin: true,
-    request: {
-        endpoint: '/chat/completions',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
-            stream: true,
-        }
-    },
-    response: {
-        contentField: 'delta.content',
-        toolCallField: 'delta.tool_calls',
-        toolNamePath: 'function.name',
-        toolArgsPath: 'function.arguments',
-        toolIdPath: 'id',
-        argsIsObject: false,
-        finishReasonField: 'finish_reason',
-        doneMarker: '[DONE]',
-    }
-}
-
 // ============================================
 // 内置 Provider 配置
 // ============================================
+
 
 export const PROVIDERS: Record<string, UnifiedProviderConfig> = {
     openai: {
@@ -394,219 +304,25 @@ export const PROVIDERS: Record<string, UnifiedProviderConfig> = {
         },
     },
 
-    deepseek: {
-        id: 'deepseek',
-        name: 'deepseek',
-        displayName: 'DeepSeek',
-        description: 'DeepSeek V3, R1 等模型',
-        auth: {
-            type: 'api-key',
-            placeholder: 'sk-...',
-            helpUrl: 'https://platform.deepseek.com/api_keys',
-        },
-        endpoint: {
-            default: 'https://api.deepseek.com',
-            customizable: true,
-        },
-        models: {
-            default: ['deepseek-chat', 'deepseek-reasoner'],
-            recommended: 'deepseek-chat',
-        },
-        adapter: DEEPSEEK_ADAPTER,
-        features: {
-            streaming: true,
-            tools: true,
-            vision: false,
-            reasoning: true,
-        },
-        defaults: {
-            temperature: 0.7,
-            topP: 1,
-            maxTokens: 8192,
-            timeout: 120000,
-        },
-    },
-
-    groq: {
-        id: 'groq',
-        name: 'groq',
-        displayName: 'Groq',
-        description: '超快推理，Llama, Mixtral 等',
-        auth: {
-            type: 'api-key',
-            placeholder: 'gsk_...',
-            helpUrl: 'https://console.groq.com/keys',
-        },
-        endpoint: {
-            default: 'https://api.groq.com/openai/v1',
-            customizable: false,
-        },
-        models: {
-            default: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
-            recommended: 'llama-3.3-70b-versatile',
-        },
-        adapter: OPENAI_ADAPTER,
-        features: {
-            streaming: true,
-            tools: true,
-            vision: false,
-        },
-        defaults: {
-            temperature: 0.7,
-            topP: 1,
-            maxTokens: 8192,
-            timeout: 60000,
-        },
-    },
-
-    mistral: {
-        id: 'mistral',
-        name: 'mistral',
-        displayName: 'Mistral AI',
-        description: 'Mistral Large, Codestral 等',
-        auth: {
-            type: 'api-key',
-            placeholder: 'api-...',
-            helpUrl: 'https://console.mistral.ai/api-keys',
-        },
-        endpoint: {
-            default: 'https://api.mistral.ai/v1',
-            customizable: false,
-        },
-        models: {
-            default: ['mistral-large-latest', 'codestral-latest', 'mistral-small-latest'],
-            recommended: 'mistral-large-latest',
-        },
-        adapter: OPENAI_ADAPTER,
-        features: {
-            streaming: true,
-            tools: true,
-            vision: false,
-            codeCompletion: true,
-        },
-        defaults: {
-            temperature: 0.7,
-            topP: 1,
-            maxTokens: 8192,
-            timeout: 120000,
-        },
-    },
-
-    zhipu: {
-        id: 'zhipu',
-        name: 'zhipu',
-        displayName: '智谱 GLM',
-        description: 'GLM-4.7, GLM-4.5 系列',
-        auth: {
-            type: 'api-key',
-            placeholder: 'api-...',
-            helpUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
-        },
-        endpoint: {
-            default: 'https://open.bigmodel.cn/api/paas/v4',
-            customizable: true,
-        },
-        models: {
-            default: ['glm-4-plus', 'glm-4-air', 'glm-4-flash'],
-            recommended: 'glm-4-plus',
-        },
-        adapter: ZHIPU_ADAPTER,
-        features: {
-            streaming: true,
-            tools: true,
-            vision: true,
-            reasoning: true,
-        },
-        defaults: {
-            temperature: 0.7,
-            topP: 1,
-            maxTokens: 8192,
-            timeout: 120000,
-        },
-    },
-
-    qwen: {
-        id: 'qwen',
-        name: 'qwen',
-        displayName: '阿里 Qwen',
-        description: 'Qwen 系列 (通义千问)',
-        auth: {
-            type: 'api-key',
-            placeholder: 'sk-...',
-            helpUrl: 'https://dashscope.console.aliyun.com/apiKey',
-        },
-        endpoint: {
-            default: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-            customizable: true,
-        },
-        models: {
-            default: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
-            recommended: 'qwen-plus',
-        },
-        adapter: OPENAI_ADAPTER,
-        features: {
-            streaming: true,
-            tools: true,
-            vision: true,
-        },
-        defaults: {
-            temperature: 0.7,
-            topP: 1,
-            maxTokens: 8192,
-            timeout: 120000,
-        },
-    },
-
-    ollama: {
-        id: 'ollama',
-        name: 'ollama',
-        displayName: 'Ollama',
-        description: '本地运行开源模型',
-        isLocal: true,
-        auth: {
-            type: 'none',
-            placeholder: '(无需 API Key)',
-        },
-        endpoint: {
-            default: 'http://localhost:11434/v1',
-            customizable: true,
-        },
-        models: {
-            default: ['llama3.2', 'codellama', 'deepseek-coder-v2', 'qwen2.5-coder'],
-            recommended: 'llama3.2',
-        },
-        adapter: OLLAMA_ADAPTER,
-        features: {
-            streaming: true,
-            tools: true,
-            vision: false,
-        },
-        defaults: {
-            temperature: 0.7,
-            topP: 1,
-            maxTokens: 4096,
-            timeout: 300000, // 本地模型可能较慢
-        },
-    },
-
+    // Custom 占位符 - 用户可自定义配置
     custom: {
         id: 'custom',
         name: 'custom',
         displayName: 'Custom',
-        description: '自定义 API 端点',
+        description: '自定义 API 配置',
         auth: {
             type: 'api-key',
             placeholder: 'your-api-key',
         },
         endpoint: {
-            default: 'https://api.example.com/v1',
+            default: '',
             customizable: true,
         },
         models: {
             default: [],
             recommended: undefined,
         },
-        adapter: OPENAI_ADAPTER,
+        adapter: OPENAI_ADAPTER, // 默认使用 OpenAI 适配器
         features: {
             streaming: true,
             tools: true,
@@ -620,6 +336,7 @@ export const PROVIDERS: Record<string, UnifiedProviderConfig> = {
         },
     },
 }
+
 
 // ============================================
 // 辅助函数
@@ -665,9 +382,6 @@ export function getBuiltinAdapters(): LLMAdapterConfig[] {
         OPENAI_ADAPTER,
         ANTHROPIC_ADAPTER,
         GEMINI_ADAPTER,
-        DEEPSEEK_ADAPTER,
-        ZHIPU_ADAPTER,
-        OLLAMA_ADAPTER,
     ]
 }
 
