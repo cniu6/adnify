@@ -25,20 +25,20 @@ export interface RequestConfig {
 
 /** 响应解析配置 */
 export interface ResponseConfig {
-    // 流式响应字段路径
-    contentField: string          // 内容字段 'delta.content'
-    reasoningField?: string       // 思考字段 'delta.reasoning'
-    toolCallField?: string        // 工具调用 'delta.tool_calls'
-    finishReasonField?: string    // 完成原因 'finish_reason'
+    // 流式响应字段路径 (相对于 choices[0] 的路径)
+    contentField: string          // 内容字段，如 'delta.content'
+    reasoningField?: string       // 思考字段，如 'delta.reasoning_content'
+    toolCallField?: string        // 工具调用，如 'delta.tool_calls'
+    finishReasonField?: string    // 完成原因，如 'finish_reason'
 
-    // 工具调用解析
-    toolNamePath?: string         // 工具名 'function.name'
-    toolArgsPath?: string         // 参数 'function.arguments'
-    toolIdPath?: string           // ID 'id'
-    argsIsObject?: boolean        // 参数是否已是对象
+    // 工具调用解析 (相对于单个 tool_call 对象的路径)
+    toolNamePath?: string         // 工具名，如 'function.name'
+    toolArgsPath?: string         // 参数，如 'function.arguments'
+    toolIdPath?: string           // ID，如 'id'
+    argsIsObject?: boolean        // 参数是否已是对象 (true=对象, false=JSON字符串)
 
     // 结束标记
-    doneMarker?: string           // 流结束标记 '[DONE]'
+    doneMarker?: string           // 流结束标记，如 '[DONE]'
 }
 
 /** LLM 适配器配置 */
@@ -49,6 +49,29 @@ export interface LLMAdapterConfig {
     request: RequestConfig
     response: ResponseConfig
     isBuiltin?: boolean
+}
+
+/** 适配器覆盖配置（用于自定义内置适配器的行为） */
+export interface AdapterOverrides {
+    request?: {
+        endpoint?: string
+        bodyTemplate?: Record<string, unknown>
+        headers?: Record<string, string>
+    }
+    response?: {
+        contentField?: string
+        reasoningField?: string
+        toolCallField?: string
+        toolNamePath?: string
+        toolArgsPath?: string
+        toolIdPath?: string
+        argsIsObject?: boolean
+        doneMarker?: string
+    }
+    auth?: {
+        type: 'bearer' | 'header' | 'query' | 'none'
+        headerName?: string
+    }
 }
 
 /** 功能支持声明 */
@@ -121,11 +144,9 @@ const OPENAI_ADAPTER: LLMAdapterConfig = {
         headers: {
             'Content-Type': 'application/json',
         },
+        // bodyTemplate 只放结构性配置，参数由系统自动填充
         bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
             stream: true,
-            max_tokens: 8192,
         }
     },
     response: {
@@ -153,10 +174,7 @@ const ANTHROPIC_ADAPTER: LLMAdapterConfig = {
             'anthropic-version': '2023-06-01',
         },
         bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
             stream: true,
-            max_tokens: 8192,
         }
     },
     response: {
@@ -174,7 +192,7 @@ const ANTHROPIC_ADAPTER: LLMAdapterConfig = {
 const GEMINI_ADAPTER: LLMAdapterConfig = {
     id: 'gemini',
     name: 'Google Gemini',
-    description: 'Gemini API 格式',
+    description: 'Gemini API 格式 (OpenAI 兼容)',
     isBuiltin: true,
     request: {
         endpoint: '/chat/completions',
@@ -183,10 +201,7 @@ const GEMINI_ADAPTER: LLMAdapterConfig = {
             'Content-Type': 'application/json',
         },
         bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
             stream: true,
-            max_tokens: 8192,
         }
     },
     response: {

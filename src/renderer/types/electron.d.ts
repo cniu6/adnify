@@ -104,9 +104,14 @@ export interface LLMConfig {
   baseUrl?: string
   timeout?: number
   maxTokens?: number
+  temperature?: number
+  topP?: number
   // Thinking 模式配置
   thinkingEnabled?: boolean
   thinkingBudget?: number
+  // 适配器配置
+  adapterId?: string
+  adapterConfig?: import('@/shared/config/providers').LLMAdapterConfig
 }
 
 // Security Audit Log Entry

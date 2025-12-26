@@ -4,16 +4,89 @@
  * 提供工具格式转换和响应解析功能
  */
 
-import {
-    ProviderAdapterConfig,
-    ResponseParseConfig,
-    XMLParseConfig,
-    ParsedToolCall,
-    BuiltinAdapterId
-} from '../../../shared/types/providerAdapter'
 import type { ToolDefinition, LLMMessage } from './types'
 
+// ===== 类型定义（原 providerAdapter.ts） =====
+
+/** 工具定义转换规则 */
+interface ToolFormatConfig {
+    wrapMode: 'none' | 'function' | 'tool'
+    wrapField?: string
+    parameterField: 'parameters' | 'input_schema' | 'schema'
+    includeType: boolean
+}
+
+/** XML 解析配置 */
+export interface XMLParseConfig {
+    toolCallTag: string
+    nameSource: string
+    argsTag: string
+    argsFormat: 'json' | 'xml' | 'key-value'
+}
+
+/** 响应解析配置 */
+export interface ResponseParseConfig {
+    responseFormat: 'json' | 'xml' | 'mixed'
+    toolCallPath?: string
+    toolNamePath?: string
+    toolArgsPath?: string
+    argsIsObject?: boolean
+    toolIdPath?: string
+    autoGenerateId?: boolean
+    xmlConfig?: XMLParseConfig
+}
+
+/** 消息格式配置 */
+interface MessageFormatConfig {
+    toolResultRole: 'tool' | 'user' | 'function'
+    toolCallIdField: string
+    wrapToolResult: boolean
+    toolResultWrapper?: string
+}
+
+/** 请求配置 */
+interface RequestConfig {
+    extraParams?: Record<string, unknown>
+    extraHeaders?: Record<string, string>
+    maxTokensParam?: string
+    streamParam?: string
+    thinkingParams?: Record<string, unknown>
+}
+
+/** 流式响应配置 */
+interface StreamConfig {
+    deltaContentPath?: string
+    deltaToolCallsPath?: string
+    reasoningField?: string
+    fieldMappings?: Record<string, string>
+}
+
+/** Provider 适配器配置 */
+export interface ProviderAdapterConfig {
+    id: string
+    name: string
+    description?: string
+    extendsFrom?: 'openai' | 'anthropic' | 'gemini'
+    isBuiltin?: boolean
+    toolFormat: ToolFormatConfig
+    responseParse: ResponseParseConfig
+    messageFormat: MessageFormatConfig
+    requestConfig?: RequestConfig
+    streamConfig?: StreamConfig
+}
+
+/** 内置适配器 ID */
+type BuiltinAdapterId = 'openai' | 'anthropic' | 'qwen' | 'glm' | 'deepseek' | 'xml-generic' | 'mixed'
+
+/** 解析后的工具调用 */
+export interface ParsedToolCall {
+    id: string
+    name: string
+    arguments: Record<string, unknown>
+}
+
 // ===== 内置适配器预设 =====
+
 
 const BUILTIN_ADAPTERS: Record<BuiltinAdapterId, ProviderAdapterConfig> = {
     // OpenAI 标准格式

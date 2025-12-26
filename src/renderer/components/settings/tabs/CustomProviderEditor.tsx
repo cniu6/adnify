@@ -1,25 +1,24 @@
 /**
- * 自定义 Provider 编辑器 (内联版本)
- * 支持兼容模式和完全自定义模式
+ * 自定义 Provider 编辑器（内联版本）
+ * 
+ * 仅用于新建自定义 Provider，支持：
+ * - 兼容模式（OpenAI/Anthropic/Gemini）
+ * - 完全自定义模式
  */
 
-import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, Plus, Trash, Zap, X, Save, Code2, FileJson } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, ChevronUp, Plus, Trash, Zap, X, Save, Code2 } from 'lucide-react'
 import { Button, Input, Select } from '@components/ui'
 import { useStore } from '@store'
-import type {
-    CustomProviderConfig,
-    ProviderMode,
-    CustomModeConfig,
-    AuthType,
-} from '@shared/types/customProvider'
+import type { CustomProviderConfig, ProviderMode, CustomModeConfig } from '@shared/types/customProvider'
+import type { AdapterOverrides } from '@/shared/config/providers'
 import { VENDOR_PRESETS, validateCustomProviderConfig } from '@shared/types/customProviderPresets'
 import { toast } from '@components/common/ToastProvider'
+import { AdapterOverridesEditor } from '../AdapterOverridesEditor'
 
 interface InlineProviderEditorProps {
-    provider?: CustomProviderConfig | null
     language: 'en' | 'zh'
-    onSave: () => void
+    onSave: (config: CustomProviderConfig) => void
     onCancel: () => void
     isNew?: boolean
 }
@@ -31,34 +30,13 @@ const MODE_OPTIONS = [
     { value: 'custom', label: '完全自定义' },
 ]
 
-const AUTH_TYPE_OPTIONS = [
-    { value: 'bearer', label: 'Bearer Token (Authorization: Bearer xxx)' },
-    { value: 'header', label: '自定义 Header' },
-    { value: 'query', label: 'Query 参数' },
-    { value: 'none', label: '无认证' },
-]
-
 const VENDOR_OPTIONS = Object.entries(VENDOR_PRESETS).map(([id, preset]) => ({
     value: id,
     label: preset.name || id,
 }))
 
-// 默认的 OpenAI 风格请求体模板
-const DEFAULT_BODY_TEMPLATE = `{
-  "model": "{{model}}",
-  "messages": "{{messages}}",
-  "stream": true,
-  "max_tokens": 8192
-}`
-
-export function InlineProviderEditor({
-    provider,
-    language,
-    onSave,
-    onCancel,
-    isNew = false,
-}: InlineProviderEditorProps) {
-    const { addCustomProvider, updateCustomProvider, setProviderApiKey, getProviderApiKey } = useStore()
+export function InlineProviderEditor({ language, onSave, onCancel, isNew = false }: InlineProviderEditorProps) {
+    const { addCustomProvider, setProviderApiKey } = useStore()
 
     // 基础状态
     const [name, setName] = useState('')
@@ -70,65 +48,9 @@ export function InlineProviderEditor({
     const [timeout, setTimeout] = useState(120)
     const [selectedPreset, setSelectedPreset] = useState('')
 
-    // 完全自定义模式状态
+    // 自定义模式配置
+    const [adapterOverrides, setAdapterOverrides] = useState<AdapterOverrides | undefined>(undefined)
     const [showCustomConfig, setShowCustomConfig] = useState(false)
-    const [endpoint, setEndpoint] = useState('/chat/completions')
-    const [bodyTemplate, setBodyTemplate] = useState(DEFAULT_BODY_TEMPLATE)
-    const [bodyJsonError, setBodyJsonError] = useState<string | null>(null)
-
-    // 认证配置
-    const [authType, setAuthType] = useState<AuthType>('bearer')
-    const [authHeaderName, setAuthHeaderName] = useState('X-API-Key')
-
-    // 响应解析配置
-    const [contentField, setContentField] = useState('delta.content')
-    const [reasoningField, setReasoningField] = useState('')
-    const [toolCallsField, setToolCallsField] = useState('delta.tool_calls')
-    const [doneMarker, setDoneMarker] = useState('[DONE]')
-
-    // 初始化表单
-    useEffect(() => {
-        if (provider) {
-            setName(provider.name)
-            setBaseUrl(provider.baseUrl)
-            setModels(provider.models || [])
-            setMode(provider.mode)
-            setTimeout((provider.defaults?.timeout || 120000) / 1000)
-            const savedKey = getProviderApiKey(provider.id)
-            setApiKey(savedKey || '')
-
-            // 完全自定义模式配置
-            if (provider.customConfig) {
-                setEndpoint(provider.customConfig.request.endpoint)
-                setBodyTemplate(JSON.stringify(provider.customConfig.request.bodyTemplate, null, 2))
-                setAuthType(provider.customConfig.auth.type)
-                if (provider.customConfig.auth.headerName) {
-                    setAuthHeaderName(provider.customConfig.auth.headerName)
-                }
-                setContentField(provider.customConfig.response.streaming.contentField)
-                setReasoningField(provider.customConfig.response.streaming.reasoningField || '')
-                setToolCallsField(provider.customConfig.response.streaming.toolCallsField || 'delta.tool_calls')
-                setDoneMarker(provider.customConfig.response.sseConfig.doneMarker)
-            }
-        } else {
-            // 重置
-            setName('')
-            setBaseUrl('')
-            setApiKey('')
-            setModels([])
-            setNewModel('')
-            setMode('openai')
-            setTimeout(120)
-            setSelectedPreset('')
-            setEndpoint('/chat/completions')
-            setBodyTemplate(DEFAULT_BODY_TEMPLATE)
-            setAuthType('bearer')
-            setContentField('delta.content')
-            setReasoningField('')
-            setToolCallsField('delta.tool_calls')
-            setDoneMarker('[DONE]')
-        }
-    }, [provider, getProviderApiKey])
 
     // 从厂商预设加载
     const handleLoadPreset = (presetId: string) => {
@@ -142,10 +64,23 @@ export function InlineProviderEditor({
                 setTimeout(preset.defaults.timeout / 1000)
             }
             setSelectedPreset(presetId)
+
+            if (preset.customConfig) {
+                const cfg = preset.customConfig
+                setAdapterOverrides({
+                    request: { endpoint: cfg.request.endpoint, bodyTemplate: cfg.request.bodyTemplate },
+                    response: {
+                        contentField: cfg.response.streaming.contentField,
+                        reasoningField: cfg.response.streaming.reasoningField,
+                        toolCallField: cfg.response.streaming.toolCallsField,
+                        doneMarker: cfg.response.sseConfig.doneMarker,
+                    },
+                    auth: { type: cfg.auth.type, headerName: cfg.auth.headerName },
+                })
+            }
         }
     }
 
-    // 添加模型
     const handleAddModel = () => {
         if (newModel.trim() && !models.includes(newModel.trim())) {
             setModels([...models, newModel.trim()])
@@ -153,70 +88,48 @@ export function InlineProviderEditor({
         }
     }
 
-    // 验证 JSON
-    const handleBodyTemplateChange = (text: string) => {
-        setBodyTemplate(text)
-        try {
-            JSON.parse(text)
-            setBodyJsonError(null)
-        } catch (e: any) {
-            setBodyJsonError(e.message)
-        }
-    }
-
     // 构建 customConfig
     const buildCustomConfig = (): CustomModeConfig | undefined => {
         if (mode !== 'custom') return undefined
-
-        let parsedBody: Record<string, unknown> = {}
-        try {
-            parsedBody = JSON.parse(bodyTemplate)
-        } catch {
-            toast.error(language === 'zh' ? '请求体 JSON 格式错误' : 'Invalid request body JSON')
-            return undefined
-        }
+        if (!adapterOverrides) return undefined
 
         return {
             request: {
-                endpoint,
+                endpoint: adapterOverrides.request?.endpoint || '/chat/completions',
                 method: 'POST',
-                bodyTemplate: parsedBody,
+                bodyTemplate: adapterOverrides.request?.bodyTemplate || {
+                    model: '{{model}}',
+                    messages: '{{messages}}',
+                    stream: true,
+                },
             },
             response: {
-                sseConfig: {
-                    dataPrefix: 'data: ',
-                    doneMarker,
-                },
+                sseConfig: { dataPrefix: 'data: ', doneMarker: adapterOverrides.response?.doneMarker || '[DONE]' },
                 streaming: {
-                    contentField,
-                    reasoningField: reasoningField || undefined,
-                    toolCallsField: toolCallsField || undefined,
+                    contentField: adapterOverrides.response?.contentField || 'delta.content',
+                    reasoningField: adapterOverrides.response?.reasoningField,
+                    toolCallsField: adapterOverrides.response?.toolCallField,
                     toolNameField: 'function.name',
                     toolArgsField: 'function.arguments',
+                    toolIdField: 'id',
                     finishReasonField: 'finish_reason',
                 },
-                toolCall: {
-                    mode: 'streaming',
-                    argsIsObject: false,
-                },
+                toolCall: { mode: 'streaming', argsIsObject: adapterOverrides.response?.argsIsObject || false },
             },
-            auth: {
-                type: authType,
-                headerName: authType === 'header' ? authHeaderName : undefined,
-            },
+            auth: { type: adapterOverrides.auth?.type || 'bearer', headerName: adapterOverrides.auth?.headerName },
         }
     }
 
-    // 保存
     const handleSave = () => {
-        // 完全自定义模式需要构建 customConfig
         const customConfig = mode === 'custom' ? buildCustomConfig() : undefined
+
         if (mode === 'custom' && !customConfig) {
-            return // buildCustomConfig 已显示错误
+            toast.error(language === 'zh' ? '请配置自定义参数' : 'Please configure custom parameters')
+            return
         }
 
         const config: Partial<CustomProviderConfig> = {
-            id: provider?.id || `custom-${Date.now()}`,
+            id: `custom-${Date.now()}`,
             name,
             baseUrl,
             models,
@@ -231,26 +144,21 @@ export function InlineProviderEditor({
             return
         }
 
-        if (provider) {
-            updateCustomProvider(provider.id, config)
-            toast.success(language === 'zh' ? '已更新' : 'Updated')
-        } else {
-            addCustomProvider(config as CustomProviderConfig)
-            toast.success(language === 'zh' ? '已添加' : 'Added')
-        }
+        addCustomProvider(config as CustomProviderConfig)
+        toast.success(language === 'zh' ? '已添加' : 'Added')
 
         if (apiKey) {
             setProviderApiKey(config.id!, apiKey)
         }
 
-        onSave()
+        onSave(config as CustomProviderConfig)
     }
 
     const isCustomMode = mode === 'custom'
 
     return (
         <div className="p-4 bg-surface-elevated border border-accent/30 rounded-xl space-y-4 animate-fade-in">
-            {/* 快速预设 (仅新建时) */}
+            {/* 快速预设 */}
             {isNew && (
                 <div className="space-y-2">
                     <label className="text-xs font-medium text-text-secondary flex items-center gap-2">
@@ -269,40 +177,22 @@ export function InlineProviderEditor({
             {/* 基础信息 */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-text-secondary">
-                        {language === 'zh' ? '名称' : 'Name'} *
-                    </label>
-                    <Input
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="DeepSeek"
-                        className="text-sm h-9"
-                    />
+                    <label className="text-xs font-medium text-text-secondary">{language === 'zh' ? '名称' : 'Name'} *</label>
+                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="DeepSeek" className="text-sm h-9" />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-text-secondary">
-                        {language === 'zh' ? '模式' : 'Mode'} *
-                    </label>
-                    <Select
-                        value={mode}
-                        onChange={(v) => setMode(v as ProviderMode)}
-                        options={MODE_OPTIONS}
-                        className="text-sm"
-                    />
+                    <label className="text-xs font-medium text-text-secondary">{language === 'zh' ? '模式' : 'Mode'} *</label>
+                    <Select value={mode} onChange={(v) => setMode(v as ProviderMode)} options={MODE_OPTIONS} className="text-sm" />
                 </div>
             </div>
 
-            {/* API URL 和 Key */}
+            {/* API URL */}
             <div className="space-y-1.5">
                 <label className="text-xs font-medium text-text-secondary">API URL *</label>
-                <Input
-                    value={baseUrl}
-                    onChange={(e) => setBaseUrl(e.target.value)}
-                    placeholder="https://api.example.com"
-                    className="text-sm h-9"
-                />
+                <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.example.com" className="text-sm h-9" />
             </div>
 
+            {/* API Key */}
             <div className="space-y-1.5">
                 <label className="text-xs font-medium text-text-secondary">API Key</label>
                 <Input
@@ -316,9 +206,7 @@ export function InlineProviderEditor({
 
             {/* 模型列表 */}
             <div className="space-y-1.5">
-                <label className="text-xs font-medium text-text-secondary">
-                    {language === 'zh' ? '模型列表' : 'Models'} *
-                </label>
+                <label className="text-xs font-medium text-text-secondary">{language === 'zh' ? '模型列表' : 'Models'} *</label>
                 <div className="flex gap-2">
                     <Input
                         value={newModel}
@@ -336,7 +224,7 @@ export function InlineProviderEditor({
                         {models.map((model) => (
                             <div key={model} className="flex items-center gap-1 px-2 py-0.5 bg-surface rounded-full border border-border-subtle text-xs">
                                 <span>{model}</span>
-                                <button onClick={() => setModels(models.filter(m => m !== model))} className="text-text-muted hover:text-red-400">
+                                <button onClick={() => setModels(models.filter((m) => m !== model))} className="text-text-muted hover:text-red-400">
                                     <Trash className="w-3 h-3" />
                                 </button>
                             </div>
@@ -345,7 +233,7 @@ export function InlineProviderEditor({
                 )}
             </div>
 
-            {/* ===== 完全自定义模式配置 ===== */}
+            {/* 完全自定义模式配置 */}
             {isCustomMode && (
                 <div className="border border-accent/20 rounded-lg overflow-hidden">
                     <button
@@ -357,138 +245,27 @@ export function InlineProviderEditor({
                         <span className="text-sm font-medium text-text-primary">
                             {language === 'zh' ? '自定义请求/响应配置' : 'Custom Request/Response Config'}
                         </span>
-                        <span className="ml-auto text-xs text-accent">
-                            {language === 'zh' ? '必填' : 'Required'}
-                        </span>
+                        <span className="ml-auto text-xs text-accent">{language === 'zh' ? '必填' : 'Required'}</span>
                     </button>
-
                     {showCustomConfig && (
-                        <div className="p-4 space-y-4 bg-surface/30">
-                            {/* 认证方式 */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-text-secondary">
-                                    {language === 'zh' ? '认证方式' : 'Authentication'}
-                                </label>
-                                <Select
-                                    value={authType}
-                                    onChange={(v) => setAuthType(v as AuthType)}
-                                    options={AUTH_TYPE_OPTIONS}
-                                    className="text-sm"
-                                />
-                                {authType === 'header' && (
-                                    <Input
-                                        value={authHeaderName}
-                                        onChange={(e) => setAuthHeaderName(e.target.value)}
-                                        placeholder="X-API-Key"
-                                        className="text-sm h-8 mt-2"
-                                    />
-                                )}
-                            </div>
-
-                            {/* 请求端点 */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-text-secondary">
-                                    {language === 'zh' ? 'API 端点 (相对路径)' : 'API Endpoint (relative path)'}
-                                </label>
-                                <Input
-                                    value={endpoint}
-                                    onChange={(e) => setEndpoint(e.target.value)}
-                                    placeholder="/chat/completions"
-                                    className="font-mono text-sm h-9"
-                                />
-                            </div>
-
-                            {/* 请求体模板 */}
-                            <div className="space-y-1.5">
-                                <label className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-                                    <FileJson className="w-3.5 h-3.5 text-accent" />
-                                    {language === 'zh' ? '请求体模板 (JSON)' : 'Request Body Template (JSON)'}
-                                </label>
-                                <textarea
-                                    value={bodyTemplate}
-                                    onChange={(e) => handleBodyTemplateChange(e.target.value)}
-                                    className={`w-full px-3 py-2 text-xs font-mono leading-5 bg-surface/50 border rounded-lg text-text-primary focus:outline-none resize-none ${bodyJsonError ? 'border-red-500/50' : 'border-border-subtle focus:border-accent'}`}
-                                    rows={6}
-                                    spellCheck={false}
-                                />
-                                {bodyJsonError && (
-                                    <p className="text-xs text-red-400">JSON Error: {bodyJsonError}</p>
-                                )}
-                                <p className="text-[10px] text-text-muted">
-                                    {language === 'zh'
-                                        ? '占位符: {{model}}, {{messages}}, {{tools}}, {{max_tokens}}, {{stream}}'
-                                        : 'Placeholders: {{model}}, {{messages}}, {{tools}}, {{max_tokens}}, {{stream}}'}
-                                </p>
-                            </div>
-
-                            {/* 响应解析配置 */}
-                            <div className="pt-3 border-t border-border-subtle space-y-3">
-                                <label className="text-xs font-medium text-text-secondary">
-                                    {language === 'zh' ? '响应解析配置' : 'Response Parsing'}
-                                </label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] text-text-muted">{language === 'zh' ? '内容字段路径' : 'Content Field'}</label>
-                                        <Input
-                                            value={contentField}
-                                            onChange={(e) => setContentField(e.target.value)}
-                                            placeholder="delta.content"
-                                            className="font-mono text-xs h-8"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] text-text-muted">{language === 'zh' ? '思考字段 (可选)' : 'Reasoning Field'}</label>
-                                        <Input
-                                            value={reasoningField}
-                                            onChange={(e) => setReasoningField(e.target.value)}
-                                            placeholder="delta.reasoning"
-                                            className="font-mono text-xs h-8"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] text-text-muted">{language === 'zh' ? '工具调用字段' : 'Tool Calls Field'}</label>
-                                        <Input
-                                            value={toolCallsField}
-                                            onChange={(e) => setToolCallsField(e.target.value)}
-                                            placeholder="delta.tool_calls"
-                                            className="font-mono text-xs h-8"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] text-text-muted">{language === 'zh' ? '流结束标记' : 'Done Marker'}</label>
-                                        <Input
-                                            value={doneMarker}
-                                            onChange={(e) => setDoneMarker(e.target.value)}
-                                            placeholder="[DONE]"
-                                            className="font-mono text-xs h-8"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="p-4 bg-surface/30">
+                            <AdapterOverridesEditor overrides={adapterOverrides} onChange={setAdapterOverrides} language={language} defaultEndpoint="/chat/completions" />
                         </div>
                     )}
                 </div>
             )}
 
-            {/* 高级设置 (非自定义模式) */}
+            {/* 非自定义模式的高级设置 */}
             {!isCustomMode && (
-                <>
-                    <button
-                        onClick={() => setShowCustomConfig(!showCustomConfig)}
-                        className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
-                    >
-                        {showCustomConfig ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                <details className="group">
+                    <summary className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary cursor-pointer">
                         {language === 'zh' ? '高级设置' : 'Advanced'}
-                    </button>
-                    {showCustomConfig && (
-                        <div className="pl-4 border-l border-border-subtle space-y-2">
-                            <div className="space-y-1">
-                                <label className="text-xs text-text-secondary">{language === 'zh' ? '超时 (秒)' : 'Timeout (sec)'}</label>
-                                <Input type="number" value={timeout} onChange={(e) => setTimeout(parseInt(e.target.value) || 120)} min={30} max={600} className="w-24 text-sm h-8" />
-                            </div>
-                        </div>
-                    )}
-                </>
+                    </summary>
+                    <div className="mt-2 pl-4 border-l border-border-subtle">
+                        <label className="text-xs text-text-secondary">{language === 'zh' ? '超时 (秒)' : 'Timeout (sec)'}</label>
+                        <Input type="number" value={timeout} onChange={(e) => setTimeout(parseInt(e.target.value) || 120)} min={30} max={600} className="w-24 text-sm h-8 mt-1" />
+                    </div>
+                </details>
             )}
 
             {/* 操作按钮 */}

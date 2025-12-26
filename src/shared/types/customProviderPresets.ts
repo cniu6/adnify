@@ -2,103 +2,75 @@
  * Custom Provider 预设模板
  * 
  * 提供常用的兼容模式预设配置，方便用户快速添加新厂商
+ * 
+ * 注意：
+ * 1. 所有响应字段路径都是相对于 choices[0] 的
+ * 2. bodyTemplate 只包含结构性配置，核心字段和 LLM 参数由系统自动填充
  */
 
 import type {
     PresetTemplate,
     CustomProviderConfig,
-    CustomModeConfig,
 } from './customProvider'
+import type { LLMAdapterConfig } from '@/shared/config/providers'
 
 // ============================================
-// OpenAI 兼容模板
+// LLMAdapterConfig 预设（用于快速配置）
 // ============================================
 
-/** OpenAI 兼容模式的完全自定义配置 */
-export const OPENAI_COMPATIBLE_CUSTOM_CONFIG: CustomModeConfig = {
+/** OpenAI 兼容适配器配置 */
+export const OPENAI_ADAPTER_PRESET: Omit<LLMAdapterConfig, 'id' | 'name'> = {
+    isBuiltin: false,
     request: {
         endpoint: '/chat/completions',
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        // bodyTemplate 只放结构性配置，核心字段由系统自动填充
         bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
-            tools: '{{tools}}',
             stream: true,
-            stream_options: { include_usage: true },
-            max_tokens: '{{max_tokens}}',
         },
-        messageFormat: 'openai',
-        toolFormat: 'openai',
     },
     response: {
-        sseConfig: {
-            dataPrefix: 'data: ',
-            doneMarker: '[DONE]',
-        },
-        streaming: {
-            choicePath: 'choices[0]',
-            deltaPath: 'delta',
-            contentField: 'content',
-            toolCallsField: 'tool_calls',
-            toolIdField: 'id',
-            toolNameField: 'function.name',
-            toolArgsField: 'function.arguments',
-            finishReasonField: 'finish_reason',
-        },
-        toolCall: {
-            mode: 'streaming',
-            argsIsObject: false,
-            autoGenerateId: false,
-        },
-        usage: {
-            path: 'usage',
-            promptTokensField: 'prompt_tokens',
-            completionTokensField: 'completion_tokens',
-        },
-    },
-    auth: {
-        type: 'bearer',
+        contentField: 'delta.content',
+        toolCallField: 'delta.tool_calls',
+        toolNamePath: 'function.name',
+        toolArgsPath: 'function.arguments',
+        toolIdPath: 'id',
+        argsIsObject: false,
+        finishReasonField: 'finish_reason',
+        doneMarker: '[DONE]',
     },
 }
 
-/** DeepSeek 兼容配置 (支持 reasoning) */
-export const DEEPSEEK_COMPATIBLE_CUSTOM_CONFIG: CustomModeConfig = {
-    ...OPENAI_COMPATIBLE_CUSTOM_CONFIG,
+/** DeepSeek 适配器配置（支持 reasoning） */
+export const DEEPSEEK_ADAPTER_PRESET: Omit<LLMAdapterConfig, 'id' | 'name'> = {
+    ...OPENAI_ADAPTER_PRESET,
     response: {
-        ...OPENAI_COMPATIBLE_CUSTOM_CONFIG.response,
-        streaming: {
-            ...OPENAI_COMPATIBLE_CUSTOM_CONFIG.response.streaming,
-            reasoningField: 'reasoning',
-        },
+        ...OPENAI_ADAPTER_PRESET.response,
+        reasoningField: 'delta.reasoning_content',
     },
 }
 
-/** 智谱 GLM 兼容配置 (支持 reasoning_content) */
-export const ZHIPU_COMPATIBLE_CUSTOM_CONFIG: CustomModeConfig = {
-    ...OPENAI_COMPATIBLE_CUSTOM_CONFIG,
+/** 智谱 GLM 适配器配置 */
+export const ZHIPU_ADAPTER_PRESET: Omit<LLMAdapterConfig, 'id' | 'name'> = {
+    ...OPENAI_ADAPTER_PRESET,
+    request: {
+        ...OPENAI_ADAPTER_PRESET.request,
+        bodyTemplate: {
+            stream: true,
+            tool_choice: 'auto',
+        },
+    },
     response: {
-        ...OPENAI_COMPATIBLE_CUSTOM_CONFIG.response,
-        streaming: {
-            ...OPENAI_COMPATIBLE_CUSTOM_CONFIG.response.streaming,
-            reasoningField: 'reasoning_content',
-        },
-        toolCall: {
-            mode: 'streaming',
-            argsIsObject: true, // 智谱返回的参数已是对象
-            autoGenerateId: false,
-        },
+        ...OPENAI_ADAPTER_PRESET.response,
+        reasoningField: 'delta.reasoning_content',
+        argsIsObject: true, // 智谱返回的参数已是对象
     },
 }
 
-// ============================================
-// Anthropic 兼容模板
-// ============================================
-
-/** Anthropic 兼容模式的完全自定义配置 */
-export const ANTHROPIC_COMPATIBLE_CUSTOM_CONFIG: CustomModeConfig = {
+/** Anthropic 适配器配置 */
+export const ANTHROPIC_ADAPTER_PRESET: Omit<LLMAdapterConfig, 'id' | 'name'> = {
+    isBuiltin: false,
     request: {
         endpoint: '/messages',
         method: 'POST',
@@ -107,39 +79,18 @@ export const ANTHROPIC_COMPATIBLE_CUSTOM_CONFIG: CustomModeConfig = {
             'anthropic-version': '2023-06-01',
         },
         bodyTemplate: {
-            model: '{{model}}',
-            messages: '{{messages}}',
-            tools: '{{tools}}',
-            max_tokens: '{{max_tokens}}',
             stream: true,
         },
-        messageFormat: 'anthropic',
-        toolFormat: 'anthropic',
     },
     response: {
-        sseConfig: {
-            dataPrefix: 'data: ',
-            doneMarker: 'message_stop',
-            eventField: 'type',
-        },
-        streaming: {
-            contentField: 'delta.text',
-            toolCallsField: 'content_block',
-            toolIdField: 'id',
-            toolNameField: 'name',
-            toolArgsField: 'input',
-            finishReasonField: 'stop_reason',
-        },
-        toolCall: {
-            mode: 'complete', // Anthropic 工具调用在 finalMessage 中
-            argsIsObject: true,
-            autoGenerateId: false,
-        },
-    },
-    auth: {
-        type: 'header',
-        headerName: 'x-api-key',
-        headerTemplate: '{{apiKey}}',
+        contentField: 'delta.text',
+        toolCallField: 'content_block',
+        toolNamePath: 'name',
+        toolArgsPath: 'input',
+        toolIdPath: 'id',
+        argsIsObject: true,
+        finishReasonField: 'stop_reason',
+        doneMarker: 'message_stop',
     },
 }
 
@@ -166,6 +117,28 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
                 timeout: 120000,
             },
         },
+        /** 对应的 LLMAdapterConfig 预设 */
+        adapterPreset: OPENAI_ADAPTER_PRESET,
+    },
+    {
+        id: 'deepseek-compatible',
+        name: 'DeepSeek 兼容',
+        description: '适用于 DeepSeek 等支持推理的 API',
+        config: {
+            mode: 'openai',
+            features: {
+                streaming: true,
+                tools: true,
+                vision: false,
+                reasoning: true,
+            },
+            defaults: {
+                temperature: 0.7,
+                maxTokens: 8192,
+                timeout: 120000,
+            },
+        },
+        adapterPreset: DEEPSEEK_ADAPTER_PRESET,
     },
     {
         id: 'anthropic-compatible',
@@ -185,6 +158,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
                 timeout: 120000,
             },
         },
+        adapterPreset: ANTHROPIC_ADAPTER_PRESET,
     },
     {
         id: 'custom-blank',
@@ -192,7 +166,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
         description: '从零开始配置请求体、响应解析和认证方式',
         config: {
             mode: 'custom',
-            customConfig: OPENAI_COMPATIBLE_CUSTOM_CONFIG,
             features: {
                 streaming: true,
                 tools: true,
@@ -202,6 +175,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
                 timeout: 120000,
             },
         },
+        adapterPreset: OPENAI_ADAPTER_PRESET,
     },
 ]
 

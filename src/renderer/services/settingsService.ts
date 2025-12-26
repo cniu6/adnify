@@ -11,7 +11,7 @@
 
 import { logger } from '@utils/Logger'
 import { LLM_DEFAULTS } from '@/shared/constants'
-import { PROVIDERS, getAdapterConfig, getBuiltinAdapter, type LLMAdapterConfig } from '@/shared/config/providers'
+import { PROVIDERS, getAdapterConfig, getBuiltinAdapter, type LLMAdapterConfig, type AdapterOverrides } from '@/shared/config/providers'
 
 // ============ 类型定义 ============
 
@@ -47,6 +47,8 @@ export interface ProviderConfig {
     adapterId?: string
     adapterConfig?: LLMAdapterConfig  // 只有自定义 Provider 才保存
     customModels?: string[]
+    // 新增：覆盖内置适配器配置
+    adapterOverrides?: AdapterOverrides
 }
 
 /** 自动审批设置 */
@@ -136,19 +138,8 @@ const generateDefaultProviderConfigs = (): Record<string, ProviderConfig> => {
     return configs
 }
 
-// ============ 清理工具函数 ============
 
-/** 判断 LLM 参数是否为默认值 */
-function isDefaultParameters(params?: LLMParameters): boolean {
-    if (!params) return true
-    return (
-        params.temperature === LLM_DEFAULTS.TEMPERATURE &&
-        params.topP === LLM_DEFAULTS.TOP_P &&
-        params.maxTokens === LLM_DEFAULTS.MAX_TOKENS &&
-        !params.frequencyPenalty &&
-        !params.presencePenalty
-    )
-}
+// ============ 清理工具函数 ============
 
 /** 判断 baseUrl 是否为默认值 */
 function isDefaultBaseUrl(providerId: string, baseUrl?: string): boolean {
@@ -211,6 +202,11 @@ function cleanProviderConfig(
         if (config.adapterConfig) {
             cleaned.adapterConfig = config.adapterConfig
         }
+    }
+
+    // adapterOverrides: 始终保存（如果有）
+    if (config.adapterOverrides) {
+        cleaned.adapterOverrides = config.adapterOverrides
     }
 
     // 如果清理后没有任何有意义的数据，返回 null
@@ -379,10 +375,38 @@ class SettingsService {
             const adapterId = merged.adapterId || merged.provider
             const builtinAdapter = getBuiltinAdapter(adapterId)
             if (builtinAdapter) {
-                merged.adapterConfig = builtinAdapter
+                // 复制一份，避免修改原始对象
+                merged.adapterConfig = { ...builtinAdapter }
             } else {
-                merged.adapterConfig = getAdapterConfig('openai')
+                merged.adapterConfig = { ...getAdapterConfig('openai') }
             }
+        }
+
+        // 应用 adapterOverrides 覆盖配置
+        if (providerConfig.adapterOverrides && merged.adapterConfig) {
+            const overrides = providerConfig.adapterOverrides
+            const config = merged.adapterConfig
+
+            // 覆盖 request 配置
+            if (overrides.request) {
+                config.request = {
+                    ...config.request,
+                    ...overrides.request,
+                    headers: { ...config.request.headers, ...overrides.request.headers },
+                    bodyTemplate: overrides.request.bodyTemplate || config.request.bodyTemplate,
+                }
+            }
+
+            // 覆盖 response 配置
+            if (overrides.response) {
+                config.response = {
+                    ...config.response,
+                    ...overrides.response,
+                }
+            }
+
+            // 标记为非内置（已被修改）
+            config.isBuiltin = false
         }
 
         return merged
@@ -395,10 +419,10 @@ class SettingsService {
         if (!saved) return defaults
 
         const merged: Record<string, ProviderConfig> = { ...defaults }
-        
+
         for (const [id, config] of Object.entries(saved)) {
             const isBuiltin = isBuiltinProvider(id)
-            
+
             if (isBuiltin) {
                 // 内置 Provider: 合并用户配置，但 adapterConfig 使用代码定义的
                 merged[id] = {

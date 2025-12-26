@@ -223,6 +223,8 @@ export class LLMService {
         tools,
         systemPrompt,
         maxTokens: config.maxTokens,
+        temperature: config.temperature,
+        topP: config.topP,
         signal: this.currentAbortController.signal,
         // 完整适配器配置
         adapterConfig: config.adapterConfig,

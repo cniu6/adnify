@@ -8,7 +8,7 @@
 import { BaseProvider } from './base'
 import { ChatParams, ToolDefinition, ToolCall, LLMError, LLMErrorCode } from '../types'
 import { getByPath } from '../utils/jsonPath'
-import type { LLMAdapterConfig } from '@shared/types/llmAdapter'
+import type { LLMAdapterConfig } from '@shared/config/providers'
 import { AGENT_DEFAULTS } from '@shared/constants'
 
 /** 请求构建结果 */
@@ -45,7 +45,7 @@ export class CustomProvider extends BaseProvider {
     }
 
     async chat(params: ChatParams): Promise<void> {
-        const { model, messages, tools, systemPrompt, maxTokens, signal, onStream, onToolCall, onComplete, onError } = params
+        const { model, messages, tools, systemPrompt, maxTokens, temperature, topP, signal, onStream, onToolCall, onComplete, onError } = params
 
         try {
             this.log('info', 'Starting chat', { model, messageCount: messages.length })
@@ -60,6 +60,8 @@ export class CustomProvider extends BaseProvider {
                 tools,
                 systemPrompt,
                 maxTokens,
+                temperature,
+                topP,
             })
 
             this.log('info', 'Request built', { url: requestData.url })
@@ -107,6 +109,11 @@ export class CustomProvider extends BaseProvider {
 
     /**
      * 构建 HTTP 请求
+     * 
+     * 新架构：
+     * 1. 核心字段（model, messages, tools）由系统自动填充
+     * 2. LLM 参数（max_tokens, temperature, top_p）从 params 传入
+     * 3. bodyTemplate 只包含结构性配置（stream, tool_choice 等）
      */
     private buildRequest(params: {
         requestConfig: LLMAdapterConfig['request']
@@ -115,8 +122,10 @@ export class CustomProvider extends BaseProvider {
         tools?: ToolDefinition[]
         systemPrompt?: string
         maxTokens?: number
+        temperature?: number
+        topP?: number
     }): RequestData {
-        const { requestConfig, model, messages, tools, systemPrompt, maxTokens } = params
+        const { requestConfig, model, messages, tools, systemPrompt, maxTokens, temperature, topP } = params
 
         // 构建 URL
         const url = `${this.baseUrl}${requestConfig.endpoint}`
@@ -131,39 +140,55 @@ export class CustomProvider extends BaseProvider {
         // 转换消息格式
         const convertedMessages = this.convertMessages(messages, systemPrompt)
 
-        // 构建请求体（从模板替换占位符）
-        const body = this.buildBody(requestConfig.bodyTemplate, {
-            model,
-            messages: convertedMessages,
-            tools: this.convertTools(tools),
-            max_tokens: maxTokens || AGENT_DEFAULTS.DEFAULT_MAX_TOKENS,
-            stream: true,
-        })
+        // 转换工具定义
+        const convertedTools = this.convertTools(tools)
+
+        // 1. 先从 bodyTemplate 构建基础请求体（只包含结构性配置）
+        const body = this.buildBodyFromTemplate(requestConfig.bodyTemplate)
+
+        // 2. 填充核心字段（系统自动填充，不可覆盖）
+        body.model = model
+        body.messages = convertedMessages
+        if (convertedTools && convertedTools.length > 0) {
+            body.tools = convertedTools
+        }
+
+        // 3. 填充 LLM 参数（从 params 传入）
+        body.max_tokens = maxTokens || AGENT_DEFAULTS.DEFAULT_MAX_TOKENS
+        if (temperature !== undefined) {
+            body.temperature = temperature
+        }
+        if (topP !== undefined) {
+            body.top_p = topP
+        }
+
+        // 4. 确保 stream 存在
+        if (!('stream' in body)) {
+            body.stream = true
+        }
 
         return { url, method: requestConfig.method, headers, body }
     }
 
     /**
-     * 构建请求体
+     * 从模板构建请求体（只处理结构性配置，跳过占位符）
      */
-    private buildBody(
-        template: Record<string, unknown>,
-        values: Record<string, unknown>
-    ): Record<string, unknown> {
+    private buildBodyFromTemplate(template: Record<string, unknown>): Record<string, unknown> {
         const body: Record<string, unknown> = {}
 
         for (const [key, value] of Object.entries(template)) {
+            // 跳过占位符（兼容旧配置）
             if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
-                // 占位符替换
-                const placeholder = value.slice(2, -2)
-                if (placeholder in values && values[placeholder] !== undefined) {
-                    body[key] = values[placeholder]
-                }
-            } else if (typeof value === 'object' && value !== null) {
-                // 递归处理嵌套对象
-                body[key] = this.buildBody(value as Record<string, unknown>, values)
+                continue
+            }
+            // 跳过核心字段（由系统填充）
+            if (['model', 'messages', 'tools', 'max_tokens', 'temperature', 'top_p'].includes(key)) {
+                continue
+            }
+            // 递归处理嵌套对象
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                body[key] = this.buildBodyFromTemplate(value as Record<string, unknown>)
             } else {
-                // 直接使用值
                 body[key] = value
             }
         }

@@ -84,6 +84,8 @@ export interface LLMError {
   retryable: boolean
 }
 
+// LLMConfig 用于 IPC 通信
+// 完整的 LLMConfig 类型在 settingsSlice.ts/providers.ts 中
 export interface LLMConfig {
   provider: string
   model: string
@@ -91,6 +93,10 @@ export interface LLMConfig {
   baseUrl?: string
   timeout?: number
   maxTokens?: number
+  temperature?: number
+  topP?: number
+  adapterId?: string
+  adapterConfig?: import('@/shared/config/providers').LLMAdapterConfig
 }
 
 export interface ToolDefinition {

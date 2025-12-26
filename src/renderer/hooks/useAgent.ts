@@ -110,6 +110,8 @@ export function useAgent() {
         baseUrl: llmConfig.baseUrl,
         timeout: llmConfig.timeout,
         maxTokens: llmConfig.parameters?.maxTokens,
+        temperature: llmConfig.parameters?.temperature,
+        topP: llmConfig.parameters?.topP,
         adapterId: llmConfig.adapterId,
         adapterConfig: llmConfig.adapterConfig,
       },

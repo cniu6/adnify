@@ -62,8 +62,10 @@ export interface LLMCallConfig {
   baseUrl?: string
   timeout?: number
   maxTokens?: number
+  temperature?: number
+  topP?: number
   adapterId?: string
-  adapterConfig?: import('@/shared/types/llmAdapter').LLMAdapterConfig
+  adapterConfig?: import('@/shared/config/providers').LLMAdapterConfig
 }
 
 // ===== Agent 服务类 =====
@@ -491,7 +493,7 @@ class AgentServiceClass {
         window.electronAPI.onLLMDone((result) => {
           // 结束性能监控
           performanceMonitor.end(`llm:${config.model}`, true)
-          
+
           cleanupListeners()
           const finalResult = handleLLMDone(result, this.streamState, this.currentAssistantId)
           // 更新 store 中的 usage 信息
@@ -509,7 +511,7 @@ class AgentServiceClass {
         window.electronAPI.onLLMError((error) => {
           // 结束性能监控（失败）
           performanceMonitor.end(`llm:${config.model}`, false, { error: error.message })
-          
+
           closeReasoningIfNeeded(this.streamState, this.currentAssistantId)
           cleanupListeners()
           resolve({ error: error.message })

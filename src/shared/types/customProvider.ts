@@ -102,31 +102,34 @@ export interface XMLToolCallConfig {
 
 /** 流式响应字段配置 */
 export interface StreamingFieldConfig {
-    /** Choice 数组路径 (默认 'choices[0]') */
-    choicePath?: string
-
-    /** Delta 对象路径 (默认 'delta') */
-    deltaPath?: string
-
-    /** 内容字段名 (如 'content') */
+    /** 
+     * 内容字段路径 (相对于 choices[0])
+     * 例如 'delta.content' 表示 choices[0].delta.content
+     */
     contentField: string
 
-    /** 推理/思考字段名 (如 'reasoning_content') */
+    /** 
+     * 推理/思考字段路径 (相对于 choices[0])
+     * 例如 'delta.reasoning_content'
+     */
     reasoningField?: string
 
-    /** 工具调用数组字段 (如 'tool_calls') */
+    /** 
+     * 工具调用数组字段路径 (相对于 choices[0])
+     * 例如 'delta.tool_calls'
+     */
     toolCallsField?: string
 
-    /** 工具 ID 字段路径 (如 'id') */
+    /** 工具 ID 字段路径 (相对于单个 tool_call，如 'id') */
     toolIdField?: string
 
-    /** 工具名称路径 (如 'function.name') */
+    /** 工具名称路径 (相对于单个 tool_call，如 'function.name') */
     toolNameField?: string
 
-    /** 工具参数路径 (如 'function.arguments') */
+    /** 工具参数路径 (相对于单个 tool_call，如 'function.arguments') */
     toolArgsField?: string
 
-    /** 完成原因字段 (如 'finish_reason') */
+    /** 完成原因字段 (相对于 choices[0]，如 'finish_reason') */
     finishReasonField?: string
 }
 
@@ -278,14 +281,16 @@ export interface CustomProviderConfig {
 // ============================================
 
 /** 预设模板 ID */
-export type PresetTemplateId = 'openai-compatible' | 'anthropic-compatible' | 'custom-blank'
+export type PresetTemplateId = 'openai-compatible' | 'deepseek-compatible' | 'anthropic-compatible' | 'custom-blank'
 
 /** 预设模板 */
 export interface PresetTemplate {
-    id: PresetTemplateId
+    id: PresetTemplateId | string
     name: string
     description: string
     config: Partial<CustomProviderConfig>
+    /** 对应的 LLMAdapterConfig 预设（用于快速配置适配器） */
+    adapterPreset?: Record<string, unknown>
 }
 
 // ============================================

@@ -5,19 +5,6 @@
 
 export type ProviderType = 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'groq' | 'mistral' | 'ollama' | 'custom'
 
-// 适配器配置
-export interface AdapterConfig {
-  responseFormat: 'json' | 'xml' | 'mixed'
-  toolCallPath: string
-  toolNamePath: string
-  toolArgsPath: string
-  argsIsObject: boolean
-  autoGenerateId: boolean
-  xmlToolCallTag?: string
-  xmlNameSource?: string
-  xmlArgsTag?: string
-}
-
 export interface LLMConfig {
   provider: ProviderType
   model: string
@@ -25,10 +12,11 @@ export interface LLMConfig {
   baseUrl?: string
   maxTokens?: number
   temperature?: number
+  topP?: number
   timeout?: number
   // 完整适配器配置
   adapterId?: string
-  adapterConfig?: import('@/shared/types/llmAdapter').LLMAdapterConfig
+  adapterConfig?: import('@/shared/config/providers').LLMAdapterConfig
 }
 
 export interface TextContent {
@@ -102,9 +90,11 @@ export interface ChatParams {
   tools?: ToolDefinition[]
   systemPrompt?: string
   maxTokens?: number
+  temperature?: number
+  topP?: number
   signal?: AbortSignal
   // 完整适配器配置（包含请求体和响应解析）
-  adapterConfig?: import('../../../shared/types/llmAdapter').LLMAdapterConfig
+  adapterConfig?: import('@/shared/config/providers').LLMAdapterConfig
   onStream: (chunk: StreamChunk) => void
   onToolCall: (toolCall: ToolCall) => void
   onComplete: (result: ChatResult) => void

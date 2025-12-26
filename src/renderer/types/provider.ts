@@ -5,7 +5,7 @@
  * 此文件仅保留渲染进程专用的类型定义
  */
 
-import type { LLMAdapterConfig } from '@/shared/config/providers'
+import type { LLMAdapterConfig, AdapterOverrides } from '@/shared/config/providers'
 
 // ============ Provider 设置类型 ============
 
@@ -19,6 +19,7 @@ export interface ProviderModelConfig {
 	adapterId?: string         // 适配器 ID
 	adapterConfig?: LLMAdapterConfig  // 适配器配置
 	model?: string             // 当前选择的模型
+	adapterOverrides?: AdapterOverrides // 适配器覆盖配置
 }
 
 /** 所有 Provider 设置 */
