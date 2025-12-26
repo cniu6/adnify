@@ -7,7 +7,7 @@
  * - 上下文窗口管理
  */
 import { StateCreator } from 'zustand'
-import { ToolStatus, ToolApprovalType, Checkpoint } from '@renderer/agent/toolTypes'
+import { ToolStatus, ToolApprovalType, Checkpoint } from '@renderer/agent/types'
 
 // ============ 配置常量 ============
 

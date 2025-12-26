@@ -17,6 +17,7 @@ import { toast } from '@components/common/ToastProvider'
 import { AdapterOverridesEditor } from '../AdapterOverridesEditor'
 
 interface InlineProviderEditorProps {
+    provider?: CustomProviderConfig  // 编辑现有 provider 时传入
     language: 'en' | 'zh'
     onSave: (config: CustomProviderConfig) => void
     onCancel: () => void
@@ -35,16 +36,16 @@ const VENDOR_OPTIONS = Object.entries(VENDOR_PRESETS).map(([id, preset]) => ({
     label: preset.name || id,
 }))
 
-export function InlineProviderEditor({ language, onSave, onCancel, isNew = false }: InlineProviderEditorProps) {
+export function InlineProviderEditor({ provider, language, onSave, onCancel, isNew = false }: InlineProviderEditorProps) {
     const { addCustomProvider, setProviderApiKey } = useStore()
 
-    // 基础状态
-    const [name, setName] = useState('')
-    const [baseUrl, setBaseUrl] = useState('')
+    // 基础状态 - 如果有 provider 则使用其值初始化
+    const [name, setName] = useState(provider?.name || '')
+    const [baseUrl, setBaseUrl] = useState(provider?.baseUrl || '')
     const [apiKey, setApiKey] = useState('')
-    const [models, setModels] = useState<string[]>([])
+    const [models, setModels] = useState<string[]>(provider?.models || [])
     const [newModel, setNewModel] = useState('')
-    const [mode, setMode] = useState<ProviderMode>('openai')
+    const [mode, setMode] = useState<ProviderMode>(provider?.mode || 'openai')
     const [timeout, setTimeout] = useState(120)
     const [selectedPreset, setSelectedPreset] = useState('')
 

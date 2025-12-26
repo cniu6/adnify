@@ -192,13 +192,14 @@ export const TOOL_CATEGORIES = {
     PLAN: 'plan',
 } as const
 
-/** 只读类工具列表（可并行执行） */
+/** 只读类工具列表（可并行执行）- 从 agentConfig 动态获取更佳 */
 export const READ_ONLY_TOOLS = [
     'read_file',
     'read_multiple_files',
     'list_directory',
     'get_dir_tree',
     'search_files',
+    'search_in_file',
     'codebase_search',
     'find_references',
     'go_to_definition',
@@ -209,13 +210,16 @@ export const READ_ONLY_TOOLS = [
     'read_url',
 ] as const
 
-/** 写入类工具列表（需要预览） */
+/** 写入类工具列表（需要预览）- 从 agentConfig 动态获取更佳 */
 export const WRITE_TOOLS = [
     'edit_file',
     'write_file',
     'replace_file_content',
     'create_file_or_folder',
 ] as const
+
+// 注意：更灵活的工具分类请使用 src/shared/config/agentConfig.ts 中的
+// DEFAULT_TOOL_METADATA 和相关辅助函数
 
 // ==========================================
 // 服务层默认值（统一各服务的超时和间隔）

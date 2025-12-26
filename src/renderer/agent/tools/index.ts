@@ -1,11 +1,31 @@
 /**
- * 工具模块入口
- * 
- * 统一从 toolDefinitions.ts 导出所有工具相关定义
- * schemas.ts 已被合并到 toolDefinitions.ts，保留文件以兼容历史引用
+ * 工具模块
+ * 统一导出工具相关功能
  */
 
-// 从统一的工具定义文件导出所有内容
-export * from '../core/toolDefinitions'
+// 类型
+export type {
+    ToolDefinition,
+    ToolExecutionResult,
+    ToolExecutionContext,
+    ToolExecutor,
+    ValidationResult,
+    ToolStatus,
+    ToolResultType,
+    ToolCall,
+    ToolApprovalType,
+    ToolCategory,
+    ToolMetadata,
+} from './types'
 
-// 兼容性：schemas.ts 仍然存在，但所有新代码应该使用 toolDefinitions.ts
+// 注册表
+export { toolRegistry } from './registry'
+
+// 定义
+export { TOOL_DEFINITIONS, TOOL_DISPLAY_NAMES, getToolDefinitions, getToolApprovalType, getToolDisplayName } from './definitions'
+
+// Schema
+export { TOOL_SCHEMAS } from './schemas'
+
+// 执行器
+export { toolExecutors, initializeTools } from './executors'

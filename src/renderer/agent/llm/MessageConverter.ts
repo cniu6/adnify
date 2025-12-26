@@ -9,7 +9,7 @@
  * 4. Anthropic 格式：assistant 消息带 tool_use，user 消息带 tool_result
  */
 
-import { ChatMessage, isUserMessage, isAssistantMessage, isToolResultMessage, MessageContent } from './types'
+import { ChatMessage, isUserMessage, isAssistantMessage, isToolResultMessage, MessageContent } from '../types'
 
 // ===== 简化的 LLM 消息格式（内部使用）=====
 

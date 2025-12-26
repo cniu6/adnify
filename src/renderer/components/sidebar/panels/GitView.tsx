@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '@store'
 import { t } from '@renderer/i18n'
-import { gitService, GitStatus, GitCommit } from '@renderer/agent/gitService'
+import { gitService, GitStatus, GitCommit } from '@renderer/agent/services/gitService'
 import { getEditorConfig } from '@renderer/config/editorConfig'
 import { toast } from '@components/common/ToastProvider'
 import { keybindingService } from '@services/keybindingService'

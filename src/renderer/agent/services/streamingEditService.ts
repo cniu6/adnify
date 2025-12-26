@@ -4,7 +4,7 @@
  */
 
 import { logger } from '@utils/Logger'
-import { StreamingEditState } from './toolTypes'
+import { StreamingEditState } from '../types'
 
 type StreamingEditListener = (state: StreamingEditState) => void
 

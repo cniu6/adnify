@@ -59,16 +59,40 @@ export interface AutoApproveSettings {
 
 /** Agent 配置 */
 export interface AgentConfig {
+    // 基础配置
     maxToolLoops: number
     maxHistoryMessages: number
+    enableAutoFix: boolean
+
+    // 上下文限制
     maxToolResultChars: number
     maxFileContentChars: number
     maxTotalContextChars: number
-    enableAutoFix: boolean
+    maxSingleFileChars: number
     maxContextFiles: number
     maxSemanticResults: number
     maxTerminalChars: number
-    maxSingleFileChars: number
+
+    // 重试配置
+    maxRetries: number
+    retryDelayMs: number
+
+    // 工具执行
+    toolTimeoutMs: number
+
+    // 上下文压缩
+    contextCompressThreshold: number
+    keepRecentTurns: number
+
+    // 循环检测
+    loopDetection: {
+        maxHistory: number
+        maxExactRepeats: number
+        maxSameTargetRepeats: number
+    }
+
+    // 忽略目录
+    ignoredDirectories: string[]
 }
 
 /** 完整的应用设置（不再包含 editorSettings） */
@@ -112,16 +136,44 @@ const defaultAutoApprove: AutoApproveSettings = {
 }
 
 const defaultAgentConfig: AgentConfig = {
+    // 基础配置
     maxToolLoops: 30,
     maxHistoryMessages: 60,
+    enableAutoFix: true,
+
+    // 上下文限制
     maxToolResultChars: 10000,
     maxFileContentChars: 15000,
     maxTotalContextChars: 60000,
-    enableAutoFix: true,
+    maxSingleFileChars: 6000,
     maxContextFiles: 6,
     maxSemanticResults: 5,
     maxTerminalChars: 3000,
-    maxSingleFileChars: 6000,
+
+    // 重试配置
+    maxRetries: 3,
+    retryDelayMs: 1000,
+
+    // 工具执行
+    toolTimeoutMs: 60000,
+
+    // 上下文压缩
+    contextCompressThreshold: 40000,
+    keepRecentTurns: 3,
+
+    // 循环检测
+    loopDetection: {
+        maxHistory: 15,
+        maxExactRepeats: 2,
+        maxSameTargetRepeats: 3,
+    },
+
+    // 忽略目录
+    ignoredDirectories: [
+        'node_modules', '.git', 'dist', 'build', '.next',
+        '__pycache__', '.venv', 'venv', '.cache', 'coverage',
+        '.nyc_output', 'tmp', 'temp', '.idea', '.vscode',
+    ],
 }
 
 // 生成所有内置 Provider 的默认配置（运行时使用，不保存）

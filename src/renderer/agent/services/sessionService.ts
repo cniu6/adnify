@@ -7,8 +7,8 @@
 import { logger } from '@utils/Logger'
 import { LLMConfig } from '@store'
 import { WorkMode } from '@/renderer/modes/types'
-import { ChatMessage, ChatThread, getMessageText as getMsgText, isUserMessage } from './core/types'
-import { useAgentStore } from './core/AgentStore'
+import { ChatMessage, ChatThread, getMessageText as getMsgText, isUserMessage } from '../types'
+import { useAgentStore } from '../store/AgentStore'
 
 export interface ChatSession {
 	id: string

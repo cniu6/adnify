@@ -1,3 +1,8 @@
+/**
+ * @ 提及解析器
+ * 解析用户输入中的 @file, @codebase, @web 等提及
+ */
+
 import { logger } from '@utils/Logger'
 import { FileText, Folder, Database, Globe, FileCode, Terminal, GitBranch } from 'lucide-react'
 
@@ -59,35 +64,22 @@ export const SPECIAL_MENTIONS: MentionCandidate[] = [
 
 export class MentionParser {
     /**
-     * Parse text to find the active mention trigger
-     * @param text The full text input
-     * @param cursorPosition The current cursor position
+     * 解析文本中的 @ 提及
      */
     static parse(text: string, cursorPosition: number): MentionParseResult | null {
-        // Look backwards from cursor for '@'
         const textBeforeCursor = text.slice(0, cursorPosition)
         const lastAt = textBeforeCursor.lastIndexOf('@')
 
         if (lastAt === -1) return null
 
-        // Check if '@' is preceded by whitespace or is start of line
+        // @ 前必须是空白或行首
         if (lastAt > 0 && !/\s/.test(textBeforeCursor[lastAt - 1])) {
             return null
         }
 
-        // Check if there's any whitespace between '@' and cursor
-        // We allow spaces for multi-word queries if we want, but usually mentions are single tokens until selected
-        // For now, let's allow spaces to support "natural language" queries like @web how to...
-        // But typically for autocomplete, we stop at space unless it's a specific syntax.
-        // Cursor allows spaces for @codebase queries, but the trigger is just @.
-
         const query = textBeforeCursor.slice(lastAt + 1)
 
-        // If query contains whitespace or newlines, abort
-        // Standard autocomplete behavior: mentions are single tokens.
-        // If the user wants to search for "Program Files", they should select "Program" and let it autocomplete,
-        // or we need a more complex parser that handles quotes.
-        // For now, stopping at space prevents the "No results" issue when typing "@codebase query".
+        // 查询中不能有空白
         if (/[\s\n]/.test(query)) return null
 
         return {
@@ -98,7 +90,7 @@ export class MentionParser {
     }
 
     /**
-     * Get suggestions based on the query
+     * 获取建议列表
      */
     static async getSuggestions(
         query: string,
@@ -108,18 +100,16 @@ export class MentionParser {
         const lowerQuery = query.toLowerCase()
         const suggestions: MentionCandidate[] = []
 
-        // 1. Add special mentions that match
+        // 1. 匹配特殊提及
         SPECIAL_MENTIONS.forEach(m => {
             if (m.label.toLowerCase().includes(lowerQuery) || m.type.includes(lowerQuery)) {
                 suggestions.push(m)
             }
         })
 
-        // 2. Search files if workspace is available
+        // 2. 搜索文件
         if (workspacePath && (options.includeFiles || options.includeFolders)) {
             try {
-                // Use a simple recursive search for now, similar to FileMentionPopup
-                // In a real implementation, we might want to use a more efficient search service or the index
                 const files = await this.searchFiles(workspacePath, lowerQuery, options)
                 suggestions.push(...files)
             } catch (e) {
@@ -135,24 +125,19 @@ export class MentionParser {
         query: string,
         options: { includeFiles?: boolean; includeFolders?: boolean }
     ): Promise<MentionCandidate[]> {
-        // This is a simplified version. In production, we should use the electronAPI.searchFiles or similar
-        // For now, we'll reuse the logic from FileMentionPopup but adapted here
-        // Since we can't easily import the component logic, we'll use electronAPI directly
-
         if (!window.electronAPI) return []
 
         const candidates: MentionCandidate[] = []
 
-        // Helper to collect files recursively
         const collect = async (dir: string, depth: number) => {
-            if (depth > 3) return // Limit depth
+            if (depth > 3) return
 
             const items = await window.electronAPI.readDir(dir)
             if (!items) return
 
             for (const item of items) {
                 if (item.name.startsWith('.') && item.name !== '.env') continue
-                if (item.name === 'node_modules' || item.name === 'dist' || item.name === 'build') continue
+                if (['node_modules', 'dist', 'build', '.git'].includes(item.name)) continue
 
                 const relativePath = item.path.replace(rootPath, '').replace(/^[/\\]/, '')
                 const match = item.name.toLowerCase().includes(query) || relativePath.toLowerCase().includes(query)
@@ -187,15 +172,14 @@ export class MentionParser {
 
         await collect(rootPath, 0)
 
-        // Sort: exact matches first, then shorter paths
-        return candidates.sort((a, b) => {
-            // Prioritize special mentions (already added before)
-            // Here we sort files
-            const aMatch = a.label.toLowerCase() === query
-            const bMatch = b.label.toLowerCase() === query
-            if (aMatch && !bMatch) return -1
-            if (!aMatch && bMatch) return 1
-            return a.label.length - b.label.length
-        }).slice(0, 20) // Limit results
+        return candidates
+            .sort((a, b) => {
+                const aMatch = a.label.toLowerCase() === query
+                const bMatch = b.label.toLowerCase() === query
+                if (aMatch && !bMatch) return -1
+                if (!aMatch && bMatch) return 1
+                return a.label.localeCompare(b.label)
+            })
+            .slice(0, 20)
     }
 }

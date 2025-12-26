@@ -4,12 +4,11 @@
  */
 
 import { logger } from '@utils/Logger'
-import { useAgentStore } from './AgentStore'
+import { useAgentStore } from '../store/AgentStore'
 import { useModeStore } from '@/renderer/modes'
-import { getToolDefinitions } from './ToolExecutor'
-import { parsePartialArgs, parseXMLToolCalls, removeXMLToolCallsFromContent } from './XMLToolParser'
+import { getToolDefinitions, ToolDefinition } from '../tools'
+import { parsePartialArgs, parseXMLToolCalls, removeXMLToolCallsFromContent } from '../utils/XMLToolParser'
 import { LLMStreamChunk, LLMToolCall } from '@/renderer/types/electron'
-import { ToolDefinition } from './types'
 
 /**
  * 流式处理器状态

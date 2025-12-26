@@ -4,7 +4,7 @@
  * 参考 Claude Code 的 PreCompact 机制
  */
 
-import { ChatMessage, isAssistantMessage, TextContent, ToolCallPart } from './types'
+import { ChatMessage, isAssistantMessage, TextContent, ToolCallPart } from '../types'
 
 // 压缩配置
 export const COMPACT_CONFIG = {

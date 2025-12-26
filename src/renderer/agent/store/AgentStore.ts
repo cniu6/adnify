@@ -29,9 +29,7 @@ import {
   isTextPart,
   Plan,
   PlanItem,
-  PlanStatus,
-  PlanItemStatus,
-} from './types'
+} from '../types'
 
 // ===== Store 类型 =====
 
@@ -1161,9 +1159,9 @@ export const useAgentStore = create<AgentStore>()(
               id: generateShortId(),
               title: item.title,
               description: item.description,
-              status: PlanItemStatus.Pending
+              status: 'pending' as const
             })),
-            status: PlanStatus.Draft,
+            status: 'draft' as const,
             currentStepId: null,
             createdAt: Date.now(),
             updatedAt: Date.now()
@@ -1206,7 +1204,7 @@ export const useAgentStore = create<AgentStore>()(
             id: generateShortId(),
             title: item.title,
             description: item.description,
-            status: PlanItemStatus.Pending,
+            status: 'pending' as const,
           }
           return {
             plan: {
@@ -1315,8 +1313,12 @@ export async function initializeAgentStore(): Promise<void> {
       await persistApi.rehydrate()
       logger.agent.info('[AgentStore] Rehydrated from project storage:', STORE_NAME)
     }
+
+    // 初始化工具注册表
+    const { initializeTools } = await import('../tools')
+    await initializeTools()
+    logger.agent.info('[AgentStore] Tools initialized')
   } catch (error) {
-    logger.agent.error('[AgentStore] Failed to initialize storage:', error)
-    // 降级到默认行为，不阻塞应用启动
+    logger.agent.error('[AgentStore] Failed to initialize:', error)
   }
 }

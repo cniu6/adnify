@@ -1,27 +1,20 @@
 /**
  * Agent 服务
  * 核心的 Agent 循环逻辑，处理 LLM 通信和工具执行
- * 
- * 架构设计（参考 Cursor/Void）：
- * 1. 内部使用 ChatMessage 格式存储消息
- * 2. 发送给 LLM 前，使用 MessageConverter 转换为 OpenAI API 格式
- * 3. 工具调用必须在 assistant 消息中声明，tool 结果 must 紧随其后
- * 4. 上下文文件内容在发送前异步读取并嵌入用户消息
- * 5. 流式响应实时更新 UI
  */
 
 import { logger } from '@utils/Logger'
 import { performanceMonitor } from '@shared/utils/PerformanceMonitor'
-import { useAgentStore } from './AgentStore'
+import { useAgentStore } from '../store/AgentStore'
 import { useStore } from '@store'
 import { WorkMode } from '@/renderer/modes/types'
-import { executeTool, getToolDefinitions } from './ToolExecutor'
-import { OpenAIMessage } from './MessageConverter'
+import { toolRegistry, getToolDefinitions } from '../tools'
+import { OpenAIMessage } from '../llm/MessageConverter'
 import {
   ContextItem,
   MessageContent,
   TextContent,
-} from './types'
+} from '../types'
 import { LLMStreamChunk, LLMToolCall } from '@/renderer/types/electron'
 import { READ_ONLY_TOOLS } from '@/shared/constants'
 
@@ -31,7 +24,7 @@ import {
   READ_TOOLS,
   RETRYABLE_ERROR_CODES,
   LoopDetector,
-} from './AgentConfig'
+} from '../utils/AgentConfig'
 import {
   createStreamHandlerState,
   StreamHandlerState,
@@ -45,15 +38,15 @@ import {
   handleLLMToolCall,
   handleLLMDone,
   detectStreamingXMLToolCalls,
-} from './LLMStreamHandler'
+} from '../llm/LLMStreamHandler'
 import {
   buildContextContent,
   calculateContextStats,
-} from './ContextBuilder'
+} from '../llm/ContextBuilder'
 
 // 导入新的服务模块
 import { toolExecutionService } from './ToolExecutionService'
-import { buildLLMMessages, compressContext } from './MessageBuilder'
+import { buildLLMMessages, compressContext } from '../llm/MessageBuilder'
 
 export interface LLMCallConfig {
   provider: string
@@ -567,7 +560,7 @@ class AgentServiceClass {
 
     for (const filePath of editedFiles) {
       try {
-        const lintResult = await executeTool('get_lint_errors', { path: filePath }, workspacePath)
+        const lintResult = await toolRegistry.execute('get_lint_errors', { path: filePath }, { workspacePath })
         if (lintResult.success && lintResult.result) {
           const result = lintResult.result.trim()
           if (result && result !== '[]' && result !== 'No diagnostics found') {

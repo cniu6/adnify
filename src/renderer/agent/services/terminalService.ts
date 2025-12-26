@@ -1,9 +1,9 @@
 /**
- * 持久化终端服�?
- * 参�?void 编辑器的 run_persistent_command 功能
+ * 持久化终端服务
+ * 参考 void 编辑器的 run_persistent_command 功能
  */
 
-import { PersistentTerminal, TerminalCommandResult } from './toolTypes'
+import { PersistentTerminal, TerminalCommandResult } from '../types'
 
 const MAX_TERMINALS = 5
 const MAX_OUTPUT_LINES = 1000
@@ -26,7 +26,7 @@ class TerminalService {
 
 		// 限制终端数量
 		if (this.terminals.size >= MAX_TERMINALS) {
-			// 关闭最旧的非运行终�?
+			// 关闭最旧的非运行终�?
 			let oldestId: string | null = null
 			let oldestTime = Infinity
 
@@ -80,7 +80,7 @@ class TerminalService {
 
 		try {
 			if (waitForCompletion) {
-				// 同步执行，等待完�?
+				// 同步执行，等待完�?
 				const result = await Promise.race([
 					window.electronAPI.executeSecureCommand({
 						command: command.split(' ')[0],
@@ -111,7 +111,7 @@ class TerminalService {
 					duration: 0
 				}
 			} else {
-				// 异步执行，立即返�?
+				// 异步执行，立即返�?
 				window.electronAPI.executeSecureCommand({
 					command: command.split(' ')[0],
 					args: command.split(' ').slice(1),
@@ -145,7 +145,7 @@ class TerminalService {
 	}
 
 	/**
-	 * 追加输出到终�?
+	 * 追加输出到终�?
 	 */
 	private appendOutput(terminalId: string, text: string): void {
 		const terminal = this.terminals.get(terminalId)
@@ -154,12 +154,12 @@ class TerminalService {
 		const lines = text.split('\n')
 		terminal.output.push(...lines)
 
-		// 内存管理：超过阈值时清理旧输�?
+		// 内存管理：超过阈值时清理旧输�?
 		if (terminal.output.length > OUTPUT_CLEANUP_THRESHOLD) {
 			terminal.output = terminal.output.slice(-MAX_OUTPUT_LINES)
 		}
 
-		// 通知监听�?
+		// 通知监听�?
 		const listeners = this.outputListeners.get(terminalId)
 		if (listeners) {
 			for (const listener of listeners) {
@@ -212,7 +212,7 @@ class TerminalService {
 	}
 
 	/**
-	 * 获取所有终�?
+	 * 获取所有终�?
 	 */
 	getAllTerminals(): PersistentTerminal[] {
 		return Array.from(this.terminals.values())
@@ -226,7 +226,7 @@ class TerminalService {
 	}
 
 	/**
-	 * 按名称获取终�?
+	 * 按名称获取终�?
 	 */
 	getTerminalByName(name: string): PersistentTerminal | undefined {
 		for (const terminal of this.terminals.values()) {
@@ -248,7 +248,7 @@ class TerminalService {
 	}
 
 	/**
-	 * 清除所有终�?
+	 * 清除所有终�?
 	 */
 	clearAll(): void {
 		this.terminals.clear()

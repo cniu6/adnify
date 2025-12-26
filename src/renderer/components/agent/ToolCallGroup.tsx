@@ -6,10 +6,10 @@
 
 import { useState, useMemo } from 'react'
 import { ChevronDown, ChevronRight, Layers } from 'lucide-react'
-import { ToolCall } from '@/renderer/agent/core/types'
+import { ToolCall } from '@/renderer/agent/types'
 import ToolCallCard from './ToolCallCard'
 import FileChangeCard from './FileChangeCard'
-import { WRITE_TOOLS } from '@/renderer/agent/core/ToolExecutor'
+import { isWriteTool } from '@shared/config/agentConfig'
 import { useStore } from '@store'
 
 interface ToolCallGroupProps {
@@ -51,7 +51,7 @@ export default function ToolCallGroup({
 
     // 渲染单个工具卡片
     const renderToolCard = (tc: ToolCall) => {
-        const isFileOp = WRITE_TOOLS.includes(tc.name)
+        const isFileOp = isWriteTool(tc.name)
         const isPending = tc.id === pendingToolId
 
         if (isFileOp) {

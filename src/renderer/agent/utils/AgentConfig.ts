@@ -1,61 +1,67 @@
 /**
  * Agent 配置管理
  * 集中管理 Agent 运行时配置
+ * 
+ * 使用 src/shared/config/agentConfig.ts 作为配置源
  */
 
 import { useStore } from '@store'
-import { AGENT_DEFAULTS, READ_ONLY_TOOLS } from '@/shared/constants'
+import {
+    DEFAULT_AGENT_CONFIG,
+    getReadOnlyTools,
+    type AgentRuntimeConfig,
+} from '@/shared/config/agentConfig'
 import { LLMToolCall } from '@/renderer/types/electron'
 
-/**
- * Agent 运行时配置
- */
-export interface AgentRuntimeConfig {
-  // 用户可配置
-  maxToolLoops: number
-  maxHistoryMessages: number
-  maxToolResultChars: number
-  maxFileContentChars: number
-  maxTotalContextChars: number
-  // 重试配置
-  maxRetries: number
-  retryDelayMs: number
-  retryBackoffMultiplier: number
-  // 工具执行
-  toolTimeoutMs: number
-  // 上下文压缩
-  contextCompressThreshold: number
-  keepRecentTurns: number
-}
+// 重新导出类型
+export type { AgentRuntimeConfig }
 
 /**
  * 从 store 获取动态配置
+ * 合并用户配置和默认配置
  */
 export function getAgentConfig(): AgentRuntimeConfig {
-  const agentConfig = useStore.getState().agentConfig || {}
-  return {
-    // 用户可配置的值（优先使用 store 中的配置，否则使用统一默认值）
-    maxToolLoops: agentConfig.maxToolLoops ?? AGENT_DEFAULTS.MAX_TOOL_LOOPS,
-    maxHistoryMessages: agentConfig.maxHistoryMessages ?? AGENT_DEFAULTS.MAX_HISTORY_MESSAGES,
-    maxToolResultChars: agentConfig.maxToolResultChars ?? AGENT_DEFAULTS.MAX_TOOL_RESULT_CHARS,
-    maxFileContentChars: agentConfig.maxFileContentChars ?? AGENT_DEFAULTS.MAX_FILE_CONTENT_CHARS,
-    maxTotalContextChars: agentConfig.maxTotalContextChars ?? AGENT_DEFAULTS.MAX_TOTAL_CONTEXT_CHARS,
-    // 重试配置
-    maxRetries: AGENT_DEFAULTS.MAX_RETRIES,
-    retryDelayMs: AGENT_DEFAULTS.RETRY_DELAY_MS,
-    retryBackoffMultiplier: AGENT_DEFAULTS.RETRY_BACKOFF_MULTIPLIER,
-    // 工具执行超时
-    toolTimeoutMs: AGENT_DEFAULTS.TOOL_TIMEOUT_MS,
-    // 上下文压缩阈值
-    contextCompressThreshold: AGENT_DEFAULTS.CONTEXT_COMPRESS_THRESHOLD,
-    keepRecentTurns: AGENT_DEFAULTS.KEEP_RECENT_TURNS,
-  }
+    const agentConfig = useStore.getState().agentConfig || {}
+    return {
+        // 基础配置
+        maxToolLoops: agentConfig.maxToolLoops ?? DEFAULT_AGENT_CONFIG.maxToolLoops,
+        maxHistoryMessages: agentConfig.maxHistoryMessages ?? DEFAULT_AGENT_CONFIG.maxHistoryMessages,
+
+        // 上下文限制
+        maxToolResultChars: agentConfig.maxToolResultChars ?? DEFAULT_AGENT_CONFIG.maxToolResultChars,
+        maxFileContentChars: agentConfig.maxFileContentChars ?? DEFAULT_AGENT_CONFIG.maxFileContentChars,
+        maxTotalContextChars: agentConfig.maxTotalContextChars ?? DEFAULT_AGENT_CONFIG.maxTotalContextChars,
+        maxSingleFileChars: (agentConfig as any).maxSingleFileChars ?? DEFAULT_AGENT_CONFIG.maxSingleFileChars,
+
+        // 重试配置（从 store 获取）
+        maxRetries: (agentConfig as any).maxRetries ?? DEFAULT_AGENT_CONFIG.maxRetries,
+        retryDelayMs: (agentConfig as any).retryDelayMs ?? DEFAULT_AGENT_CONFIG.retryDelayMs,
+        retryBackoffMultiplier: DEFAULT_AGENT_CONFIG.retryBackoffMultiplier,
+
+        // 工具执行超时
+        toolTimeoutMs: (agentConfig as any).toolTimeoutMs ?? DEFAULT_AGENT_CONFIG.toolTimeoutMs,
+
+        // 上下文压缩阈值
+        contextCompressThreshold: (agentConfig as any).contextCompressThreshold ?? DEFAULT_AGENT_CONFIG.contextCompressThreshold,
+        keepRecentTurns: (agentConfig as any).keepRecentTurns ?? DEFAULT_AGENT_CONFIG.keepRecentTurns,
+
+        // 循环检测配置（从 store 获取）
+        loopDetection: {
+            maxHistory: (agentConfig as any).loopDetection?.maxHistory ?? DEFAULT_AGENT_CONFIG.loopDetection.maxHistory,
+            maxExactRepeats: (agentConfig as any).loopDetection?.maxExactRepeats ?? DEFAULT_AGENT_CONFIG.loopDetection.maxExactRepeats,
+            maxSameTargetRepeats: (agentConfig as any).loopDetection?.maxSameTargetRepeats ?? DEFAULT_AGENT_CONFIG.loopDetection.maxSameTargetRepeats,
+        },
+
+        // 忽略目录（从 store 获取）
+        ignoredDirectories: (agentConfig as any).ignoredDirectories ?? DEFAULT_AGENT_CONFIG.ignoredDirectories,
+    }
 }
 
 /**
  * 只读工具列表（可并行执行）
+ * 从配置中心动态获取
  */
-export const READ_TOOLS = READ_ONLY_TOOLS as readonly string[]
+export const READ_TOOLS: readonly string[] = getReadOnlyTools()
 
 /**
  * 可重试的错误代码
@@ -113,9 +119,11 @@ interface LoopCheckResult {
  */
 export class LoopDetector {
   private history: ToolCallSignature[] = []
-  private readonly maxHistory = 15
-  private readonly maxExactRepeats = 2
-  private readonly maxSameTargetRepeats = 3
+
+  /** 获取当前配置（动态获取，支持运行时修改） */
+  private get config() {
+    return getAgentConfig().loopDetection
+  }
 
   /**
    * 检查是否存在循环
@@ -137,8 +145,8 @@ export class LoopDetector {
 
     // 记录本次调用
     this.history.push(...signatures)
-    if (this.history.length > this.maxHistory) {
-      this.history = this.history.slice(-this.maxHistory)
+    if (this.history.length > this.config.maxHistory) {
+      this.history = this.history.slice(-this.config.maxHistory)
     }
 
     return { isLoop: false }
@@ -179,7 +187,7 @@ export class LoopDetector {
       const exactMatches = this.history.filter(
         h => h.name === sig.name && h.argsHash === sig.argsHash
       )
-      if (exactMatches.length >= this.maxExactRepeats) {
+      if (exactMatches.length >= this.config.maxExactRepeats) {
         return {
           isLoop: true,
           reason: `Detected exact repeat of ${sig.name} (${exactMatches.length + 1} times).`,
@@ -204,7 +212,7 @@ export class LoopDetector {
 
       // 写操作更严格
       const isWriteOp = ['edit_file', 'write_file', 'run_command'].includes(sig.name)
-      const threshold = isWriteOp ? 2 : this.maxSameTargetRepeats
+      const threshold = isWriteOp ? 2 : this.config.maxSameTargetRepeats
 
       if (sameTargetCalls.length >= threshold) {
         return {

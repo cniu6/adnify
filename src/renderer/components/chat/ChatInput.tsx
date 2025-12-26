@@ -23,7 +23,7 @@ import { WorkMode } from '@/renderer/modes/types'
 import { t } from '@renderer/i18n'
 import { Button } from '../ui'
 
-import { ContextItem, FileContext } from '@/renderer/agent/core/types'
+import { ContextItem, FileContext } from '@/renderer/agent/types'
 
 export interface PendingImage {
   id: string

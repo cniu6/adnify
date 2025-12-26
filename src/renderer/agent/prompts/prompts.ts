@@ -4,8 +4,8 @@
  */
 
 import { WorkMode } from '@/renderer/modes/types'
-import { rulesService } from './rulesService'
-import { useAgentStore } from './core/AgentStore'
+import { rulesService } from '../services/rulesService'
+import { useAgentStore } from '../store/AgentStore'
 import { FILE_LIMITS } from '@shared/constants'
 
 // Search/Replace 块格式 - 从统一模块导入

@@ -6,9 +6,9 @@
 import { useState, useCallback, memo } from 'react'
 import { History, RotateCcw, ChevronDown, ChevronUp, FileText, MessageSquare, Wrench, X } from 'lucide-react'
 import { useStore } from '@/renderer/store'
-import { useAgentStore } from '@/renderer/agent/core/AgentStore'
-import { checkpointService } from '@/renderer/agent/checkpointService'
-import { Checkpoint } from '@/renderer/agent/toolTypes'
+import { useAgentStore } from '@/renderer/agent/store/AgentStore'
+import { checkpointService } from '@/renderer/agent/services/checkpointService'
+import { Checkpoint } from '@/renderer/agent/types'
 import { getFileName } from '@/renderer/utils/pathUtils'
 
 

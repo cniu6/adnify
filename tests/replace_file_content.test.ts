@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { executeTool } from '../src/renderer/agent/core/ToolExecutor'
-import { AgentService } from '../src/renderer/agent/core/AgentService'
+import { toolRegistry, initializeTools } from '../src/renderer/agent/tools'
+import { AgentService } from '@renderer/agent/services/AgentService'
 
 // Mock dependencies
 vi.mock('../src/renderer/agent/core/AgentService', () => ({
@@ -29,6 +29,8 @@ line 5`
 
     beforeEach(() => {
         vi.resetAllMocks()
+        // Initialize tools
+        initializeTools()
         // Mock AgentService.hasReadFile to always return true
         vi.mocked(AgentService.hasReadFile).mockReturnValue(true)
         // Mock electronAPI.writeFile to return true (success)
@@ -45,7 +47,7 @@ line 5`
             content: 'line 3 modified'
         }
 
-        const result = await executeTool('replace_file_content', args)
+        const result = await toolRegistry.execute('replace_file_content', args, { workspacePath: null })
         expect(result.success).toBe(true)
 
         expect(mockElectronAPI.writeFile).toHaveBeenCalledWith(
@@ -68,7 +70,7 @@ line 5`
             content: 'new content\nspanning multiple lines'
         }
 
-        const result = await executeTool('replace_file_content', args)
+        const result = await toolRegistry.execute('replace_file_content', args, { workspacePath: null })
         expect(result.success).toBe(true)
 
         expect(mockElectronAPI.writeFile).toHaveBeenCalledWith(
@@ -90,7 +92,7 @@ line 5`
             content: 'header'
         }
 
-        const result = await executeTool('replace_file_content', args)
+        const result = await toolRegistry.execute('replace_file_content', args, { workspacePath: null })
         expect(result.success).toBe(true)
 
         expect(mockElectronAPI.writeFile).toHaveBeenCalledWith(
@@ -112,7 +114,7 @@ line 5`
             content: 'footer'
         }
 
-        const result = await executeTool('replace_file_content', args)
+        const result = await toolRegistry.execute('replace_file_content', args, { workspacePath: null })
         expect(result.success).toBe(true)
 
         expect(mockElectronAPI.writeFile).toHaveBeenCalledWith(
@@ -132,7 +134,7 @@ footer`
             content: 'invalid'
         }
 
-        const result = await executeTool('replace_file_content', args)
+        const result = await toolRegistry.execute('replace_file_content', args, { workspacePath: null })
         expect(result.success).toBe(false)
         expect(result.error).toContain('start_line must be <= end_line')
     })

@@ -5,17 +5,17 @@
  */
 
 import { logger } from '@utils/Logger'
-import { useAgentStore } from './AgentStore'
+import { useAgentStore } from '../store/AgentStore'
 import { buildOpenAIMessages, validateOpenAIMessages, OpenAIMessage } from './MessageConverter'
-import { MessageContent } from './types'
+import { MessageContent } from '../types'
 import { truncateToolResult } from '@/renderer/utils/partialJson'
-import { getAgentConfig } from './AgentConfig'
+import { getAgentConfig } from '../utils/AgentConfig'
 import {
   shouldCompactContext,
   prepareMessagesForCompact,
   createCompactedSystemMessage,
   calculateSavings,
-} from './ContextCompressor'
+} from '../utils/ContextCompressor'
 
 // 从 ContextBuilder 导入已有的函数
 export { buildContextContent, buildUserContent, calculateContextStats } from './ContextBuilder'

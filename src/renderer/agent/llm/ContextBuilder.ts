@@ -5,10 +5,10 @@
 
 import { logger } from '@utils/Logger'
 import { useStore } from '@store'
-import { useAgentStore } from './AgentStore'
-import { executeTool } from './ToolExecutor'
-import { getAgentConfig } from './AgentConfig'
-import { ContextItem, MessageContent, TextContent } from './types'
+import { useAgentStore } from '../store/AgentStore'
+import { toolRegistry } from '../tools'
+import { getAgentConfig } from '../utils/AgentConfig'
+import { ContextItem, MessageContent, TextContent } from '../types'
 import { fileContentCache, searchResultCache } from '@shared/utils/CacheService'
 
 /**
@@ -156,7 +156,7 @@ async function processWebContext(
 
   try {
     const cleanQuery = userQuery.replace(/@web\s*/i, '').trim() || userQuery
-    const searchResult = await executeTool('web_search', { query: cleanQuery }, workspacePath || undefined)
+    const searchResult = await toolRegistry.execute('web_search', { query: cleanQuery }, { workspacePath })
 
     if (searchResult.success) {
       return `\n### Web Search Results for "${cleanQuery}":\n${searchResult.result}\n`
@@ -175,11 +175,11 @@ async function processGitContext(workspacePath: string | null): Promise<string |
   if (!workspacePath) return '\n[Git info requires workspace]\n'
 
   try {
-    const gitStatus = await executeTool('run_command', {
+    const gitStatus = await toolRegistry.execute('run_command', {
       command: 'git status --short && git log --oneline -5',
       cwd: workspacePath,
       timeout: 10
-    }, workspacePath)
+    }, { workspacePath })
 
     if (gitStatus.success) {
       return `\n### Git Status:\n\`\`\`\n${gitStatus.result}\n\`\`\`\n`
@@ -196,10 +196,10 @@ async function processGitContext(workspacePath: string | null): Promise<string |
  */
 async function processTerminalContext(workspacePath: string | null): Promise<string | null> {
   try {
-    const terminalOutput = await executeTool('get_terminal_output', {
+    const terminalOutput = await toolRegistry.execute('get_terminal_output', {
       terminal_id: 'default',
       lines: 50
-    }, workspacePath || undefined)
+    }, { workspacePath })
 
     if (terminalOutput.success && terminalOutput.result) {
       return `\n### Recent Terminal Output:\n\`\`\`\n${terminalOutput.result}\n\`\`\`\n`
@@ -221,9 +221,9 @@ async function processSymbolsContext(workspacePath: string | null): Promise<stri
     const currentFile = useStore.getState().activeFilePath
 
     if (currentFile) {
-      const symbols = await executeTool('get_document_symbols', {
+      const symbols = await toolRegistry.execute('get_document_symbols', {
         path: currentFile
-      }, workspacePath)
+      }, { workspacePath })
 
       if (symbols.success && symbols.result) {
         return `\n### Symbols in ${currentFile}:\n\`\`\`\n${symbols.result}\n\`\`\`\n`

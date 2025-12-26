@@ -14,10 +14,10 @@ import {
   selectIsAwaitingApproval,
   selectPendingChanges,
   selectMessageCheckpoints,
-} from '@/renderer/agent/core/AgentStore'
-import { AgentService } from '@/renderer/agent/core/AgentService'
-import { MessageContent, ChatThread, ToolCall } from '@/renderer/agent/core/types'
-import { buildSystemPrompt } from '@/renderer/agent/prompts'
+} from '@/renderer/agent/store/AgentStore'
+import { AgentService } from '@/renderer/agent/services/AgentService'
+import { MessageContent, ChatThread, ToolCall } from '@/renderer/agent/types'
+import { buildSystemPrompt } from '@/renderer/agent/prompts/prompts'
 import { AGENT_DEFAULTS } from '@/shared/constants'
 
 export function useAgent() {

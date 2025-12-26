@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '@store'
 import { t } from '@renderer/i18n'
-import { ToolCall } from '@renderer/agent/core/types'
+import { ToolCall } from '@renderer/agent/types'
 import { JsonHighlight } from '@utils/jsonHighlight'
 
 interface ToolCallCardProps {

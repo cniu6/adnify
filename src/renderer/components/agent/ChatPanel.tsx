@@ -22,17 +22,17 @@ import {
   getMessageText,
   ContextItem,
   FileContext,
-} from '@/renderer/agent/core/types'
+} from '@/renderer/agent/types'
 
 import { ChatInput, PendingImage, ChatContextStats } from '@/renderer/components/chat'
 import MentionPopup from '@/renderer/components/agent/MentionPopup'
-import { MentionParser, MentionCandidate } from '@/renderer/agent/core/MentionParser'
+import { MentionParser, MentionCandidate } from '@/renderer/agent/utils/MentionParser'
 import ChatMessageUI from './ChatMessage'
 import AgentStatusBar from './AgentStatusBar'
 import { keybindingService } from '@/renderer/services/keybindingService'
 import { slashCommandService, SlashCommand } from '@/renderer/services/slashCommandService'
 import SlashCommandPopup from './SlashCommandPopup'
-import { AgentService } from '@/renderer/agent/core/AgentService'
+import { AgentService } from '@/renderer/agent/services/AgentService'
 import { Button } from '../ui'
 import { useToast } from '@/renderer/components/common/ToastProvider'
 

@@ -6,7 +6,7 @@
 import { useMemo } from 'react'
 import { Search, Sparkles } from 'lucide-react'
 import { t } from '@/renderer/i18n'
-import { MentionCandidate } from '@/renderer/agent/core/MentionParser'
+import { MentionCandidate } from '@/renderer/agent/utils/MentionParser'
 import { useStore } from '@/renderer/store'
 import { InputPopup, InputPopupItem } from '@/renderer/components/common/InputPopup'
 

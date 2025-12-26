@@ -15,7 +15,7 @@ import {
 import {
     ContextItem,
     FileContext,
-} from '@/renderer/agent/core/types'
+} from '@/renderer/agent/types'
 
 interface ContextPanelProps {
     contextItems: ContextItem[]

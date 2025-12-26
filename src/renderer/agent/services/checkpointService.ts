@@ -6,7 +6,7 @@
  */
 
 import { logger } from '@utils/Logger'
-import { Checkpoint, FileSnapshot } from './toolTypes'
+import { Checkpoint, FileSnapshot } from '../types'
 import { 
   loadCheckpoints, 
   saveCheckpoints, 

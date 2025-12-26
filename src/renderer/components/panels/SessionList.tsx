@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { MessageSquare, Trash2, Download, Upload, Plus, X, Clock, Bot, Zap } from 'lucide-react'
-import { sessionService, SessionSummary } from '@/renderer/agent/sessionService'
+import { sessionService, SessionSummary } from '@/renderer/agent/services/sessionService'
 import { useStore, useModeStore } from '@/renderer/store'
 import { useAgent } from '@/renderer/hooks/useAgent'
 import { t } from '@/renderer/i18n'

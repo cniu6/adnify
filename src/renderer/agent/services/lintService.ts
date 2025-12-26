@@ -4,7 +4,7 @@
  */
 
 import { logger } from '@utils/Logger'
-import { LintError } from './toolTypes'
+import { LintError } from '../types'
 import { onDiagnostics, lspUriToPath } from '@services/lspService'
 
 // 支持的语言和对应的 lint 命令

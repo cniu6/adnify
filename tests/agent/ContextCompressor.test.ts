@@ -9,8 +9,8 @@ import {
   buildCompactPrompt,
   createCompactedSystemMessage,
   COMPACT_CONFIG,
-} from '../../src/renderer/agent/core/ContextCompressor'
-import { ChatMessage, UserMessage, AssistantMessage, ToolResultMessage } from '../../src/renderer/agent/core/types'
+} from '@renderer/agent/utils/ContextCompressor'
+import { ChatMessage, UserMessage, AssistantMessage, ToolResultMessage } from '@renderer/agent/types'
 
 // 辅助函数：创建测试消息
 function createUserMessage(content: string, id = 'user-1'): UserMessage {

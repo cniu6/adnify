@@ -6,15 +6,16 @@
 
 import { logger } from '@utils/Logger'
 import { performanceMonitor } from '@shared/utils/PerformanceMonitor'
-import { useAgentStore } from './AgentStore'
+import { useAgentStore } from '../store/AgentStore'
 import { useStore } from '@store'
-import { executeTool, getToolApprovalType } from './ToolExecutor'
-import { ToolStatus, ToolExecutionResult } from './types'
+import { toolRegistry, getToolApprovalType } from '../tools'
+import { ToolStatus } from '../types'
+import type { ToolExecutionResult } from '../tools'
 import { LLMToolCall } from '@/renderer/types/electron'
 import { truncateToolResult } from '@/renderer/utils/partialJson'
 import { isFileModifyingTool } from '@/shared/constants'
-import { getAgentConfig } from './AgentConfig'
-import { compressToolResult } from './ContextCompressor'
+import { getAgentConfig } from '../utils/AgentConfig'
+import { compressToolResult } from '../utils/ContextCompressor'
 
 export interface ToolExecutionContext {
   workspacePath: string | null
@@ -144,7 +145,7 @@ export class ToolExecutionService {
     const retryDelayMs = config.retryDelayMs
 
     const executeWithTimeout = () => Promise.race([
-      executeTool(name, args, workspacePath || undefined),
+      toolRegistry.execute(name, args, { workspacePath }),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error(`Tool execution timed out after ${timeoutMs / 1000}s`)), timeoutMs)
       )
@@ -177,7 +178,7 @@ export class ToolExecutionService {
       }
     }
 
-    return result || { success: false, result: '', error: lastError || 'Tool execution failed' }
+    return result ?? { success: false, result: '', error: lastError || 'Tool execution failed' }
   }
 
   /**
@@ -220,7 +221,7 @@ export class ToolExecutionService {
     })
 
     try {
-      const { composerService } = await import('../composerService')
+      const { composerService } = await import('./composerService')
       const relativePath = workspacePath ? fullPath.replace(workspacePath, '').replace(/^[\\/]/, '') : fullPath
       composerService.addChange({
         filePath: fullPath,

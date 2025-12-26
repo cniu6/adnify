@@ -5,14 +5,17 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-  validateToolArgs,
+  toolRegistry,
   getToolDefinitions,
   getToolApprovalType,
-  ReadFileSchema,
-  EditFileSchema,
-  RunCommandSchema,
-  CreatePlanSchema,
-} from '../../src/renderer/agent/core/toolDefinitions'
+  TOOL_SCHEMAS,
+} from '../../src/renderer/agent/tools'
+
+// 从 schemas 中获取具体的 schema
+const ReadFileSchema = TOOL_SCHEMAS.read_file
+const EditFileSchema = TOOL_SCHEMAS.edit_file
+const RunCommandSchema = TOOL_SCHEMAS.run_command
+const CreatePlanSchema = TOOL_SCHEMAS.create_plan
 
 describe('Tool Definitions', () => {
   describe('getToolDefinitions', () => {
@@ -183,28 +186,22 @@ describe('Tool Schema Validation', () => {
   })
 })
 
-describe('validateToolArgs', () => {
+describe('toolRegistry.validate', () => {
   it('should return success for valid args', () => {
-    const result = validateToolArgs('read_file', { path: 'src/main.ts' })
+    const result = toolRegistry.validate('read_file', { path: 'src/main.ts' })
     expect(result.success).toBe(true)
     expect(result.data).toEqual({ path: 'src/main.ts' })
   })
 
   it('should return error for invalid args', () => {
-    const result = validateToolArgs('read_file', { path: '' })
+    const result = toolRegistry.validate('read_file', { path: '' })
     expect(result.success).toBe(false)
     expect(result.error).toBeDefined()
   })
 
   it('should return error for unknown tool', () => {
-    const result = validateToolArgs('unknown_tool', {})
+    const result = toolRegistry.validate('unknown_tool', {})
     expect(result.success).toBe(false)
     expect(result.error).toContain('Unknown tool')
-  })
-
-  it('should provide hint for errors', () => {
-    const result = validateToolArgs('read_file', {})
-    expect(result.success).toBe(false)
-    expect(result.hint).toBeDefined()
   })
 })

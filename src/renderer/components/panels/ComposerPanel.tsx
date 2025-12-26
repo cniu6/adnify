@@ -19,7 +19,7 @@ import {
 import { useStore } from '@store'
 import DiffViewer from '../editor/DiffViewer'
 import { t } from '@renderer/i18n'
-import { composerService, FileChange } from '@renderer/agent/composerService'
+import { composerService, FileChange } from '@renderer/agent/services/composerService'
 import { getEditorConfig } from '@renderer/config/editorConfig'
 
 interface FileEdit {

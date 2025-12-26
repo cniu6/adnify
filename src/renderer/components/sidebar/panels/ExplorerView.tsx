@@ -7,7 +7,7 @@ import { FolderOpen, Plus, RefreshCw, FolderPlus, GitBranch, FilePlus, ExternalL
 import { useStore } from '@store'
 import { t } from '@renderer/i18n'
 import { getFileName, joinPath } from '@utils/pathUtils'
-import { gitService } from '@renderer/agent/gitService'
+import { gitService } from '@renderer/agent/services/gitService'
 import { getEditorConfig } from '@renderer/config/editorConfig'
 import { toast } from '../../common/ToastProvider'
 import { adnifyDir } from '@services/adnifyDirService'
@@ -102,7 +102,7 @@ export function ExplorerView() {
     if (path) {
       await adnifyDir.flush()
 
-      const { checkpointService } = await import('@renderer/agent/checkpointService')
+      const { checkpointService } = await import('@renderer/agent/services/checkpointService')
       checkpointService.reset()
       adnifyDir.reset()
       directoryCacheService.clear()

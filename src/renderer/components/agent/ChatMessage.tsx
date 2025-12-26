@@ -21,11 +21,12 @@ import {
   isToolCallPart,
   isReasoningPart,
   ReasoningPart,
-} from '@renderer/agent/core/types'
+  ToolCall,
+} from '@renderer/agent/types'
 import FileChangeCard from './FileChangeCard'
 import ToolCallCard from './ToolCallCard'
 import ToolCallGroup from './ToolCallGroup'
-import { WRITE_TOOLS } from '@renderer/agent/core/ToolExecutor'
+import { isWriteTool } from '@shared/config/agentConfig'
 import { useStore } from '@store'
 
 interface ChatMessageProps {
@@ -252,7 +253,7 @@ const RenderPart = React.memo(({
 
   if (isToolCallPart(part)) {
     const tc = part.toolCall
-    const isFileOp = WRITE_TOOLS.includes(tc.name)
+    const isFileOp = isWriteTool(tc.name)
     const isPending = tc.id === pendingToolId
 
     if (isFileOp) {
@@ -442,10 +443,10 @@ const ChatMessage = React.memo(({
                       // Group consecutive tool calls
                       const groups: Array<
                         | { type: 'part'; part: AssistantPart; index: number }
-                        | { type: 'tool_group'; toolCalls: import('../../agent/core/types').ToolCall[]; startIndex: number }
+                        | { type: 'tool_group'; toolCalls: ToolCall[]; startIndex: number }
                       > = []
 
-                      let currentToolCalls: import('../../agent/core/types').ToolCall[] = []
+                      let currentToolCalls: ToolCall[] = []
                       let startIndex = -1
 
                       message.parts.forEach((part, index) => {
@@ -533,7 +534,7 @@ const ChatMessage = React.memo(({
                         ) : (
                           // 单个工具调用直接显示
                           message.toolCalls.map((tc, index) => {
-                            const isFileOp = WRITE_TOOLS.includes(tc.name)
+                            const isFileOp = isWriteTool(tc.name)
                             const isPending = tc.id === pendingToolId
 
                             if (isFileOp) {

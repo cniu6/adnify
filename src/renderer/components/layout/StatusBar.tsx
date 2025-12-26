@@ -8,8 +8,8 @@ import { indexWorkerService, IndexProgress } from '@services/indexWorkerService'
 import BottomBarPopover from '../ui/BottomBarPopover'
 import ToolCallLogContent from '../panels/ToolCallLogContent'
 import { PlanListPopover } from '../panels/PlanListContent'
-import { useAgentStore, selectMessages } from '@renderer/agent/core/AgentStore'
-import { isAssistantMessage, TokenUsage } from '@renderer/agent/core/types'
+import { useAgentStore, selectMessages } from '@renderer/agent/store/AgentStore'
+import { isAssistantMessage, TokenUsage } from '@renderer/agent/types'
 
 export default function StatusBar() {
   const {
