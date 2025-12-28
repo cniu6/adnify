@@ -1,6 +1,6 @@
 import { logger } from '@utils/Logger'
 import { useRef, useCallback, useEffect, useState } from 'react'
-import MonacoEditor, { DiffEditor, OnMount, loader } from '@monaco-editor/react'
+import MonacoEditor, { DiffEditor, OnMount, BeforeMount, loader } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
 import { FileCode, X, ChevronRight, AlertCircle, AlertTriangle, RefreshCw, Home, Eye, Edit, Columns } from 'lucide-react'
 import { useStore } from '@store'
@@ -36,6 +36,7 @@ import { keybindingService } from '@services/keybindingService'
 import { monaco } from '@renderer/monacoWorker'
 // 导入编辑器配置
 import type { ThemeName } from '@store/slices/themeSlice'
+import { themes } from './ThemeManager'
 
 // 配置 Monaco 使用本地安装的版本（支持国际化）
 // monaco-editor-nls 插件会在构建时注入语言包
@@ -110,6 +111,59 @@ const getLanguage = (path: string): string => {
   return LANGUAGE_MAP[ext] || 'plaintext'
 }
 
+// RGB 字符串转 Hex
+const rgbToHex = (rgbStr: string) => {
+  const [r, g, b] = rgbStr.split(' ').map(Number)
+  return '#' + [r, g, b].map(x => {
+    const hex = x.toString(16)
+    return hex.length === 1 ? '0' + hex : hex
+  }).join('')
+}
+
+// 定义 Monaco 主题（在 beforeMount 中调用，避免白屏）
+const defineMonacoTheme = (monacoInstance: typeof import('monaco-editor'), themeName: ThemeName) => {
+  const themeVars = themes[themeName] || themes['adnify-dark']
+  if (!themeVars) return
+
+  const bg = rgbToHex(themeVars['--background'])
+  const surface = rgbToHex(themeVars['--surface'])
+  const text = rgbToHex(themeVars['--text-primary'])
+  const textMuted = rgbToHex(themeVars['--text-muted'])
+  const border = rgbToHex(themeVars['--border'])
+  const accent = rgbToHex(themeVars['--accent'])
+  const selection = accent + '40'
+
+  monacoInstance.editor.defineTheme('adnify-dynamic', {
+    base: themeName === 'dawn' ? 'vs' : 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: textMuted.slice(1), fontStyle: 'italic' },
+      { token: 'keyword', foreground: accent.slice(1) },
+      { token: 'string', foreground: 'a5d6ff' },
+      { token: 'number', foreground: 'ffc600' },
+      { token: 'type', foreground: '4ec9b0' },
+    ],
+    colors: {
+      'editor.background': bg,
+      'editor.foreground': text,
+      'editor.lineHighlightBackground': surface,
+      'editorCursor.foreground': accent,
+      'editorWhitespace.foreground': border,
+      'editorIndentGuide.background': border,
+      'editor.selectionBackground': selection,
+      'editorLineNumber.foreground': textMuted,
+      'editorLineNumber.activeForeground': text,
+      'editorWidget.background': surface,
+      'editorWidget.border': border,
+      'editorSuggestWidget.background': surface,
+      'editorSuggestWidget.border': border,
+      'editorSuggestWidget.selectedBackground': accent + '20',
+      'editorHoverWidget.background': surface,
+      'editorHoverWidget.border': border,
+    }
+  })
+}
+
 export default function Editor() {
   const { openFiles, activeFilePath, setActiveFile, closeFile, updateFileContent, markFileSaved, language, activeDiff, setActiveDiff, setCursorPosition, setIsLspReady } = useStore()
   const { pendingChanges, acceptChange, undoChange } = useAgent()
@@ -118,6 +172,12 @@ export default function Editor() {
   const cursorDebounceRef = useRef<NodeJS.Timeout | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // beforeMount 回调：在编辑器挂载前定义主题，避免白屏
+  const handleBeforeMount: BeforeMount = (monacoInstance) => {
+    const { currentTheme } = useStore.getState() as { currentTheme: ThemeName }
+    defineMonacoTheme(monacoInstance, currentTheme)
+    initMonacoTypeService(monacoInstance)
+  }
 
   // Lint 错误状态
   const [lintErrors, setLintErrors] = useState<LintError[]>([])
@@ -178,59 +238,8 @@ export default function Editor() {
 
   useEffect(() => {
     if (monacoRef.current && currentTheme) {
-      const monaco = monacoRef.current
-      import('../editor/ThemeManager').then(({ themes }) => {
-        const themeVars = themes[currentTheme] || themes['adnify-dark']
-        if (!themeVars) return
-
-        const rgbToHex = (rgbStr: string) => {
-          const [r, g, b] = rgbStr.split(' ').map(Number)
-          return '#' + [r, g, b].map(x => {
-            const hex = x.toString(16)
-            return hex.length === 1 ? '0' + hex : hex
-          }).join('')
-        }
-
-        // 使用正确的变量名（与 ThemeManager 中的定义匹配）
-        const bg = rgbToHex(themeVars['--background'])
-        const surface = rgbToHex(themeVars['--surface'])
-        const text = rgbToHex(themeVars['--text-primary'])
-        const textMuted = rgbToHex(themeVars['--text-muted'])
-        const border = rgbToHex(themeVars['--border'])
-        const accent = rgbToHex(themeVars['--accent'])
-        const selection = accent + '40' // 25% opacity
-
-        monaco.editor.defineTheme('adnify-dynamic', {
-          base: currentTheme === 'dawn' ? 'vs' : 'vs-dark',
-          inherit: true,
-          rules: [
-            { token: 'comment', foreground: textMuted.slice(1), fontStyle: 'italic' },
-            { token: 'keyword', foreground: accent.slice(1) },
-            { token: 'string', foreground: 'a5d6ff' }, // Light blue for strings
-            { token: 'number', foreground: 'ffc600' }, // Yellow for numbers
-            { token: 'type', foreground: '4ec9b0' }, // Teal for types
-          ],
-          colors: {
-            'editor.background': bg,
-            'editor.foreground': text,
-            'editor.lineHighlightBackground': surface,
-            'editorCursor.foreground': accent,
-            'editorWhitespace.foreground': border,
-            'editorIndentGuide.background': border,
-            'editor.selectionBackground': selection,
-            'editorLineNumber.foreground': textMuted,
-            'editorLineNumber.activeForeground': text,
-            'editorWidget.background': surface,
-            'editorWidget.border': border,
-            'editorSuggestWidget.background': surface,
-            'editorSuggestWidget.border': border,
-            'editorSuggestWidget.selectedBackground': accent + '20',
-            'editorHoverWidget.background': surface,
-            'editorHoverWidget.border': border,
-          }
-        })
-        monaco.editor.setTheme('adnify-dynamic')
-      })
+      defineMonacoTheme(monacoRef.current, currentTheme)
+      monacoRef.current.editor.setTheme('adnify-dynamic')
     }
   }, [currentTheme])
 
@@ -264,54 +273,8 @@ export default function Editor() {
     // 注册所有 LSP 提供者（hover、completion、signature help 等）
     registerLspProviders(monaco)
 
-    // 初始设置主题 - 直接在挂载时应用
-    const { currentTheme: initialTheme } = useStore.getState() as { currentTheme: ThemeName }
-    import('../editor/ThemeManager').then(({ themes }) => {
-      const themeVars = themes[initialTheme]
-      if (!themeVars) return
-
-      const rgbToHex = (rgbStr: string) => {
-        const [r, g, b] = rgbStr.split(' ').map(Number)
-        return '#' + [r, g, b].map(x => {
-          const hex = x.toString(16)
-          return hex.length === 1 ? '0' + hex : hex
-        }).join('')
-      }
-
-      // 使用正确的变量名（与 ThemeManager 中的定义匹配）
-      const bg = rgbToHex(themeVars['--background'])
-      const surface = rgbToHex(themeVars['--surface'])
-      const text = rgbToHex(themeVars['--text-primary'])
-      const textMuted = rgbToHex(themeVars['--text-muted'])
-      const border = rgbToHex(themeVars['--border'])
-      const accent = rgbToHex(themeVars['--accent'])
-      const selection = accent + '40'
-
-      monaco.editor.defineTheme('adnify-dynamic', {
-        base: initialTheme === 'dawn' ? 'vs' : 'vs-dark',
-        inherit: true,
-        rules: [],
-        colors: {
-          'editor.background': bg,
-          'editor.foreground': text,
-          'editor.lineHighlightBackground': surface,
-          'editorCursor.foreground': accent,
-          'editorWhitespace.foreground': border,
-          'editorIndentGuide.background': border,
-          'editor.selectionBackground': selection,
-          'editorLineNumber.foreground': textMuted,
-          'editorLineNumber.activeForeground': text,
-          'editorWidget.background': surface,
-          'editorWidget.border': border,
-          'editorSuggestWidget.background': surface,
-          'editorSuggestWidget.border': border,
-          'editorSuggestWidget.selectedBackground': selection,
-          'editorHoverWidget.background': surface,
-          'editorHoverWidget.border': border,
-        }
-      })
-      monaco.editor.setTheme('adnify-dynamic')
-    })
+    // 主题已在 beforeMount 中定义，这里只需设置
+    monaco.editor.setTheme('adnify-dynamic')
 
     // 启动 LSP 服务器（异步）
     const { workspacePath } = useStore.getState()
@@ -1300,7 +1263,7 @@ export default function Editor() {
                     language={activeLanguage}
                     value={activeFile.content}
                     theme="adnify-dynamic"
-                    beforeMount={(monacoInstance) => initMonacoTypeService(monacoInstance)}
+                    beforeMount={handleBeforeMount}
                     onMount={handleEditorMount}
                     onChange={(value) => {
                       if (value !== undefined) {
@@ -1356,9 +1319,7 @@ export default function Editor() {
                 language={activeLanguage}
                 value={activeFile.content}
                 theme="adnify-dynamic"
-                beforeMount={(monacoInstance) => {
-                  initMonacoTypeService(monacoInstance)
-                }}
+                beforeMount={handleBeforeMount}
                 onMount={handleEditorMount}
                 onChange={(value) => {
                   if (value !== undefined) {
