@@ -84,6 +84,7 @@
   "build": {
     "appId": "com.adnify.app",
     "productName": "Adnify",
+    "publish": null,
     "directories": {
       "output": "release"
     },
