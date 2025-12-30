@@ -4,7 +4,7 @@
  * 新设计：全宽布局，头像在顶部 Header
  */
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { User, Copy, Check, RefreshCw, Edit2, RotateCcw, Sparkles, ChevronDown } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -570,9 +570,9 @@ const ChatMessage = React.memo(({
                   </>
                 )}
 
-                {/* Streaming cursor */}
+                {/* Streaming indicator - 带随机文字的动态效果 */}
                 {isAssistantMessage(message) && message.isStreaming && (
-                  <span className="inline-block w-2 h-4 bg-accent/80 ml-0.5 animate-pulse align-sub rounded-[1px] shadow-[0_0_5px_rgba(var(--accent)/0.5)]" />
+                  <StreamingIndicator />
                 )}
               </div>
             )
@@ -582,6 +582,78 @@ const ChatMessage = React.memo(({
     </div >
   )
 })
+
+// 流式指示器组件 - 带随机思考文字
+const THINKING_TEXTS = [
+  'Thinking',
+  'Analyzing',
+  'Processing',
+  'Generating',
+  'Composing',
+  'Crafting',
+  'Working',
+  'Computing',
+  'Reasoning',
+  'Pondering'
+]
+
+const THINKING_TEXTS_ZH = [
+  '思考中',
+  '分析中',
+  '处理中',
+  '生成中',
+  '编写中',
+  '构思中',
+  '工作中',
+  '计算中',
+  '推理中',
+  '琢磨中'
+]
+
+function StreamingIndicator() {
+  const { language } = useStore()
+  const [textIndex, setTextIndex] = useState(() => Math.floor(Math.random() * THINKING_TEXTS.length))
+  
+  // 每 3 秒切换一次文字
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTextIndex(prev => {
+        let next = Math.floor(Math.random() * THINKING_TEXTS.length)
+        // 避免连续相同
+        while (next === prev) {
+          next = Math.floor(Math.random() * THINKING_TEXTS.length)
+        }
+        return next
+      })
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const texts = language === 'zh' ? THINKING_TEXTS_ZH : THINKING_TEXTS
+  const currentText = texts[textIndex]
+
+  return (
+    <span className="inline-flex items-center gap-1.5 ml-2 text-accent/70 select-none">
+      <span className="text-[12px] font-medium animate-pulse">
+        {currentText}
+      </span>
+      <span className="inline-flex items-center gap-[2px]">
+        <span 
+          className="w-1 h-2.5 bg-accent rounded-full animate-bounce" 
+          style={{ animationDelay: '0ms', animationDuration: '600ms' }} 
+        />
+        <span 
+          className="w-1 h-2.5 bg-accent/70 rounded-full animate-bounce" 
+          style={{ animationDelay: '150ms', animationDuration: '600ms' }} 
+        />
+        <span 
+          className="w-1 h-2.5 bg-accent/40 rounded-full animate-bounce" 
+          style={{ animationDelay: '300ms', animationDuration: '600ms' }} 
+        />
+      </span>
+    </span>
+  )
+}
 
 ChatMessage.displayName = 'ChatMessage'
 
