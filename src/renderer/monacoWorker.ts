@@ -44,6 +44,10 @@ monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
   noSuggestionDiagnostics: true,
 })
 
+// 禁用 eager model sync，减少 inmemory model 被提前处理的情况
+monaco.languages.typescript.typescriptDefaults.setEagerModelSync(false)
+monaco.languages.typescript.javascriptDefaults.setEagerModelSync(false)
+
 // 配置编译选项
 monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
   target: monaco.languages.typescript.ScriptTarget.ESNext,
