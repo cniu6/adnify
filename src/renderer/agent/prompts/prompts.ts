@@ -44,13 +44,10 @@ export async function buildSystemPrompt(
 	const projectRules = await rulesService.getRules()
 
 	// 获取提示词模板
-	const { getPromptTemplateById, getDefaultPromptTemplate, PLANNING_TOOLS_DESC } = await import('./promptTemplates')
-	const template = promptTemplateId
-		? getPromptTemplateById(promptTemplateId) || getDefaultPromptTemplate()
-		: getDefaultPromptTemplate()
+	const { getSystemPrompt, PLANNING_TOOLS_DESC } = await import('./promptTemplates')
 
-	// 使用模板的完整系统提示词（新模板已包含工具定义和工作流规范）
-	let systemPrompt = template.systemPrompt
+	// 使用模板构建完整系统提示词
+	let systemPrompt = getSystemPrompt(promptTemplateId)
 
 	// 动态替换环境信息占位符
 	const os = typeof navigator !== 'undefined' ? ((navigator as any).userAgentData?.platform || navigator.platform || 'Unknown') : 'Unknown'

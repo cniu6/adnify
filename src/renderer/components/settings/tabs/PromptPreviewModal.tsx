@@ -11,7 +11,7 @@ import { PromptPreviewModalProps } from '../types'
 
 export function PromptPreviewModal({ templateId, language, onClose }: PromptPreviewModalProps) {
     const template = getPromptTemplateById(templateId)
-    const previewContent = template ? getPromptTemplatePreview(templateId) : ''
+    const previewContent = template ? getPromptTemplatePreview(templateId, language) : ''
     const [searchQuery, setSearchQuery] = useState('')
     const [activeSection, setActiveSection] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
