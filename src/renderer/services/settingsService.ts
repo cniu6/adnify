@@ -204,9 +204,18 @@ function cleanProviderConfig(
     cleaned.advanced = config.advanced
   }
 
-  // 自定义 Provider: 保存 adapterConfig
-  if (!isBuiltin && config.adapterConfig) {
-    cleaned.adapterConfig = config.adapterConfig
+  // 自定义 Provider: 保存完整配置
+  if (!isBuiltin) {
+    if (config.adapterConfig) {
+      cleaned.adapterConfig = config.adapterConfig
+    }
+    // 保存自定义厂商的元数据
+    if (config.displayName) cleaned.displayName = config.displayName
+    if (config.mode) cleaned.mode = config.mode
+    if (config.createdAt) cleaned.createdAt = config.createdAt
+    if (config.updatedAt) cleaned.updatedAt = config.updatedAt
+    // 自定义厂商必须保存 baseUrl
+    if (config.baseUrl) cleaned.baseUrl = config.baseUrl
   }
 
   if (Object.keys(cleaned).length === 0) {

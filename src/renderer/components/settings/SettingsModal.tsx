@@ -78,30 +78,34 @@ export default function SettingsModal() {
         setAgentConfig(localAgentConfig)
         setAiInstructions(localAiInstructions)
 
-        // 更新 provider configs - 从 localProviderConfigs 获取 advanced 和 adapterConfig
+        // 合并当前 provider 的配置到 localProviderConfigs
         const currentProviderLocalConfig = localProviderConfigs[localConfig.provider] || {}
-        const updatedProviderConfigs = {
+        const finalProviderConfigs = {
             ...localProviderConfigs,
             [localConfig.provider]: {
                 ...currentProviderLocalConfig,
                 apiKey: localConfig.apiKey,
                 baseUrl: localConfig.baseUrl,
                 timeout: localConfig.timeout,
+                model: localConfig.model,
                 adapterConfig: currentProviderLocalConfig.adapterConfig || localConfig.adapterConfig,
                 advanced: currentProviderLocalConfig.advanced,
-                model: localConfig.model,
             }
         }
-        setProviderConfig(localConfig.provider, updatedProviderConfigs[localConfig.provider])
 
-        // 使用 settingsService 统一保存到 app-settings
+        // 批量更新所有 provider configs 到 store
+        for (const [providerId, config] of Object.entries(finalProviderConfigs)) {
+            setProviderConfig(providerId, config)
+        }
+
+        // 使用 settingsService 统一保存
         await settingsService.saveAll({
             llmConfig: localConfig as any,
             language: localLanguage,
             autoApprove: localAutoApprove,
             promptTemplateId: localPromptTemplateId,
             agentConfig: localAgentConfig,
-            providerConfigs: updatedProviderConfigs as any,
+            providerConfigs: finalProviderConfigs as any,
             aiInstructions: localAiInstructions,
             onboardingCompleted: true,
         })

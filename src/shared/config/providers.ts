@@ -154,6 +154,11 @@ export interface UserProviderConfig {
   customModels?: string[]
   adapterConfig?: LLMAdapterConfig
   advanced?: AdvancedConfig
+  // 自定义厂商专用字段（custom- 前缀的 provider）
+  displayName?: string
+  mode?: ProviderMode
+  createdAt?: number
+  updatedAt?: number
 }
 
 // ============================================
