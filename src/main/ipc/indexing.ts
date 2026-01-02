@@ -5,10 +5,11 @@
 import { logger } from '@shared/utils/Logger'
 import { ipcMain, BrowserWindow } from 'electron'
 import { getIndexService, EmbeddingConfig } from '../indexing'
+import { ok, failFromError, Result } from '@shared/types/result'
 
 export function registerIndexingHandlers(getMainWindow: () => BrowserWindow | null) {
   // 初始化索引服务
-  ipcMain.handle('index:initialize', async (_, workspacePath: string) => {
+  ipcMain.handle('index:initialize', async (_, workspacePath: string): Promise<Result<void>> => {
     try {
       const indexService = getIndexService(workspacePath)
       const mainWindow = getMainWindow()
@@ -16,15 +17,15 @@ export function registerIndexingHandlers(getMainWindow: () => BrowserWindow | nu
         indexService.setMainWindow(mainWindow)
       }
       await indexService.initialize()
-      return { success: true }
+      return ok(undefined)
     } catch (e) {
       logger.ipc.error('[Index] Initialize failed:', e)
-      return { success: false, error: e instanceof Error ? e.message : String(e) }
+      return failFromError(e)
     }
   })
 
   // 开始全量索引
-  ipcMain.handle('index:start', async (_, workspacePath: string) => {
+  ipcMain.handle('index:start', async (_, workspacePath: string): Promise<Result<void>> => {
     try {
       const indexService = getIndexService(workspacePath)
       const mainWindow = getMainWindow()
@@ -38,10 +39,10 @@ export function registerIndexingHandlers(getMainWindow: () => BrowserWindow | nu
         logger.ipc.error('[Index] Indexing failed:', e)
       })
 
-      return { success: true }
+      return ok(undefined)
     } catch (e) {
       logger.ipc.error('[Index] Start failed:', e)
-      return { success: false, error: e instanceof Error ? e.message : String(e) }
+      return failFromError(e)
     }
   })
 
@@ -92,24 +93,24 @@ export function registerIndexingHandlers(getMainWindow: () => BrowserWindow | nu
   })
 
   // 更新单个文件的索引
-  ipcMain.handle('index:updateFile', async (_, workspacePath: string, filePath: string) => {
+  ipcMain.handle('index:updateFile', async (_, workspacePath: string, filePath: string): Promise<Result<void>> => {
     try {
       const indexService = getIndexService(workspacePath)
       await indexService.updateFile(filePath)
-      return { success: true }
+      return ok(undefined)
     } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : String(e) }
+      return failFromError(e)
     }
   })
 
   // 清空索引
-  ipcMain.handle('index:clear', async (_, workspacePath: string) => {
+  ipcMain.handle('index:clear', async (_, workspacePath: string): Promise<Result<void>> => {
     try {
       const indexService = getIndexService(workspacePath)
       await indexService.clearIndex()
-      return { success: true }
+      return ok(undefined)
     } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : String(e) }
+      return failFromError(e)
     }
   })
 
@@ -118,13 +119,13 @@ export function registerIndexingHandlers(getMainWindow: () => BrowserWindow | nu
     _,
     workspacePath: string,
     config: Partial<EmbeddingConfig>
-  ) => {
+  ): Promise<Result<void>> => {
     try {
       const indexService = getIndexService(workspacePath)
       indexService.updateEmbeddingConfig(config)
-      return { success: true }
+      return ok(undefined)
     } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : String(e) }
+      return failFromError(e)
     }
   })
 
