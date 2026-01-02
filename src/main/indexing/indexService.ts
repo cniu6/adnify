@@ -320,11 +320,81 @@ export class CodebaseIndexService {
 
   /**
    * 混合搜索（向量 + 关键词）
+   * 结合语义搜索和关键词搜索，使用 RRF (Reciprocal Rank Fusion) 融合结果
    */
   async hybridSearch(query: string, topK: number = 10): Promise<SearchResult[]> {
-    // 1. 向量搜索
-    const semanticResults = await this.search(query, topK * 2)
-    return semanticResults.slice(0, topK)
+    if (!this.vectorStore.isInitialized()) {
+      throw new Error('Index not initialized')
+    }
+
+    // 提取关键词（简单分词：按空格和常见分隔符拆分，过滤短词）
+    const keywords = this.extractKeywords(query)
+
+    // 并行执行向量搜索和关键词搜索
+    const [semanticResults, keywordResults] = await Promise.all([
+      this.search(query, topK * 2),
+      keywords.length > 0 
+        ? this.vectorStore.keywordSearch(keywords, topK * 2)
+        : Promise.resolve([])
+    ])
+
+    // 如果没有关键词结果，直接返回语义结果
+    if (keywordResults.length === 0) {
+      return semanticResults.slice(0, topK)
+    }
+
+    // 使用 RRF 融合两个结果集
+    return this.fuseResults(semanticResults, keywordResults, topK)
+  }
+
+  /**
+   * 从查询中提取关键词
+   * 代码搜索场景下，保留所有有意义的 token（函数名、变量名等）
+   */
+  private extractKeywords(query: string): string[] {
+    return query
+      .split(/[\s,.:;!?()[\]{}'"<>]+/)
+      .map(t => t.trim())
+      .filter(t => t.length >= 2 && !/^\d+$/.test(t))
+  }
+
+  /**
+   * 使用 RRF (Reciprocal Rank Fusion) 融合搜索结果
+   * RRF score = Σ 1/(k + rank)，k=60 是常用值
+   */
+  private fuseResults(
+    semanticResults: SearchResult[],
+    keywordResults: SearchResult[],
+    topK: number
+  ): SearchResult[] {
+    const k = 60
+    const scoreMap = new Map<string, { result: SearchResult; score: number }>()
+
+    // 计算语义搜索的 RRF 分数（权重 0.7）
+    semanticResults.forEach((result, rank) => {
+      const key = `${result.filePath}:${result.startLine}`
+      const rrfScore = 0.7 / (k + rank + 1)
+      scoreMap.set(key, { result, score: rrfScore })
+    })
+
+    // 计算关键词搜索的 RRF 分数（权重 0.3）并合并
+    keywordResults.forEach((result, rank) => {
+      const key = `${result.filePath}:${result.startLine}`
+      const rrfScore = 0.3 / (k + rank + 1)
+      
+      const existing = scoreMap.get(key)
+      if (existing) {
+        existing.score += rrfScore
+      } else {
+        scoreMap.set(key, { result, score: rrfScore })
+      }
+    })
+
+    // 按融合分数排序并返回 topK
+    return Array.from(scoreMap.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK)
+      .map(({ result, score }) => ({ ...result, score }))
   }
 
   /**

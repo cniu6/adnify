@@ -297,6 +297,7 @@ export interface ElectronAPI {
   indexStatus: (workspacePath: string) => Promise<IndexStatus>
   indexHasIndex: (workspacePath: string) => Promise<boolean>
   indexSearch: (workspacePath: string, query: string, topK?: number) => Promise<IndexSearchResult[]>
+  indexHybridSearch: (workspacePath: string, query: string, topK?: number) => Promise<IndexSearchResult[]>
   indexUpdateFile: (workspacePath: string, filePath: string) => Promise<{ success: boolean; error?: string }>
   indexClear: (workspacePath: string) => Promise<{ success: boolean; error?: string }>
   indexUpdateEmbeddingConfig: (workspacePath: string, config: EmbeddingConfigInput) => Promise<{ success: boolean; error?: string }>

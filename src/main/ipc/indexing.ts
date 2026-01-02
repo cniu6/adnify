@@ -79,6 +79,18 @@ export function registerIndexingHandlers(getMainWindow: () => BrowserWindow | nu
     }
   })
 
+  // 混合搜索（向量 + 关键词）
+  ipcMain.handle('index:hybridSearch', async (_, workspacePath: string, query: string, topK?: number) => {
+    try {
+      const indexService = getIndexService(workspacePath)
+      await indexService.initialize()
+      return await indexService.hybridSearch(query, topK || 10)
+    } catch (e) {
+      logger.ipc.error('[Index] Hybrid search failed:', e)
+      return []
+    }
+  })
+
   // 更新单个文件的索引
   ipcMain.handle('index:updateFile', async (_, workspacePath: string, filePath: string) => {
     try {

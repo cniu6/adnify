@@ -126,7 +126,7 @@ async function processCodebaseContext(
     const results = await searchResultCache.getOrSet(
       cacheKey,
       async () => {
-        const searchResults = await window.electronAPI.indexSearch(workspacePath, cleanQuery, 20)
+        const searchResults = await window.electronAPI.indexHybridSearch(workspacePath, cleanQuery, 20)
         return searchResults || []
       },
       60 * 1000 // 1 分钟 TTL（搜索结果变化较快）

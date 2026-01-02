@@ -230,6 +230,7 @@ export interface ElectronAPI {
   indexStatus: (workspacePath: string) => Promise<IndexStatusData>
   indexHasIndex: (workspacePath: string) => Promise<boolean>
   indexSearch: (workspacePath: string, query: string, topK?: number) => Promise<IndexSearchResult[]>
+  indexHybridSearch: (workspacePath: string, query: string, topK?: number) => Promise<IndexSearchResult[]>
   indexUpdateFile: (workspacePath: string, filePath: string) => Promise<{ success: boolean; error?: string }>
   indexClear: (workspacePath: string) => Promise<{ success: boolean; error?: string }>
   indexUpdateEmbeddingConfig: (workspacePath: string, config: EmbeddingConfigInput) => Promise<{ success: boolean; error?: string }>
@@ -442,6 +443,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   indexStatus: (workspacePath: string) => ipcRenderer.invoke('index:status', workspacePath),
   indexHasIndex: (workspacePath: string) => ipcRenderer.invoke('index:hasIndex', workspacePath),
   indexSearch: (workspacePath: string, query: string, topK?: number) => ipcRenderer.invoke('index:search', workspacePath, query, topK),
+  indexHybridSearch: (workspacePath: string, query: string, topK?: number) => ipcRenderer.invoke('index:hybridSearch', workspacePath, query, topK),
   indexUpdateFile: (workspacePath: string, filePath: string) => ipcRenderer.invoke('index:updateFile', workspacePath, filePath),
   indexClear: (workspacePath: string) => ipcRenderer.invoke('index:clear', workspacePath),
   indexUpdateEmbeddingConfig: (workspacePath: string, config: EmbeddingConfigInput) => ipcRenderer.invoke('index:updateEmbeddingConfig', workspacePath, config),

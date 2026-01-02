@@ -336,6 +336,86 @@ export class VectorStoreService {
   }
 
   /**
+   * 关键词搜索
+   * 在 content、symbols、relativePath 中搜索关键词
+   */
+  async keywordSearch(keywords: string[], topK: number = 10): Promise<SearchResult[]> {
+    if (!this.table || keywords.length === 0) return []
+
+    try {
+      // 构建 SQL WHERE 条件：任意关键词匹配 content、symbols 或 relativePath
+      // LanceDB 使用 SQL 语法的 LIKE 进行模糊匹配
+      const conditions = keywords.map(kw => {
+        const safeKw = this.sanitizeKeyword(kw)
+        return `(content LIKE '%${safeKw}%' OR symbols LIKE '%${safeKw}%' OR relativePath LIKE '%${safeKw}%')`
+      }).join(' OR ')
+
+      const results = await this.table
+        .query()
+        .where(conditions)
+        .limit(topK)
+        .execute()
+
+      return results.map((r: LanceDBSearchResult) => ({
+        filePath: r.filePath,
+        relativePath: r.relativePath,
+        content: r.content,
+        startLine: r.startLine,
+        endLine: r.endLine,
+        type: r.type,
+        language: r.language,
+        score: this.calculateKeywordScore(r.content, r.symbols, keywords),
+      }))
+    } catch (e) {
+      logger.index.warn('[VectorStore] Keyword search failed:', e)
+      return []
+    }
+  }
+
+  /**
+   * 清理关键词，防止 SQL 注入
+   */
+  private sanitizeKeyword(keyword: string): string {
+    return keyword
+      .replace(/'/g, "''")
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_')
+      .replace(/--/g, '')
+      .replace(/;/g, '')
+      .slice(0, 100)
+  }
+
+  /**
+   * 计算关键词匹配得分
+   * 基于匹配数量和位置
+   */
+  private calculateKeywordScore(content: string, symbols: string, keywords: string[]): number {
+    const lowerContent = content.toLowerCase()
+    const lowerSymbols = (symbols || '').toLowerCase()
+    let score = 0
+
+    for (const kw of keywords) {
+      const lowerKw = kw.toLowerCase()
+      // symbols 匹配权重更高（函数名、类名等）
+      if (lowerSymbols.includes(lowerKw)) {
+        score += 0.3
+      }
+      // content 匹配
+      const matches = (lowerContent.match(new RegExp(this.escapeRegex(lowerKw), 'g')) || []).length
+      score += Math.min(matches * 0.1, 0.5)
+    }
+
+    return Math.min(score, 1)
+  }
+
+  /**
+   * 转义正则表达式特殊字符
+   */
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
+  /**
    * 清空索引
    */
   async clear(): Promise<void> {
