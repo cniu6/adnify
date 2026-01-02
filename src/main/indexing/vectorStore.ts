@@ -8,10 +8,54 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { IndexedChunk, SearchResult } from './types'
 
-// LanceDB 类型
-type LanceDBConnection = any
-type LanceDBTable = any
-type LanceDBSearchResult = any
+/**
+ * LanceDB 类型定义
+ * 由于 LanceDB 是动态导入的，这里定义接口描述其 API
+ */
+interface LanceDBConnection {
+  tableNames(): Promise<string[]>
+  openTable(name: string): Promise<LanceDBTable>
+  createTable(name: string, data: unknown[]): Promise<LanceDBTable>
+  dropTable(name: string): Promise<void>
+}
+
+interface LanceDBTable {
+  countRows(): Promise<number>
+  add(data: unknown[]): Promise<void>
+  delete(filter: string): Promise<void>
+  query(): LanceDBQuery
+  search(vector: number[]): LanceDBVectorQuery
+}
+
+interface LanceDBQuery {
+  select(columns: string[]): LanceDBQuery
+  where(filter: string): LanceDBQuery
+  limit(n: number): LanceDBQuery
+  execute(): Promise<LanceDBRecord[]>
+}
+
+interface LanceDBVectorQuery {
+  limit(n: number): LanceDBVectorQuery
+  execute(): Promise<LanceDBSearchResult[]>
+}
+
+/** LanceDB 记录类型 */
+interface LanceDBRecord {
+  filePath: string
+  relativePath: string
+  fileHash: string
+  content: string
+  startLine: number
+  endLine: number
+  type: string
+  language: string
+  symbols: string
+}
+
+/** LanceDB 向量搜索结果 */
+interface LanceDBSearchResult extends LanceDBRecord {
+  _distance: number
+}
 
 export class VectorStoreService {
   private db: LanceDBConnection | null = null
@@ -34,12 +78,12 @@ export class VectorStoreService {
 
     try {
       const lancedb = await import('@lancedb/lancedb')
-      this.db = await lancedb.connect(this.indexPath)
+      this.db = (await lancedb.connect(this.indexPath)) as unknown as LanceDBConnection
 
       // 检查是否已有表
       const tables = await this.db.tableNames()
       if (tables.includes(this.tableName)) {
-        this.table = await this.db.openTable(this.tableName)
+        this.table = (await this.db.openTable(this.tableName)) as unknown as LanceDBTable
         
         // 验证 schema 是否正确（检查是否有 filePath 字段）
         const isValidSchema = await this.validateSchema()
@@ -173,7 +217,7 @@ export class VectorStoreService {
       await this.db.dropTable(this.tableName)
     }
 
-    this.table = await this.db.createTable(this.tableName, data)
+    this.table = (await this.db.createTable(this.tableName, data)) as unknown as LanceDBTable
     logger.index.info(`[VectorStore] Created index with ${chunks.length} chunks`)
   }
 
@@ -199,7 +243,7 @@ export class VectorStoreService {
 
     // 如果表不存在，创建表
     if (!this.table) {
-      this.table = await this.db.createTable(this.tableName, data)
+      this.table = (await this.db.createTable(this.tableName, data)) as unknown as LanceDBTable
       logger.index.info(`[VectorStore] Created table with ${chunks.length} initial chunks`)
     } else {
       await this.table.add(data)
@@ -356,7 +400,7 @@ export class VectorStoreService {
         .limit(topK)
         .execute()
 
-      return results.map((r: LanceDBSearchResult) => ({
+      return results.map((r: LanceDBRecord) => ({
         filePath: r.filePath,
         relativePath: r.relativePath,
         content: r.content,

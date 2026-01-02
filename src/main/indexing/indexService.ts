@@ -171,9 +171,19 @@ export class CodebaseIndexService {
 
   /**
    * 更新 Embedding 配置
+   * 当切换 provider 时，自动清除旧的 model，使用新 provider 的默认值
    */
   updateEmbeddingConfig(config: Partial<EmbeddingConfig>): void {
-    this.config.embedding = { ...this.config.embedding, ...config }
+    // 如果切换了 provider，清除旧的 model
+    if (config.provider && config.provider !== this.config.embedding.provider) {
+      this.config.embedding = {
+        ...this.config.embedding,
+        ...config,
+        model: undefined, // 让 EmbeddingService 使用新 provider 的默认 model
+      }
+    } else {
+      this.config.embedding = { ...this.config.embedding, ...config }
+    }
     this.embedder.updateConfig(this.config.embedding)
   }
 

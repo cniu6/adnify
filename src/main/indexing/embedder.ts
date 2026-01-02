@@ -92,10 +92,15 @@ export class EmbeddingService {
 
   /**
    * 更新配置
+   * 当切换 provider 时，如果没有指定新 model，则使用新 provider 的默认 model
    */
   updateConfig(config: Partial<EmbeddingConfig>): void {
     const newProvider = config.provider || this.config.provider
-    const newModel = this.resolveModel(newProvider, config.model || this.config.model)
+    const providerChanged = config.provider && config.provider !== this.config.provider
+    
+    // 如果切换了 provider 且没有指定新 model，使用新 provider 的默认 model
+    const modelToUse = providerChanged ? config.model : (config.model || this.config.model)
+    const newModel = this.resolveModel(newProvider, modelToUse)
 
     this.config = {
       ...this.config,

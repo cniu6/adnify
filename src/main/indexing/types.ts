@@ -99,7 +99,7 @@ export interface IndexConfig {
 export const DEFAULT_INDEX_CONFIG: IndexConfig = {
   embedding: {
     provider: 'jina',
-    model: 'jina-embeddings-v2-base-code',
+    // model 不指定，让 EmbeddingService 根据 provider 自动选择默认值
   },
   chunkSize: 80,
   chunkOverlap: 10,
