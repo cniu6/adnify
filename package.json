@@ -157,14 +157,6 @@
     },
     "extraResources": [
       {
-        "from": "resources/icon.png",
-        "to": "icon.png"
-      },
-      {
-        "from": "resources/icon.icns",
-        "to": "icon.icns"
-      },
-      {
         "from": "resources/tree-sitter",
         "to": "tree-sitter"
       },

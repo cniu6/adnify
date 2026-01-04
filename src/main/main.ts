@@ -291,11 +291,11 @@ async function initializeModules(firstWin: BrowserWindow) {
 // ==========================================
 
 app.whenReady().then(async () => {
-  // 1. 立即创建窗口（不等待任何模块）
-  const firstWin = createWindow()
-
-  // 2. 初始化 Store（窗口显示后）
+  // 1. 初始化 Store（必须在模块加载前完成）
   await initStores()
+
+  // 2. 创建窗口
+  const firstWin = createWindow()
 
   // 3. 后台加载模块（不阻塞窗口显示）
   initializeModules(firstWin).catch(err => {
