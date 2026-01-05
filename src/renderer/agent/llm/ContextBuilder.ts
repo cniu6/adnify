@@ -3,6 +3,7 @@
  * 负责构建发送给 LLM 的上下文内容
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useStore } from '@store'
 import { useAgentStore } from '../store/AgentStore'
@@ -91,7 +92,7 @@ async function processFileContext(
     const content = await fileContentCache.getOrSet(
       filePath,
       async () => {
-        const fileContent = await window.electronAPI.readFile(filePath)
+        const fileContent = await api.file.read(filePath)
         return fileContent || ''
       },
       2 * 60 * 1000 // 2 分钟 TTL
@@ -126,7 +127,7 @@ async function processCodebaseContext(
     const results = await searchResultCache.getOrSet(
       cacheKey,
       async () => {
-        const searchResults = await window.electronAPI.indexHybridSearch(workspacePath, cleanQuery, 20)
+        const searchResults = await api.index.hybridSearch(workspacePath, cleanQuery, 20)
         return searchResults || []
       },
       60 * 1000 // 1 分钟 TTL（搜索结果变化较快）
@@ -331,7 +332,7 @@ export async function calculateContextStats(
         let fileSize = fileSizeCache.get(filePath)
         if (fileSize === undefined) {
           try {
-            const content = await window.electronAPI.readFile(filePath)
+            const content = await api.file.read(filePath)
             fileSize = content?.length ?? 0
             fileSizeCache.set(filePath, fileSize)
             // 限制缓存大小

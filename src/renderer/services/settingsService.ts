@@ -3,6 +3,7 @@
  * 集中管理所有应用设置的加载、保存和清理
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { LLM_DEFAULTS } from '@/shared/constants'
 import {
@@ -272,7 +273,7 @@ class SettingsService {
 
     // 从文件读取
     try {
-      const settings = (await window.electronAPI.getSetting('app-settings')) as Partial<AppSettings> | null
+      const settings = (await api.settings.get('app-settings')) as Partial<AppSettings> | null
 
       if (!settings) {
         return this.getDefaultSettings()
@@ -307,7 +308,7 @@ class SettingsService {
 
   private async syncFromFile(): Promise<void> {
     try {
-      const settings = (await window.electronAPI.getSetting('app-settings')) as Partial<AppSettings> | null
+      const settings = (await api.settings.get('app-settings')) as Partial<AppSettings> | null
       if (settings) {
         const merged = this.mergeSettings(settings)
         this.cache = merged
@@ -361,7 +362,7 @@ class SettingsService {
       this.cache = settings
 
       // 异步写入文件
-      await window.electronAPI.setSetting('app-settings', cleaned)
+      await api.settings.set('app-settings', cleaned)
 
       logger.settings.info('[SettingsService] Settings saved')
     } catch (e) {

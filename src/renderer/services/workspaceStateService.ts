@@ -5,6 +5,7 @@
  * 数据通过 adnifyDir 服务统一管理
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useStore } from '@store'
 import { adnifyDir, WorkspaceStateData } from './adnifyDirService'
@@ -59,7 +60,7 @@ export async function restoreWorkspaceState(): Promise<void> {
   // 恢复打开的文件
   for (const filePath of state.openFiles) {
     try {
-      const fileContent = await window.electronAPI.readFile(filePath)
+      const fileContent = await api.file.read(filePath)
       if (fileContent !== null) {
         openFile(filePath, fileContent)
       }

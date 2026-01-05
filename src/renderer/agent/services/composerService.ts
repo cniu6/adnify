@@ -10,6 +10,7 @@
  */
 
 // ============ Types ============
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 
 
@@ -143,14 +144,14 @@ class ComposerServiceClass {
     
     try {
       if (change.changeType === 'delete') {
-        await window.electronAPI.deleteFile(filePath)
+        await api.file.delete(filePath)
       } else if (change.newContent !== null) {
         // Ensure parent directory exists
         const parentDir = filePath.replace(/[/\\][^/\\]+$/, '')
         if (parentDir && parentDir !== filePath) {
-          await window.electronAPI.mkdir(parentDir)
+          await api.file.mkdir(parentDir)
         }
-        await window.electronAPI.writeFile(filePath, change.newContent)
+        await api.file.write(filePath, change.newContent)
       }
       
       change.status = 'accepted'
@@ -174,7 +175,7 @@ class ComposerServiceClass {
     // Restore original content if it was modified
     if (change.changeType === 'modify' && change.oldContent !== null) {
       try {
-        await window.electronAPI.writeFile(filePath, change.oldContent)
+        await api.file.write(filePath, change.oldContent)
       } catch (error) {
         logger.agent.error('[Composer] Failed to restore file:', error)
       }

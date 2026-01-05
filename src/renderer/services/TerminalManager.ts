@@ -9,6 +9,7 @@
  * 注意：Agent 命令执行使用 shell:executeBackground，不经过此服务
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { Terminal as XTerminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
@@ -81,12 +82,12 @@ class TerminalManagerClass {
   }
 
   private setupIpcListeners() {
-    this.ipcCleanup = window.electronAPI.onTerminalData(({ id, data }) => {
+    this.ipcCleanup = api.terminal.onData(({ id, data }: { id: string; data: string }) => {
       const xterm = this.xtermInstances.get(id)
       if (xterm?.terminal) {
         xterm.terminal.write(data)
       }
-      
+
       // 缓存输出
       this.appendToBuffer(id, data)
     })
@@ -195,7 +196,7 @@ class TerminalManagerClass {
 
   private async createPty(id: string, cwd: string, shell?: string): Promise<boolean> {
     try {
-      const result = await window.electronAPI.createTerminal({ id, cwd, shell })
+      const result = await api.terminal.create({ id, cwd, shell })
       return !!result
     } catch {
       return false
@@ -237,7 +238,7 @@ class TerminalManagerClass {
 
     // 处理终端输入
     terminal.onData(data => {
-      window.electronAPI.writeTerminal(id, data)
+      api.terminal.write(id, data)
     })
 
     // 处理复制粘贴快捷键
@@ -257,7 +258,7 @@ class TerminalManagerClass {
       if (event.ctrlKey && event.key === 'v' && event.type === 'keydown') {
         navigator.clipboard.readText().then(text => {
           if (text) {
-            window.electronAPI.writeTerminal(id, text)
+            api.terminal.write(id, text)
           }
         }).catch(() => {})
         return false // 阻止默认行为
@@ -276,7 +277,7 @@ class TerminalManagerClass {
       if (event.ctrlKey && event.shiftKey && event.key === 'V' && event.type === 'keydown') {
         navigator.clipboard.readText().then(text => {
           if (text) {
-            window.electronAPI.writeTerminal(id, text)
+            api.terminal.write(id, text)
           }
         }).catch(() => {})
         return false
@@ -291,7 +292,7 @@ class TerminalManagerClass {
 
     const dims = fitAddon.proposeDimensions()
     if (dims && dims.cols > 0 && dims.rows > 0) {
-      window.electronAPI.resizeTerminal(id, dims.cols, dims.rows)
+      api.terminal.resize(id, dims.cols, dims.rows)
     }
 
     return true
@@ -305,7 +306,7 @@ class TerminalManagerClass {
       instance.fitAddon.fit()
       const dims = instance.fitAddon.proposeDimensions()
       if (dims && dims.cols > 0 && dims.rows > 0) {
-        window.electronAPI.resizeTerminal(id, dims.cols, dims.rows)
+        api.terminal.resize(id, dims.cols, dims.rows)
       }
     } catch {}
   }
@@ -319,7 +320,7 @@ class TerminalManagerClass {
 
     this.outputBuffers.delete(id)
     this.ptyReady.delete(id)
-    window.electronAPI.killTerminal(id)
+    api.terminal.kill(id)
 
     const index = this.state.terminals.findIndex(t => t.id === id)
     if (index !== -1) {
@@ -343,7 +344,7 @@ class TerminalManagerClass {
   // ===== 工具方法 =====
 
   writeToTerminal(id: string, data: string) {
-    window.electronAPI.writeTerminal(id, data)
+    api.terminal.write(id, data)
   }
 
   getOutputBuffer(id: string): string[] {

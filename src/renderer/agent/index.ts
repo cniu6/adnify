@@ -60,7 +60,10 @@ export { MentionParser, SPECIAL_MENTIONS } from './utils/MentionParser'
 export type { MentionCandidate, MentionParseResult } from './utils/MentionParser'
 
 // 配置
-export { getAgentConfig, isRetryableError } from './utils/AgentConfig'
+export { getAgentConfig } from './utils/AgentConfig'
+
+// 重试工具（从 shared 导出）
+export { isRetryableError } from '@shared/utils'
 
 // Prompts
 export { buildSystemPrompt } from './prompts/prompts'

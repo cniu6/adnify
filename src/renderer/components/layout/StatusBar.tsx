@@ -1,3 +1,4 @@
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useEffect, useState, useMemo } from 'react'
 import {
@@ -97,10 +98,10 @@ export default function StatusBar() {
     }
 
     // 获取初始状态
-    window.electronAPI.indexStatus(workspacePath).then(setIndexStatus)
+    api.index.status(workspacePath).then(setIndexStatus)
 
     // 监听进度更新
-    const unsubscribe = window.electronAPI.onIndexProgress(setIndexStatus)
+    const unsubscribe = api.index.onProgress(setIndexStatus)
     return unsubscribe
   }, [workspacePath])
 

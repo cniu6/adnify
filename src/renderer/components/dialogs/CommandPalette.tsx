@@ -3,6 +3,7 @@
  * 类似 Cursor/VS Code 的中央控制枢纽
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import {
   Search, FolderOpen, Settings, Terminal,
@@ -171,7 +172,7 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
       description: 'Open a workspace folder',
       icon: FolderOpen,
       category: 'File',
-      action: () => window.electronAPI.openFolder(),
+      action: () => api.file.openFolder(),
       shortcut: 'Ctrl+O',
     },
     {
@@ -180,7 +181,7 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
       description: 'Open a new application window',
       icon: Plus,
       category: 'Window',
-      action: () => window.electronAPI.newWindow(),
+      action: () => api.window.new(),
       shortcut: 'Ctrl+Shift+N',
     },
     {
@@ -190,7 +191,7 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
       icon: FolderPlus,
       category: 'Workspace',
       action: async () => {
-        const path = await window.electronAPI.addFolderToWorkspace()
+        const path = await api.workspace.addFolder()
         if (path) {
           const { addRoot } = useStore.getState()
           addRoot(path)
@@ -209,7 +210,7 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
       action: async () => {
         const { workspace } = useStore.getState()
         if (workspace) {
-          const success = await window.electronAPI.saveWorkspace(workspace.configPath || '', workspace.roots)
+          const success = await api.workspace.save(workspace.configPath || '', workspace.roots)
           if (success) toast.success('Workspace saved')
         }
       },
@@ -233,7 +234,7 @@ export default function CommandPalette({ onClose, onShowKeyboardShortcuts }: Com
       category: 'File',
       action: async () => {
         if (workspacePath) {
-          const files = await window.electronAPI.readDir(workspacePath)
+          const files = await api.file.readDir(workspacePath)
           if (files) {
             useStore.getState().setFiles(files)
           }

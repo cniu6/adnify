@@ -2,6 +2,7 @@
  * 编辑器设置组件
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState } from 'react'
 import { Layout, Type, Sparkles, Terminal, Check, Settings2, Zap } from 'lucide-react'
 import { useStore } from '@store'
@@ -17,7 +18,7 @@ export function EditorSettings({ settings, setSettings, language }: EditorSettin
 
     const handleThemeChange = (themeId: string) => {
         setTheme(themeId as any)
-        window.electronAPI.setSetting('currentTheme', themeId)
+        api.settings.set('currentTheme', themeId)
     }
 
     return (

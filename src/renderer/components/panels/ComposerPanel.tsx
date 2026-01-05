@@ -9,6 +9,7 @@
  * - 统一 Diff 生成
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
@@ -131,7 +132,7 @@ export default function ComposerPanel({ onClose, initialChanges }: ComposerPanel
         if (openFile) {
           fileContents.push({ path: filePath, content: openFile.content })
         } else {
-          const content = await window.electronAPI.readFile(filePath)
+          const content = await api.file.read(filePath)
           if (content) {
             fileContents.push({ path: filePath, content })
           }
@@ -164,7 +165,7 @@ export default function ComposerPanel({ onClose, initialChanges }: ComposerPanel
   const applyEdit = useCallback(async (edit: FileEdit) => {
     try {
       // 写入文件
-      const success = await window.electronAPI.writeFile(edit.path, edit.newContent)
+      const success = await api.file.write(edit.path, edit.newContent)
       if (success) {
         // 更新 store 中的文件内容
         updateFileContent(edit.path, edit.newContent)
@@ -670,7 +671,7 @@ async function generateComposerEdits(
     }
 
     unsubscribers.push(
-      window.electronAPI.onLLMStream((chunk) => {
+      api.llm.onStream((chunk: { type: string; content?: string }) => {
         if (chunk.type === 'text' && chunk.content) {
           result += chunk.content
         }
@@ -678,7 +679,7 @@ async function generateComposerEdits(
     )
 
     unsubscribers.push(
-      window.electronAPI.onLLMDone(() => {
+      api.llm.onDone(() => {
         cleanup()
 
         // 解析响应
@@ -714,7 +715,7 @@ async function generateComposerEdits(
     )
 
     unsubscribers.push(
-      window.electronAPI.onLLMError((error) => {
+      api.llm.onError((error: { message: string }) => {
         cleanup()
         resolve({ success: false, error: error.message })
       })
@@ -727,7 +728,7 @@ async function generateComposerEdits(
       }
     }, 120000)
 
-    window.electronAPI.sendMessage({
+    api.llm.send({
       config,
       messages: [{ role: 'user', content: prompt }],
       systemPrompt: 'You are a helpful code editor assistant. Follow the response format exactly.',

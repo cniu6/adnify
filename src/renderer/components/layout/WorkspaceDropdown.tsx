@@ -2,6 +2,7 @@
  * WorkspaceDropdown - IDEA风格工作区下拉菜单
  * 显示当前工作区并提供快速切换功能
  */
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Plus, FolderOpen, History, Folder } from 'lucide-react'
@@ -28,7 +29,7 @@ export default function WorkspaceDropdown() {
     useEffect(() => {
         async function loadRecent() {
             try {
-                const recent = await window.electronAPI.getRecentWorkspaces()
+                const recent = await api.workspace.getRecent()
                 setRecentWorkspaces(
                     recent.map((path: string) => ({
                         path,
@@ -58,7 +59,7 @@ export default function WorkspaceDropdown() {
     // 打开文件夹
     const handleOpenFolder = async () => {
         setIsOpen(false)
-        const result = await window.electronAPI.openFolder()
+        const result = await api.file.openFolder()
         if (result && typeof result === 'string') {
             await workspaceManager.openFolder(result)
         }
@@ -68,7 +69,7 @@ export default function WorkspaceDropdown() {
     // 打开工作区
     const handleOpenWorkspace = async () => {
         setIsOpen(false)
-        const result = await window.electronAPI.openWorkspace()
+        const result = await api.workspace.open()
         if (result && !('redirected' in result)) {
             await workspaceManager.switchTo(result)
         }
@@ -77,13 +78,13 @@ export default function WorkspaceDropdown() {
     // 新建窗口
     const handleNewWindow = () => {
         setIsOpen(false)
-        window.electronAPI.newWindow()
+        api.window.new()
     }
 
     // 添加文件夹到工作区
     const handleAddFolder = async () => {
         setIsOpen(false)
-        const path = await window.electronAPI.addFolderToWorkspace()
+        const path = await api.workspace.addFolder()
         if (path) {
             await workspaceManager.addFolder(path)
         }

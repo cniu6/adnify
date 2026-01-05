@@ -3,6 +3,7 @@
  * 管理 MCP 服务器配置和状态
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect } from 'react'
 import {
   Server,
@@ -114,7 +115,7 @@ export default function McpSettings({ language }: McpSettingsProps) {
 
   const openConfigFile = async (path: string) => {
     try {
-      await window.electronAPI.showItemInFolder(path)
+      await api.file.showInFolder(path)
     } catch (err) {
       console.error('Failed to open config file:', err)
     }

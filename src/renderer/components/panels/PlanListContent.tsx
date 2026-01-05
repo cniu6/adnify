@@ -2,6 +2,7 @@
  * Plan 列表内容组件（用于 StatusBar 底部弹出框）
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect } from 'react'
 import { ClipboardList } from 'lucide-react'
 import { useStore } from '@store'
@@ -22,13 +23,13 @@ export default function PlanListContent({ language }: PlanListContentProps) {
 
         try {
             const plansDir = `${workspacePath}/.adnify/plans`
-            const files = await window.electronAPI.readDir(plansDir)
+            const files = await api.file.readDir(plansDir)
             const planFiles = files
                 .filter(f => !f.isDirectory && f.name.endsWith('.md'))
                 .map(f => f.path)
             setPlans(planFiles)
 
-            const active = await window.electronAPI.readFile(`${workspacePath}/.adnify/active_plan.txt`)
+            const active = await api.file.read(`${workspacePath}/.adnify/active_plan.txt`)
             if (active) {
                 setActivePlanPath(active.trim())
             }
@@ -42,12 +43,12 @@ export default function PlanListContent({ language }: PlanListContentProps) {
     }, [workspacePath])
 
     const handleOpenPlan = async (planPath: string) => {
-        const content = await window.electronAPI.readFile(planPath)
+        const content = await api.file.read(planPath)
         if (content) {
             openFile(planPath, content)
             setActiveFile(planPath)
             if (workspacePath) {
-                await window.electronAPI.writeFile(`${workspacePath}/.adnify/active_plan.txt`, planPath)
+                await api.file.write(`${workspacePath}/.adnify/active_plan.txt`, planPath)
             }
             setActivePlanPath(planPath)
         }

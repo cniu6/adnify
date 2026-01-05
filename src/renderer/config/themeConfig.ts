@@ -4,6 +4,7 @@
  * 使用 RGB 格式以支持 Tailwind 透明度修饰符
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 
 export interface ThemeColors {
@@ -243,8 +244,8 @@ class ThemeManager {
     try {
       // 并行读取主题配置
       const [savedThemeId, savedCustomThemes] = await Promise.all([
-        window.electronAPI.getSetting('themeId'),
-        window.electronAPI.getSetting('customThemes'),
+        api.settings.get('themeId'),
+        api.settings.get('customThemes'),
       ])
 
       if (savedCustomThemes && Array.isArray(savedCustomThemes)) {
@@ -274,8 +275,8 @@ class ThemeManager {
     }
     // 异步写入文件
     try {
-      window.electronAPI.setSetting('themeId', this.currentTheme.id)
-      window.electronAPI.setSetting('customThemes', this.customThemes)
+      api.settings.set('themeId', this.currentTheme.id)
+      api.settings.set('customThemes', this.customThemes)
     } catch (e) {
       logger.settings.error('Failed to save theme to config:', e)
     }

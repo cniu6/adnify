@@ -3,6 +3,7 @@
  * 加载和管理 UI/UX 设计数据
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { BM25Searcher } from './BM25Engine'
 import {
   type UiuxDomain,
@@ -102,7 +103,7 @@ class UiuxDatabase {
    */
   private async loadJsonFile(relativePath: string): Promise<Record<string, unknown>[]> {
     try {
-      const result = await window.electronAPI.resourcesReadJson<Record<string, unknown>[]>(`uiux/${relativePath}`)
+      const result = await api.resources.readJson<Record<string, unknown>[]>(`uiux/${relativePath}`)
       if (result.success && result.data) {
         return result.data
       }

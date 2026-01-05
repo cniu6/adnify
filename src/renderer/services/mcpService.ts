@@ -3,6 +3,7 @@
  * 封装与主进程 MCP 服务的通信
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useStore } from '@store'
 import { logger } from '@utils/Logger'
 import type {
@@ -36,7 +37,7 @@ class McpService {
       this.setupEventListeners()
 
       // 调用主进程初始化
-      const result = await window.electronAPI.mcpInitialize(workspaceRoots)
+      const result = await api.mcp.initialize(workspaceRoots)
       
       if (!result.success) {
         throw new Error(result.error || 'MCP initialization failed')
@@ -63,7 +64,7 @@ class McpService {
     store.setMcpLoading(true)
 
     try {
-      const result = await window.electronAPI.mcpInitialize(workspaceRoots)
+      const result = await api.mcp.initialize(workspaceRoots)
       if (!result.success) {
         throw new Error(result.error)
       }
@@ -79,7 +80,7 @@ class McpService {
   /** 刷新服务器状态 */
   async refreshServersState(): Promise<McpServerState[]> {
     try {
-      const result = await window.electronAPI.mcpGetServersState()
+      const result = await api.mcp.getServersState()
       if (result.success && result.servers) {
         useStore.getState().setMcpServers(result.servers)
         return result.servers
@@ -94,7 +95,7 @@ class McpService {
   /** 连接服务器 */
   async connectServer(serverId: string): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpConnectServer(serverId)
+      const result = await api.mcp.connectServer(serverId)
       if (result.success) {
         await this.refreshServersState()
       }
@@ -108,7 +109,7 @@ class McpService {
   /** 断开服务器 */
   async disconnectServer(serverId: string): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpDisconnectServer(serverId)
+      const result = await api.mcp.disconnectServer(serverId)
       if (result.success) {
         await this.refreshServersState()
       }
@@ -122,7 +123,7 @@ class McpService {
   /** 重连服务器 */
   async reconnectServer(serverId: string): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpReconnectServer(serverId)
+      const result = await api.mcp.reconnectServer(serverId)
       if (result.success) {
         await this.refreshServersState()
       }
@@ -136,7 +137,7 @@ class McpService {
   /** 调用 MCP 工具 */
   async callTool(request: McpToolCallRequest): Promise<McpToolCallResult> {
     try {
-      const result = await window.electronAPI.mcpCallTool(request)
+      const result = await api.mcp.callTool(request)
       return result
     } catch (err: any) {
       logger.agent.error('[McpService] Call tool failed:', err)
@@ -147,7 +148,7 @@ class McpService {
   /** 读取 MCP 资源 */
   async readResource(request: McpResourceReadRequest): Promise<McpResourceReadResult> {
     try {
-      const result = await window.electronAPI.mcpReadResource(request)
+      const result = await api.mcp.readResource(request)
       return result
     } catch (err: any) {
       logger.agent.error('[McpService] Read resource failed:', err)
@@ -158,7 +159,7 @@ class McpService {
   /** 获取 MCP 提示 */
   async getPrompt(request: McpPromptGetRequest): Promise<McpPromptGetResult> {
     try {
-      const result = await window.electronAPI.mcpGetPrompt(request)
+      const result = await api.mcp.getPrompt(request)
       return result
     } catch (err: any) {
       logger.agent.error('[McpService] Get prompt failed:', err)
@@ -169,7 +170,7 @@ class McpService {
   /** 刷新服务器能力 */
   async refreshCapabilities(serverId: string): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpRefreshCapabilities(serverId)
+      const result = await api.mcp.refreshCapabilities(serverId)
       if (result.success) {
         await this.refreshServersState()
       }
@@ -183,7 +184,7 @@ class McpService {
   /** 获取配置路径 */
   async getConfigPaths(): Promise<{ user: string; workspace: string[] } | null> {
     try {
-      const result = await window.electronAPI.mcpGetConfigPaths()
+      const result = await api.mcp.getConfigPaths()
       return result.success ? result.paths! : null
     } catch (err: any) {
       logger.agent.error('[McpService] Get config paths failed:', err)
@@ -194,7 +195,7 @@ class McpService {
   /** 重新加载配置 */
   async reloadConfig(): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpReloadConfig()
+      const result = await api.mcp.reloadConfig()
       if (result.success) {
         await this.refreshServersState()
       }
@@ -216,7 +217,7 @@ class McpService {
     disabled: boolean
   }): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpAddServer(config)
+      const result = await api.mcp.addServer(config)
       return result.success
     } catch (err: any) {
       logger.agent.error('[McpService] Add server failed:', err)
@@ -227,7 +228,7 @@ class McpService {
   /** 删除服务器 */
   async removeServer(serverId: string): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpRemoveServer(serverId)
+      const result = await api.mcp.removeServer(serverId)
       return result.success
     } catch (err: any) {
       logger.agent.error(`[McpService] Remove server ${serverId} failed:`, err)
@@ -238,7 +239,7 @@ class McpService {
   /** 切换服务器启用/禁用状态 */
   async toggleServer(serverId: string, disabled: boolean): Promise<boolean> {
     try {
-      const result = await window.electronAPI.mcpToggleServer(serverId, disabled)
+      const result = await api.mcp.toggleServer(serverId, disabled)
       return result.success
     } catch (err: any) {
       logger.agent.error(`[McpService] Toggle server ${serverId} failed:`, err)
@@ -271,25 +272,25 @@ class McpService {
     const store = useStore.getState()
 
     // 服务器状态变更
-    const cleanupStatus = window.electronAPI.onMcpServerStatus((event) => {
+    const cleanupStatus = api.mcp.onServerStatus((event: { serverId: string; status: string; error?: string }) => {
       store.updateMcpServerStatus(event.serverId, event.status, event.error)
     })
     this.cleanupFns.push(cleanupStatus)
 
     // 工具列表更新
-    const cleanupTools = window.electronAPI.onMcpToolsUpdated((event) => {
+    const cleanupTools = api.mcp.onToolsUpdated((event: { serverId: string; tools: any[] }) => {
       store.updateMcpServerTools(event.serverId, event.tools)
     })
     this.cleanupFns.push(cleanupTools)
 
     // 资源列表更新
-    const cleanupResources = window.electronAPI.onMcpResourcesUpdated((event) => {
+    const cleanupResources = api.mcp.onResourcesUpdated((event: { serverId: string; resources: any[] }) => {
       store.updateMcpServerResources(event.serverId, event.resources)
     })
     this.cleanupFns.push(cleanupResources)
 
     // 完整状态更新
-    const cleanupState = window.electronAPI.onMcpStateChanged((servers) => {
+    const cleanupState = api.mcp.onStateChanged((servers: any[]) => {
       store.setMcpServers(servers)
     })
     this.cleanupFns.push(cleanupState)

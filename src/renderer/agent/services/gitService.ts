@@ -1,3 +1,5 @@
+import { api } from '@/renderer/services/electronAPI'
+
 /**
  * Git 服务 (使用安全的 Git API)
  * 支持多根目录工作区
@@ -77,7 +79,7 @@ class GitService {
         }
 
         try {
-            const result = await window.electronAPI.gitExecSecure(args, targetPath)
+            const result = await api.git.execSecure(args, targetPath)
             return {
                 stdout: result.stdout || '',
                 stderr: result.stderr || '',

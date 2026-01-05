@@ -3,6 +3,7 @@
  * 参考 void 编辑器的 get_lint_errors 功能
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { LintError } from '../types'
 import { onDiagnostics, lspUriToPath } from '@services/lspService'
@@ -206,7 +207,7 @@ class LintService {
 				? [...commandArgs, '--project', '.', '--file', `"${filePath}"`]
 				: [...commandArgs, `"${filePath}"`]
 
-			const result = await window.electronAPI.executeSecureCommand({
+			const result = await api.shell.executeSecure({
 				command: baseCommand,
 				args: allArgs,
 				timeout: 60000,

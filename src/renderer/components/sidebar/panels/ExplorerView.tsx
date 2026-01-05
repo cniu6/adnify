@@ -2,6 +2,7 @@
  * 文件资源管理器视图
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect, useCallback } from 'react'
 import { FolderOpen, Plus, RefreshCw, FolderPlus, GitBranch, FilePlus, ExternalLink, Crosshair } from 'lucide-react'
 import { useStore } from '@store'
@@ -84,7 +85,7 @@ export function ExplorerView() {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
     let pendingChanges: Array<{ path: string; event: string }> = []
 
-    const unsubscribe = window.electronAPI.onFileChanged((event) => {
+    const unsubscribe = api.file.onChanged((event: { event: 'create' | 'update' | 'delete'; path: string }) => {
       if (event.path.startsWith(workspacePath)) {
         pendingChanges.push({ path: event.path, event: event.event })
 
@@ -107,7 +108,7 @@ export function ExplorerView() {
   }, [workspacePath, refreshFiles])
 
   const handleOpenFolder = async () => {
-    const path = await window.electronAPI.openFolder()
+    const path = await api.file.openFolder()
     if (path && typeof path === 'string') {
       directoryCacheService.clear()
       await workspaceManager.openFolder(path)
@@ -130,9 +131,9 @@ export function ExplorerView() {
       let success = false
 
       if (type === 'file') {
-        success = await window.electronAPI.writeFile(fullPath, '')
+        success = await api.file.write(fullPath, '')
       } else {
-        success = await window.electronAPI.mkdir(fullPath)
+        success = await api.file.mkdir(fullPath)
       }
 
       if (success) {
@@ -173,7 +174,7 @@ export function ExplorerView() {
       id: 'reveal',
       label: 'Reveal in Explorer',
       icon: ExternalLink,
-      onClick: () => workspacePath && window.electronAPI.showItemInFolder(workspacePath),
+      onClick: () => workspacePath && api.file.showInFolder(workspacePath),
     },
   ]
 

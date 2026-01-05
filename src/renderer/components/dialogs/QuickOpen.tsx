@@ -3,6 +3,7 @@
  * 类似 VS Code 的 Ctrl+P
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { Search, FileText, X } from 'lucide-react'
 import { useStore } from '@store'
@@ -159,7 +160,7 @@ export default function QuickOpen({ onClose }: QuickOpenProps) {
 
   // 递归获取所有文件
   const getAllFiles = useCallback(async (dirPath: string, prefix: string = ''): Promise<string[]> => {
-    const items = await window.electronAPI.readDir(dirPath)
+    const items = await api.file.readDir(dirPath)
     if (!items) return []
 
     const files: string[] = []
@@ -236,7 +237,7 @@ export default function QuickOpen({ onClose }: QuickOpenProps) {
     if (!workspacePath) return
 
     const fullPath = `${workspacePath}/${filePath}`
-    const content = await window.electronAPI.readFile(fullPath)
+    const content = await api.file.read(fullPath)
 
     if (content !== null) {
       openFile(fullPath, content)

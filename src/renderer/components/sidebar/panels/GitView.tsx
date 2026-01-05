@@ -2,6 +2,7 @@
  * Git 源代码管理面板
  * 功能: 状态查看、暂存/提交、分支管理、Stash、Rebase、Cherry-pick 等
  */
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
@@ -506,7 +507,7 @@ ${diffs.join('\n\n---\n\n')}
 Commit message:`
 
             // 调用 LLM API (使用 compactContext 进行同步调用)
-            const response = await window.electronAPI.compactContext({
+            const response = await api.llm.compactContext({
                 config: llmConfig,
                 messages: [{ role: 'user', content: prompt }],
             })
@@ -823,7 +824,7 @@ Commit message:`
     const handleFileClick = async (path: string, fileStatus: string, _staged: boolean) => {
         try {
             const fullPath = `${workspacePath}/${path}`.replace(/\\/g, '/')
-            const content = await window.electronAPI.readFile(fullPath) || ''
+            const content = await api.file.read(fullPath) || ''
 
             // 获取 HEAD 版本内容用于 diff
             if (fileStatus === 'modified' || fileStatus === 'renamed') {

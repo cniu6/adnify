@@ -3,6 +3,7 @@
  * 统一处理文件打开、大文件检测等
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useStore } from '@store'
 import { LargeFileInfo } from '@store/slices/fileSlice'
 import {
@@ -111,7 +112,7 @@ export async function safeOpenFile(
 
   try {
     // 2. 读取文件内容
-    const content = await window.electronAPI.readFile(filePath)
+    const content = await api.file.read(filePath)
 
     if (content === null) {
       const msg = language === 'zh' ? '文件不存在' : 'File not found'

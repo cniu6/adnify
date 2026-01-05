@@ -11,6 +11,7 @@
  */
 
 // 目录名常量
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 
 export const ADNIFY_DIR_NAME = '.adnify'
@@ -141,17 +142,17 @@ class AdnifyDirService {
 
     try {
       const adnifyPath = `${rootPath}/${ADNIFY_DIR_NAME}`
-      const exists = await window.electronAPI.fileExists(adnifyPath)
+      const exists = await api.file.exists(adnifyPath)
 
       if (!exists) {
-        await window.electronAPI.ensureDir(adnifyPath)
+        await api.file.ensureDir(adnifyPath)
       }
 
       // 创建 index 子目录
       const indexPath = `${adnifyPath}/${ADNIFY_FILES.INDEX_DIR}`
-      const indexExists = await window.electronAPI.fileExists(indexPath)
+      const indexExists = await api.file.exists(indexPath)
       if (!indexExists) {
-        await window.electronAPI.ensureDir(indexPath)
+        await api.file.ensureDir(indexPath)
       }
 
       this.initializedRoots.add(rootPath)
@@ -331,7 +332,7 @@ class AdnifyDirService {
 
   async readText(file: AdnifyFile | string, rootPath?: string): Promise<string | null> {
     try {
-      return await window.electronAPI.readFile(this.getFilePath(file, rootPath))
+      return await api.file.read(this.getFilePath(file, rootPath))
     } catch {
       return null
     }
@@ -339,7 +340,7 @@ class AdnifyDirService {
 
   async writeText(file: AdnifyFile | string, content: string, rootPath?: string): Promise<boolean> {
     try {
-      return await window.electronAPI.writeFile(this.getFilePath(file, rootPath), content)
+      return await api.file.write(this.getFilePath(file, rootPath), content)
     } catch (error) {
       logger.system.error(`[AdnifyDir] Failed to write ${file}:`, error)
       return false
@@ -348,7 +349,7 @@ class AdnifyDirService {
 
   async fileExists(file: AdnifyFile | string, rootPath?: string): Promise<boolean> {
     try {
-      return await window.electronAPI.fileExists(this.getFilePath(file, rootPath))
+      return await api.file.exists(this.getFilePath(file, rootPath))
     } catch {
       return false
     }
@@ -356,7 +357,7 @@ class AdnifyDirService {
 
   async deleteFile(file: AdnifyFile | string, rootPath?: string): Promise<boolean> {
     try {
-      return await window.electronAPI.deleteFile(this.getFilePath(file, rootPath))
+      return await api.file.delete(this.getFilePath(file, rootPath))
     } catch {
       return false
     }
@@ -378,7 +379,7 @@ class AdnifyDirService {
 
   private async readJsonFile<T>(file: AdnifyFile): Promise<T | null> {
     try {
-      const content = await window.electronAPI.readFile(this.getFilePath(file))
+      const content = await api.file.read(this.getFilePath(file))
       if (!content) return null
       return JSON.parse(content) as T
     } catch {
@@ -389,7 +390,7 @@ class AdnifyDirService {
   private async writeJsonFile<T>(file: AdnifyFile, data: T): Promise<void> {
     try {
       const content = JSON.stringify(data, null, 2)
-      await window.electronAPI.writeFile(this.getFilePath(file), content)
+      await api.file.write(this.getFilePath(file), content)
     } catch (error) {
       logger.system.error(`[AdnifyDir] Failed to write ${file}:`, error)
     }

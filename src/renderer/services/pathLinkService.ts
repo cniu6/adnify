@@ -3,6 +3,7 @@
  * 统一处理所有文件类型的路径跳转（import、href、src、url() 等）
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import type { languages, editor, IRange } from 'monaco-editor'
 import { getPathSeparator, getDirPath, joinPath } from '@utils/pathUtils'
@@ -216,7 +217,7 @@ class PathLinkService {
     for (const ext of extensions) {
       const fullPath = basePath + ext
       try {
-        const content = await window.electronAPI.readFile(fullPath)
+        const content = await api.file.read(fullPath)
         if (content !== null) {
           openFile(fullPath, content)
           setActiveFile(fullPath)

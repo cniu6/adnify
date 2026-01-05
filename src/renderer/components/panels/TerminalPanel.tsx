@@ -7,6 +7,7 @@
  * - 处理用户交互，委托给 terminalManager
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { X, Plus, Trash2, ChevronUp, ChevronDown, Terminal as TerminalIcon, Sparkles, Play, SplitSquareHorizontal, LayoutTemplate } from 'lucide-react'
 import { useStore, useModeStore } from '@store'
@@ -132,7 +133,7 @@ export default function TerminalPanel() {
     useEffect(() => {
         const loadShells = async () => {
             try {
-                const shells = await window.electronAPI.getAvailableShells()
+                const shells = await api.terminal.getShells()
                 setAvailableShells(shells)
             } catch {
                 setAvailableShells([{ label: 'Terminal', path: '' }])
@@ -151,7 +152,7 @@ export default function TerminalPanel() {
         const loadScripts = async () => {
             if (!selectedRoot) return
             try {
-                const content = await window.electronAPI.readFile(`${selectedRoot}/package.json`)
+                const content = await api.file.read(`${selectedRoot}/package.json`)
                 if (content) {
                     const pkg = JSON.parse(content)
                     if (pkg.scripts) setScripts(pkg.scripts)

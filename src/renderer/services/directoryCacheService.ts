@@ -3,6 +3,7 @@
  * 缓存目录内容，减少重复的文件系统请求
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { FileItem } from '@app-types/electron'
 
@@ -56,7 +57,7 @@ class DirectoryCacheService {
      */
     private async fetchDirectory(path: string): Promise<FileItem[]> {
         try {
-            const items = await window.electronAPI.readDir(path)
+            const items = await api.file.readDir(path)
             return items
         } catch (error) {
             logger.file.error('[DirCache] Failed to read directory:', path, error)

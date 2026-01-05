@@ -10,6 +10,7 @@
  * 3. 原子操作：切换是原子的，要么完全成功，要么回滚
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useStore } from '@store'
 import { useAgentStore } from '@renderer/agent/store/AgentStore'
@@ -79,7 +80,7 @@ class WorkspaceManager {
       
       // 4. 通知主进程
       if (newWorkspace.roots.length > 0) {
-        await window.electronAPI.setActiveWorkspace(newWorkspace.roots)
+        await api.workspace.setActive(newWorkspace.roots)
       }
       
       logger.system.info('[WorkspaceManager] Switch completed successfully')
@@ -247,7 +248,7 @@ class WorkspaceManager {
     
     // 4. 加载文件列表
     try {
-      const items = await window.electronAPI.readDir(primaryRoot)
+      const items = await api.file.readDir(primaryRoot)
       setFiles(items)
     } catch (e) {
       logger.system.error('[WorkspaceManager] Failed to read directory:', e)

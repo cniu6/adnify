@@ -62,38 +62,3 @@ export function getAgentConfig(): AgentRuntimeConfig {
  * 从配置中心动态获取
  */
 export const READ_TOOLS: readonly string[] = getReadOnlyTools()
-
-/**
- * 可重试的错误代码
- */
-export const RETRYABLE_ERROR_CODES = new Set([
-  'RATE_LIMIT',
-  'TIMEOUT',
-  'NETWORK_ERROR',
-  'SERVER_ERROR',
-])
-
-/**
- * 可重试的错误模式
- */
-export const RETRYABLE_ERROR_PATTERNS = [
-  /timeout/i,
-  /ECONNRESET/i,
-  /ETIMEDOUT/i,
-  /ENOTFOUND/i,
-  /network/i,
-  /temporarily unavailable/i,
-  /rate limit/i,
-  /429/,
-  /503/,
-  /502/,
-]
-
-/**
- * 判断错误是否可重试
- */
-export function isRetryableError(error: string): boolean {
-  return RETRYABLE_ERROR_PATTERNS.some(pattern => pattern.test(error))
-}
-
-// 循环检测器已移至 ./LoopDetector.ts

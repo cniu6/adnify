@@ -3,6 +3,7 @@
  * Cmd+K 风格的内联代码修改
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Sparkles, Check, Loader2, RefreshCw } from 'lucide-react'
 import { useStore } from '@store'
@@ -274,7 +275,7 @@ async function generateEdit(
 
 		// 监听流式响应
 		unsubscribers.push(
-			window.electronAPI.onLLMStream((chunk) => {
+			api.llm.onStream((chunk: { type: string; content?: string }) => {
 				if (chunk.type === 'text' && chunk.content) {
 					result += chunk.content
 				}
@@ -283,7 +284,7 @@ async function generateEdit(
 
 		// 监听完成
 		unsubscribers.push(
-			window.electronAPI.onLLMDone(() => {
+			api.llm.onDone(() => {
 				cleanup()
 				// 清理可能的 markdown 代码块
 				let code = result.trim()
@@ -296,7 +297,7 @@ async function generateEdit(
 
 		// 监听错误
 		unsubscribers.push(
-			window.electronAPI.onLLMError((error) => {
+			api.llm.onError((error: { message: string }) => {
 				cleanup()
 				resolve({ success: false, error: error.message })
 			})
@@ -311,7 +312,7 @@ async function generateEdit(
 		}, 60000)
 
 		// 发送请求
-		window.electronAPI.sendMessage({
+		api.llm.send({
 			config,
 			messages: [{ role: 'user', content: prompt }],
 			systemPrompt: 'You are a helpful code editor assistant. Respond only with code, no explanations.',

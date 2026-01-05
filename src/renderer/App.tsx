@@ -1,3 +1,4 @@
+import { api } from './services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useEffect, useState, useCallback, lazy, Suspense, memo, useRef } from 'react'
 import { useStore } from './store'
@@ -10,21 +11,14 @@ import { ToastProvider, useToast, setGlobalToast } from './components/common/Toa
 import { GlobalConfirmDialog } from './components/common/ConfirmDialog'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { GlobalErrorHandler } from './components/common/GlobalErrorHandler'
-import { initEditorConfig } from './config/editorConfig'
-import { themeManager } from './config/themeConfig'
-import { restoreWorkspaceState, initWorkspaceStateSync } from './services/workspaceStateService'
 import { ThemeManager } from './components/editor/ThemeManager'
-import { adnifyDir } from './services/adnifyDirService'
-import { checkpointService } from '@renderer/agent/services/checkpointService'
-import { useAgentStore, initializeAgentStore } from '@renderer/agent/store/AgentStore'
-import { initDiagnosticsListener } from './services/diagnosticsStore'
+import { initWorkspaceStateSync } from './services/workspaceStateService'
+import { initializeApp, registerSettingsSync } from './services/initService'
 import { keybindingService } from './services/keybindingService'
-import { registerCoreCommands } from './config/commands'
 import { LAYOUT_LIMITS } from '@shared/constants'
 import { startupMetrics } from '@shared/utils/startupMetrics'
 import { useWindowTitle } from './hooks/useWindowTitle'
 import { removeFileFromTypeService } from './services/monacoTypeService'
-import { mcpService } from './services/mcpService'
 
 // 记录 App 模块加载时间
 startupMetrics.mark('app-module-loaded')
@@ -41,8 +35,8 @@ const KeyboardShortcuts = lazy(() => import('./components/dialogs/KeyboardShortc
 const QuickOpen = lazy(() => import('./components/dialogs/QuickOpen'))
 const AboutDialog = lazy(() => import('./components/dialogs/AboutDialog'))
 
-  // 暴露 store 给插件系统
-  ; (window as any).__ADNIFY_STORE__ = { getState: () => useStore.getState() }
+// 暴露 store 给插件系统
+;(window as any).__ADNIFY_STORE__ = { getState: () => useStore.getState() }
 
 // 编辑器骨架屏（懒加载时显示）
 const EditorSkeleton = memo(() => (
@@ -75,8 +69,8 @@ function ToastInitializer() {
 // 主应用内容
 function AppContent() {
   const {
-    showSettings, setLLMConfig, setLanguage, setAutoApprove, setPromptTemplateId, setShowSettings,
-    setTerminalVisible, terminalVisible, setDebugVisible, debugVisible, setWorkspace, setFiles,
+    showSettings, setShowSettings,
+    setTerminalVisible, terminalVisible, setDebugVisible, debugVisible,
     activeSidePanel, showComposer, setShowComposer,
     sidebarWidth, setSidebarWidth, chatWidth, setChatWidth,
     showQuickOpen, setShowQuickOpen, showAbout, setShowAbout,
@@ -105,18 +99,13 @@ function AppContent() {
   }, [])
 
   // 移除初始 HTML loader
-  const removeInitialLoader = useCallback((_status?: string) => {
+  const removeInitialLoader = useCallback(() => {
     const loader = document.getElementById('initial-loader')
     const root = document.getElementById('root')
     
-    // 先显示 React 应用内容
-    if (root) {
-      root.classList.add('ready')
-    }
+    if (root) root.classList.add('ready')
     
-    // 等待 root 显示后再移除 loader（避免空白闪烁）
     if (loader) {
-      // 使用 requestAnimationFrame 确保 root 已经开始渲染
       requestAnimationFrame(() => {
         loader.classList.add('fade-out')
         setTimeout(() => loader.remove(), 300)
@@ -124,142 +113,32 @@ function AppContent() {
     }
   }, [])
 
+  // 应用初始化
   useEffect(() => {
-    // 防止 StrictMode 下重复初始化
     if (initRef.current) return
     initRef.current = true
     
-    // Load saved settings & restore workspace
-    const loadSettings = async () => {
-      try {
-        startupMetrics.start('init-total')
-        
-        // 第一阶段：并行初始化独立模块（不互相依赖）
-        startupMetrics.start('init-parallel-1')
-        updateLoaderStatus('Initializing...')
-        
-        // 同步注册命令（非常快，不需要 await）
-        registerCoreCommands()
-        
-        // 并行执行：快捷键加载、AgentStore初始化、编辑器配置、主题
-        const [, , ,] = await Promise.all([
-          keybindingService.init(),
-          initializeAgentStore(),
-          initEditorConfig(),
-          themeManager.init(),
-        ])
-        startupMetrics.end('init-parallel-1')
-
-        // 第二阶段：加载设置
-        updateLoaderStatus('Loading settings...')
-        startupMetrics.start('load-settings')
-        const params = new URLSearchParams(window.location.search)
-        const isEmptyWindow = params.get('empty') === '1'
-
-        // 并行加载 store settings 和主题
-        const [, savedTheme] = await Promise.all([
-          useStore.getState().loadSettings(isEmptyWindow),
-          window.electronAPI.getSetting('currentTheme'),
-        ])
-        startupMetrics.end('load-settings')
-
-        // 检查是否需要显示引导
-        const { onboardingCompleted, hasExistingConfig } = useStore.getState()
-
-        // 应用保存的主题
-        if (savedTheme) {
-          const { setTheme } = useStore.getState()
-          setTheme(savedTheme as 'adnify-dark' | 'midnight' | 'dawn')
-        }
-
-        // 第三阶段：恢复工作区（仅非空窗口）
-        if (!isEmptyWindow) {
-          updateLoaderStatus('Restoring workspace...')
-          startupMetrics.start('restore-workspace')
-          const workspaceConfig = await window.electronAPI.restoreWorkspace()
-          if (workspaceConfig && workspaceConfig.roots && workspaceConfig.roots.length > 0) {
-            setWorkspace(workspaceConfig)
-
-            // 并行初始化：.adnify 目录 + 读取文件列表
-            updateLoaderStatus('Loading workspace...')
-            const [, , items] = await Promise.all([
-              Promise.all(workspaceConfig.roots.map(root => adnifyDir.initialize(root))),
-              adnifyDir.setPrimaryRoot(workspaceConfig.roots[0]),
-              window.electronAPI.readDir(workspaceConfig.roots[0]),
-            ])
-            
-            setFiles(items)
-
-            // 后台初始化（不阻塞 UI）
-            Promise.all([
-              checkpointService.init(),
-              useAgentStore.persist.rehydrate(),
-              mcpService.initialize(workspaceConfig.roots),
-            ]).catch(console.error)
-
-            // 初始化诊断监听器（同步，很快）
-            initDiagnosticsListener()
-
-            // 恢复工作区状态
-            updateLoaderStatus('Restoring editor state...')
-            await restoreWorkspaceState()
-          }
-          startupMetrics.end('restore-workspace')
-        } else {
-          // 空窗口也初始化 MCP（使用空工作区列表）
-          mcpService.initialize([]).catch(console.error)
-        }
-
-        // 注册设置同步监听器（返回清理函数供 useEffect 使用）
-        const unsubscribeSettings = window.electronAPI.onSettingsChanged(({ key, value }) => {
-          logger.system.info(`[App] Setting changed in another window: ${key}`, value)
-          if (key === 'llmConfig') setLLMConfig(value as any)
-          if (key === 'language') setLanguage(value as any)
-          if (key === 'autoApprove') setAutoApprove(value as any)
-          if (key === 'promptTemplateId') setPromptTemplateId(value as any)
-          if (key === 'currentTheme') {
-            const { setTheme } = useStore.getState()
-            setTheme(value as any)
-          }
-        })
-        // 保存清理函数到 ref 或返回
-        ;(window as any).__settingsUnsubscribe = unsubscribeSettings
-
-        updateLoaderStatus('Ready!')
-        startupMetrics.end('init-total')
-        
-        // 短暂延迟后移除 loader 并通知主进程显示窗口
-        setTimeout(() => {
-          removeInitialLoader()
-          setIsInitialized(true)
-
-          // 通知主进程：渲染完成
-          window.electronAPI.appReady()
-          
-          // 打印启动性能报告（开发环境）
-          if (process.env.NODE_ENV === 'development') {
-            startupMetrics.mark('app-ready')
-            startupMetrics.printReport()
-          }
-
-          const shouldShowOnboarding = onboardingCompleted === false ||
-            (onboardingCompleted === undefined && !hasExistingConfig)
-          if (shouldShowOnboarding) {
-            setShowOnboarding(true)
-          }
-        }, 50)  // 减少延迟时间
-      } catch (error) {
-        logger.system.error('Failed to load settings:', error)
-        // Even if loading fails, ensure keybindings are registered
-        registerCoreCommands()
+    const init = async () => {
+      const result = await initializeApp(updateLoaderStatus)
+      
+      // 注册设置同步
+      const unsubscribe = registerSettingsSync()
+      ;(window as any).__settingsUnsubscribe = unsubscribe
+      
+      // 短暂延迟后完成初始化
+      setTimeout(() => {
         removeInitialLoader()
         setIsInitialized(true)
-        window.electronAPI.appReady()
-      }
+        api.appReady()
+        
+        if (result.shouldShowOnboarding) {
+          setShowOnboarding(true)
+        }
+      }, 50)
     }
-    loadSettings()
     
-    // 清理函数
+    init()
+    
     return () => {
       const unsubscribe = (window as any).__settingsUnsubscribe
       if (unsubscribe) {
@@ -267,7 +146,7 @@ function AppContent() {
         delete (window as any).__settingsUnsubscribe
       }
     }
-  }, [setLLMConfig, setLanguage, setAutoApprove, setWorkspace, setFiles, updateLoaderStatus, removeInitialLoader, setPromptTemplateId])
+  }, [updateLoaderStatus, removeInitialLoader])
 
   // 初始化工作区状态同步（自动保存打开的文件等）
   useEffect(() => {
@@ -277,7 +156,7 @@ function AppContent() {
 
   // 监听文件变化，自动刷新已打开的文件
   useEffect(() => {
-    const unsubscribe = window.electronAPI.onFileChanged(async (event) => {
+    const unsubscribe = api.file.onChanged(async (event: { event: string; path: string }) => {
       // 处理文件删除事件 - 清理 Monaco extraLib
       if (event.event === 'delete') {
         removeFileFromTypeService(event.path)
@@ -292,7 +171,7 @@ function AppContent() {
       if (!openFile) return // 文件未打开，忽略
 
       // 读取最新内容
-      const newContent = await window.electronAPI.readFile(event.path)
+      const newContent = await api.file.read(event.path)
       if (newContent === null) return
 
       // 如果内容相同，不需要任何操作（可能是自己保存的）
@@ -373,7 +252,7 @@ function AppContent() {
     }
 
     if (e.key === 'F12') {
-      window.electronAPI.toggleDevTools()
+      api.window.toggleDevTools()
     }
     else if (keybindingService.matches(e, 'workbench.action.quickOpen')) {
       e.preventDefault()
@@ -434,14 +313,14 @@ function AppContent() {
     window.addEventListener('keydown', handleGlobalKeyDown)
 
     // Listen for menu commands from main process
-    const removeListener = window.electronAPI.onExecuteCommand((commandId) => {
+    const removeListener = api.onExecuteCommand((commandId: string) => {
       logger.system.info('[App] Received command from main:', commandId)
       if (commandId === 'workbench.action.showCommands') {
         logger.system.info('[App] Showing Command Palette')
         setShowCommandPalette(true)
       }
       if (commandId === 'workbench.action.toggleDevTools') {
-        window.electronAPI.toggleDevTools()
+        api.window.toggleDevTools()
       }
       if (commandId === 'explorer.revealActiveFile') {
         window.dispatchEvent(new CustomEvent('explorer:reveal-active-file'))

@@ -3,6 +3,7 @@
  * 所有内置工具的执行逻辑
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import type { ToolExecutionResult, ToolExecutionContext } from '@/shared/types'
 import type { PlanItem } from '../types'
@@ -31,7 +32,7 @@ interface DirTreeNode {
 async function buildDirTree(dirPath: string, maxDepth: number, currentDepth = 0): Promise<DirTreeNode[]> {
     if (currentDepth >= maxDepth) return []
 
-    const items = await window.electronAPI.readDir(dirPath)
+    const items = await api.file.readDir(dirPath)
     if (!items) return []
 
     const ignoreDirs = getAgentConfig().ignoredDirectories
@@ -93,7 +94,7 @@ function resolvePath(p: unknown, workspacePath: string | null, allowRead = false
 export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: ToolExecutionContext) => Promise<ToolExecutionResult>> = {
     async read_file(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const content = await window.electronAPI.readFile(path)
+        const content = await api.file.read(path)
         if (content === null) return { success: false, result: '', error: `File not found: ${path}` }
 
         AgentService.markFileAsRead(path, content)
@@ -108,7 +109,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async list_directory(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const items = await window.electronAPI.readDir(path)
+        const items = await api.file.readDir(path)
         if (!items) return { success: false, result: '', error: `Directory not found: ${path}` }
         return { success: true, result: items.map(item => `${item.isDirectory ? '📁' : '📄'} ${item.name}`).join('\n') }
     },
@@ -121,7 +122,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async search_files(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const results = await window.electronAPI.searchFiles(args.pattern as string, path, {
+        const results = await api.file.search(args.pattern as string, path, {
             isRegex: !!args.is_regex, include: args.file_pattern as string | undefined, isCaseSensitive: false
         })
         if (!results) return { success: false, result: 'Search failed' }
@@ -130,7 +131,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async search_in_file(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const content = await window.electronAPI.readFile(path)
+        const content = await api.file.read(path)
         if (content === null) return { success: false, result: '', error: `File not found: ${path}` }
 
         const pattern = args.pattern as string
@@ -154,7 +155,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
             paths.map(p => limit(async () => {
                 try {
                     const validPath = resolvePath(p, ctx.workspacePath, true)
-                    const content = await window.electronAPI.readFile(validPath)
+                    const content = await api.file.read(validPath)
                     if (content !== null) {
                         AgentService.markFileAsRead(validPath, content)
                         return `\n--- File: ${p} ---\n${content}\n`
@@ -171,7 +172,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async edit_file(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath)
-        const originalContent = await window.electronAPI.readFile(path)
+        const originalContent = await api.file.read(path)
         if (originalContent === null) return { success: false, result: '', error: `File not found: ${path}` }
 
         // 检查文件是否被外部修改（通过重新计算哈希并比较）
@@ -203,7 +204,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
             }
         }
 
-        const success = await window.electronAPI.writeFile(path, applyResult.newContent)
+        const success = await api.file.write(path, applyResult.newContent)
         if (!success) return { success: false, result: '', error: 'Failed to write file' }
 
         // 更新文件缓存
@@ -216,8 +217,8 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
     async write_file(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath)
         const content = args.content as string
-        const originalContent = await window.electronAPI.readFile(path) || ''
-        const success = await window.electronAPI.writeFile(path, content)
+        const originalContent = await api.file.read(path) || ''
+        const success = await api.file.write(path, content)
         if (!success) return { success: false, result: '', error: 'Failed to write file' }
 
         const lineChanges = calculateLineChanges(originalContent, content)
@@ -226,7 +227,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async replace_file_content(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath)
-        const originalContent = await window.electronAPI.readFile(path)
+        const originalContent = await api.file.read(path)
         if (originalContent === null) return { success: false, result: '', error: `File not found: ${path}` }
 
         // 对于行号替换，建议先读取文件以确保行号准确
@@ -236,7 +237,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
         const content = args.content as string
         if (originalContent === '') {
-            const success = await window.electronAPI.writeFile(path, content)
+            const success = await api.file.write(path, content)
             if (success) AgentService.markFileAsRead(path, content)
             return success
                 ? { success: true, result: 'File written (was empty)', meta: { filePath: path, oldContent: '', newContent: content, linesAdded: content.split('\n').length, linesRemoved: 0 } }
@@ -259,7 +260,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
         lines.splice(startLine - 1, endLine - startLine + 1, ...content.split('\n'))
         const newContent = lines.join('\n')
 
-        const success = await window.electronAPI.writeFile(path, newContent)
+        const success = await api.file.write(path, newContent)
         if (!success) return { success: false, result: '', error: 'Failed to write file' }
         
         // 更新文件缓存
@@ -274,18 +275,18 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
         const isFolder = path.endsWith('/') || path.endsWith('\\')
 
         if (isFolder) {
-            const success = await window.electronAPI.mkdir(path)
+            const success = await api.file.mkdir(path)
             return { success, result: success ? 'Folder created' : 'Failed to create folder' }
         }
 
         const content = (args.content as string) || ''
-        const success = await window.electronAPI.writeFile(path, content)
+        const success = await api.file.write(path, content)
         return { success, result: success ? 'File created' : 'Failed to create file', meta: { filePath: path, isNewFile: true, newContent: content, linesAdded: content.split('\n').length } }
     },
 
     async delete_file_or_folder(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath)
-        const success = await window.electronAPI.deleteFile(path)
+        const success = await api.file.delete(path)
         return { success, result: success ? 'Deleted successfully' : 'Failed to delete' }
     },
 
@@ -299,7 +300,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
             : config.toolTimeoutMs
 
         // 使用后台执行（不依赖 PTY，更可靠）
-        const result = await window.electronAPI.executeBackground({
+        const result = await api.shell.executeBackground({
             command,
             cwd: cwd || ctx.workspacePath || undefined,
             timeout,
@@ -345,14 +346,14 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async codebase_search(args, ctx) {
         if (!ctx.workspacePath) return { success: false, result: '', error: 'No workspace open' }
-        const results = await window.electronAPI.indexHybridSearch(ctx.workspacePath, args.query as string, (args.top_k as number) || 10)
+        const results = await api.index.hybridSearch(ctx.workspacePath, args.query as string, (args.top_k as number) || 10)
         if (!results?.length) return { success: false, result: 'No results found' }
         return { success: true, result: results.map(r => `${r.relativePath}:${r.startLine}: ${r.content.trim()}`).join('\n') }
     },
 
     async find_references(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const locations = await window.electronAPI.lspReferences({
+        const locations = await api.lsp.references({
             uri: pathToLspUri(path), line: (args.line as number) - 1, character: (args.column as number) - 1, workspacePath: ctx.workspacePath
         })
         if (!locations?.length) return { success: true, result: 'No references found' }
@@ -374,7 +375,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async go_to_definition(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const locations = await window.electronAPI.lspDefinition({
+        const locations = await api.lsp.definition({
             uri: pathToLspUri(path), line: (args.line as number) - 1, character: (args.column as number) - 1, workspacePath: ctx.workspacePath
         })
         if (!locations?.length) return { success: true, result: 'Definition not found' }
@@ -396,7 +397,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async get_hover_info(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const hover = await window.electronAPI.lspHover({
+        const hover = await api.lsp.hover({
             uri: pathToLspUri(path), line: (args.line as number) - 1, character: (args.column as number) - 1, workspacePath: ctx.workspacePath
         })
         if (!hover?.contents) return { success: true, result: 'No hover info' }
@@ -406,7 +407,7 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
 
     async get_document_symbols(args, ctx) {
         const path = resolvePath(args.path, ctx.workspacePath, true)
-        const symbols = await window.electronAPI.lspDocumentSymbol({ uri: pathToLspUri(path), workspacePath: ctx.workspacePath })
+        const symbols = await api.lsp.documentSymbol({ uri: pathToLspUri(path), workspacePath: ctx.workspacePath })
         if (!symbols?.length) return { success: true, result: 'No symbols found' }
 
         const format = (s: { name: string; kind: number; children?: unknown[] }, depth: number): string => {
@@ -418,13 +419,13 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
     },
 
     async web_search(args) {
-        const result = await window.electronAPI.httpWebSearch(args.query as string, args.max_results as number)
+        const result = await api.http.webSearch(args.query as string, args.max_results as number)
         if (!result.success || !result.results) return { success: false, result: '', error: result.error || 'Search failed' }
         return { success: true, result: result.results.map((r) => `[${r.title}](${r.url})\n${r.snippet}`).join('\n\n') }
     },
 
     async read_url(args) {
-        const result = await window.electronAPI.httpReadUrl(args.url as string, (args.timeout as number) || 30)
+        const result = await api.http.readUrl(args.url as string, (args.timeout as number) || 30)
         if (!result.success || !result.content) return { success: false, result: '', error: result.error || 'Failed to read URL' }
         return { success: true, result: `Title: ${result.title}\n\n${result.content}` }
     },
@@ -440,12 +441,12 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
             const planName = title ? title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').slice(0, 30) : `plan_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`
             const planFilePath = `${ctx.workspacePath}/.adnify/plans/${planName}.md`
 
-            await window.electronAPI.ensureDir(`${ctx.workspacePath}/.adnify/plans`)
-            await window.electronAPI.writeFile(planFilePath, planContent)
+            await api.file.ensureDir(`${ctx.workspacePath}/.adnify/plans`)
+            await api.file.write(planFilePath, planContent)
 
             useStore.getState().openFile(planFilePath, planContent)
             useStore.getState().setActiveFile(planFilePath)
-            await window.electronAPI.writeFile(`${ctx.workspacePath}/.adnify/active_plan.txt`, planFilePath)
+            await api.file.write(`${ctx.workspacePath}/.adnify/active_plan.txt`, planFilePath)
 
             return { success: true, result: `Plan created with ${plan.items.length} items` }
         }
@@ -504,18 +505,18 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
         // 同步文件
         const updatedPlan = useAgentStore.getState().plan
         if (updatedPlan && ctx.workspacePath) {
-            let planFilePath = await window.electronAPI.readFile(`${ctx.workspacePath}/.adnify/active_plan.txt`)
+            let planFilePath = await api.file.read(`${ctx.workspacePath}/.adnify/active_plan.txt`)
             planFilePath = (planFilePath || `${ctx.workspacePath}/.adnify/plan.md`).trim()
 
             let finalTitle = args.title as string | undefined
             if (!finalTitle) {
-                const oldContent = await window.electronAPI.readFile(planFilePath)
+                const oldContent = await api.file.read(planFilePath)
                 const match = oldContent?.match(/^# 📋 (.*)$/m)
                 if (match) finalTitle = match[1]
             }
 
             const planContent = generatePlanMarkdown(updatedPlan, finalTitle)
-            await window.electronAPI.writeFile(planFilePath, planContent)
+            await api.file.write(planFilePath, planContent)
 
             try {
                 const openFile = useStore.getState().openFiles.find((f: { path: string }) => f.path === planFilePath)

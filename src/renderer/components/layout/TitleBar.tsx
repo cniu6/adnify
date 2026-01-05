@@ -1,3 +1,4 @@
+import { api } from '@/renderer/services/electronAPI'
 import { Minus, Square, X, Search, HelpCircle } from 'lucide-react'
 import { useStore } from '@store'
 import { Logo } from '../common/Logo'
@@ -53,7 +54,7 @@ export default function TitleBar() {
           <Button
             variant="icon"
             size="icon"
-            onClick={() => window.electronAPI.minimize()}
+            onClick={() => api.window.minimize()}
             className="w-7 h-7"
           >
             <Minus className="w-3.5 h-3.5" />
@@ -61,7 +62,7 @@ export default function TitleBar() {
           <Button
             variant="icon"
             size="icon"
-            onClick={() => window.electronAPI.maximize()}
+            onClick={() => api.window.maximize()}
             className="w-7 h-7"
           >
             <Square className="w-3 h-3" />
@@ -69,7 +70,7 @@ export default function TitleBar() {
           <Button
             variant="icon"
             size="icon"
-            onClick={() => window.electronAPI.close()}
+            onClick={() => api.window.close()}
             className="w-7 h-7 hover:bg-status-error hover:text-white"
           >
             <X className="w-3.5 h-3.5" />

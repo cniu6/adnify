@@ -3,8 +3,9 @@
  * 核心的 Agent 循环逻辑，处理 LLM 通信和工具执行
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
-import { performanceMonitor } from '@shared/utils/PerformanceMonitor'
+import { performanceMonitor, CacheService, withRetry, isRetryableError } from '@shared/utils'
 import { AppError, formatErrorMessage } from '@/shared/errors'
 import { useAgentStore } from '../store/AgentStore'
 import { useStore } from '@store'
@@ -16,14 +17,13 @@ import {
   MessageContent,
   TextContent,
 } from '../types'
-import { LLMStreamChunk, LLMToolCall } from '@/renderer/types/electron'
+import { LLMStreamChunk, LLMToolCall, LLMResult } from '@/renderer/types/electron'
 import { getReadOnlyTools } from '@/shared/config/tools'
 
 // 导入拆分的模块
 import {
   getAgentConfig,
   READ_TOOLS,
-  RETRYABLE_ERROR_CODES,
 } from '../utils/AgentConfig'
 import { LoopDetector } from '../utils/LoopDetector'
 import {
@@ -51,6 +51,13 @@ import { buildLLMMessages, compressContext } from '../llm/MessageBuilder'
 import { executeToolCallsIntelligently } from './ParallelToolExecutor'
 import { composerService } from './composerService'
 
+// Agent 文件读取缓存（带 LRU 淘汰）
+const agentFileCache = new CacheService<string>('AgentFileCache', {
+  maxSize: 200,
+  maxMemory: 30 * 1024 * 1024, // 30MB
+  defaultTTL: 10 * 60 * 1000,  // 10 分钟
+})
+
 export interface LLMCallConfig {
   provider: string
   model: string
@@ -74,15 +81,12 @@ class AgentServiceClass {
   private streamState: StreamHandlerState = createStreamHandlerState()
   private throttleState = { lastUpdate: 0, lastArgsLen: 0 }
 
-  // 文件读取缓存（简化版：只记录哈希，不做复杂的 TTL 管理）
-  private fileReadCache = new Map<string, string>() // path -> contentHash
-
   /**
    * 检查文件缓存是否有效
    */
   hasValidFileCache(filePath: string): boolean {
     const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase()
-    return this.fileReadCache.has(normalizedPath)
+    return agentFileCache.has(normalizedPath)
   }
 
   /**
@@ -90,7 +94,7 @@ class AgentServiceClass {
    */
   markFileAsRead(filePath: string, content: string): void {
     const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase()
-    this.fileReadCache.set(normalizedPath, this.fnvHash(content))
+    agentFileCache.set(normalizedPath, this.fnvHash(content))
   }
 
   /**
@@ -98,29 +102,33 @@ class AgentServiceClass {
    */
   getFileCacheHash(filePath: string): string | null {
     const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase()
-    return this.fileReadCache.get(normalizedPath) || null
+    return agentFileCache.get(normalizedPath) ?? null
   }
 
   /**
    * 清除会话缓存
    */
   clearSession(): void {
-    this.fileReadCache.clear()
+    agentFileCache.clear()
     logger.agent.info('[Agent] Session cleared')
   }
 
   /**
-   * FNV-1a 哈希算法 - 比简单位运算哈希碰撞率更低
-   * 使用 64 位分两部分计算，避免 JS 整数精度问题
+   * 获取缓存统计
+   */
+  getCacheStats() {
+    return agentFileCache.getStats()
+  }
+
+  /**
+   * FNV-1a 哈希算法
    */
   private fnvHash(str: string): string {
-    // FNV-1a 32-bit
     let h1 = 0x811c9dc5
     let h2 = 0x811c9dc5
     const len = str.length
     const mid = len >> 1
 
-    // 分两部分计算，增加熵
     for (let i = 0; i < mid; i++) {
       h1 ^= str.charCodeAt(i)
       h1 = Math.imul(h1, 0x01000193)
@@ -130,7 +138,6 @@ class AgentServiceClass {
       h2 = Math.imul(h2, 0x01000193)
     }
 
-    // 组合两个哈希值
     return ((h1 >>> 0).toString(36) + (h2 >>> 0).toString(36))
   }
 
@@ -211,7 +218,7 @@ class AgentServiceClass {
     if (this.abortController) {
       this.abortController.abort()
     }
-    window.electronAPI.abortMessage()
+    api.llm.abort()
 
     // 通知 ToolExecutionService 拒绝当前等待的审批
     toolExecutionService.reject()
@@ -431,31 +438,37 @@ class AgentServiceClass {
     messages: OpenAIMessage[],
     chatMode: WorkMode
   ): Promise<{ content?: string; toolCalls?: LLMToolCall[]; error?: string }> {
-    let lastError: string | undefined
     const retryConfig = getAgentConfig()
-    let delay = retryConfig.retryDelayMs
 
-    for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
-      if (this.abortController?.signal.aborted) return { error: 'Aborted' }
-
-      if (attempt > 0) {
-        await new Promise(resolve => setTimeout(resolve, delay))
-        delay *= retryConfig.retryBackoffMultiplier
-      }
-
-      const result = await this.callLLM(config, messages, chatMode)
-      if (!result.error) return result
-
-      const canRetry = RETRYABLE_ERROR_CODES.has(result.error) ||
-        result.error.includes('timeout') ||
-        result.error.includes('rate limit') ||
-        result.error.includes('network')
-
-      if (!canRetry || attempt === retryConfig.maxRetries) return result
-      lastError = result.error
+    try {
+      return await withRetry(
+        async () => {
+          if (this.abortController?.signal.aborted) {
+            throw new Error('Aborted')
+          }
+          const result = await this.callLLM(config, messages, chatMode)
+          if (result.error) {
+            throw new Error(result.error)
+          }
+          return result
+        },
+        {
+          maxRetries: retryConfig.maxRetries,
+          initialDelayMs: retryConfig.retryDelayMs,
+          backoffMultiplier: retryConfig.retryBackoffMultiplier,
+          isRetryable: (error) => {
+            const message = error instanceof Error ? error.message : String(error)
+            return isRetryableError(error) || message === 'Aborted' === false
+          },
+          onRetry: (attempt, error, delay) => {
+            logger.agent.info(`[Agent] LLM call failed (attempt ${attempt}), retrying in ${delay}ms...`, error)
+          },
+        }
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { error: message }
     }
-
-    return { error: lastError || 'Max retries exceeded' }
   }
 
   private async callLLM(
@@ -481,7 +494,7 @@ class AgentServiceClass {
 
       // 监听流式文本
       this.unsubscribers.push(
-        window.electronAPI.onLLMStream((chunk: LLMStreamChunk) => {
+        api.llm.onStream((chunk: LLMStreamChunk) => {
           // 如果正在推理但收到非推理内容，关闭推理标签
           if (this.streamState.isReasoning && chunk.type !== 'reasoning') {
             closeReasoningIfNeeded(this.streamState, this.currentAssistantId)
@@ -504,14 +517,14 @@ class AgentServiceClass {
 
       // 监听非流式工具调用
       this.unsubscribers.push(
-        window.electronAPI.onLLMToolCall((toolCall: LLMToolCall) => {
+        api.llm.onToolCall((toolCall: LLMToolCall) => {
           handleLLMToolCall(toolCall, this.streamState, this.currentAssistantId)
         })
       )
 
       // 监听完成
       this.unsubscribers.push(
-        window.electronAPI.onLLMDone((result) => {
+        api.llm.onDone((result: LLMResult) => {
           // 结束性能监控
           performanceMonitor.end(`llm:${config.model}`, true)
 
@@ -529,7 +542,7 @@ class AgentServiceClass {
 
       // 监听错误
       this.unsubscribers.push(
-        window.electronAPI.onLLMError((error) => {
+        api.llm.onError((error: { message: string }) => {
           // 结束性能监控（失败）
           performanceMonitor.end(`llm:${config.model}`, false, { error: error.message })
 
@@ -552,7 +565,7 @@ class AgentServiceClass {
       
       const allTools = chatMode === 'chat' ? [] : toolManager.getAllToolDefinitions()
       
-      window.electronAPI.sendMessage({
+      api.llm.send({
         config,
         messages: messages as any,
         tools: allTools,

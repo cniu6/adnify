@@ -2,6 +2,7 @@
  * Tab 右键菜单组件
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useRef, useEffect } from 'react'
 import { toast } from '../common/ToastProvider'
 import { keybindingService } from '@services/keybindingService'
@@ -60,7 +61,7 @@ export function TabContextMenu({
     },
     {
       label: isZh ? '在资源管理器中显示' : 'Reveal in Explorer',
-      action: () => window.electronAPI.showItemInFolder(filePath)
+      action: () => api.file.showInFolder(filePath)
     },
   ]
 

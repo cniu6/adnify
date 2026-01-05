@@ -1,3 +1,4 @@
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useRef, useCallback, useEffect, useState } from 'react'
 import MonacoEditor, { OnMount, BeforeMount, loader } from '@monaco-editor/react'
@@ -578,7 +579,7 @@ export default function Editor() {
         // 获取最新内容（格式化后）
         const content = editorRef.current.getValue()
         
-        const success = await window.electronAPI.writeFile(activeFile.path, content)
+        const success = await api.file.write(activeFile.path, content)
         if (success) {
           // 更新 store 中的内容（如果格式化了）
           if (config.formatOnSave && content !== activeFile.content) {
@@ -619,7 +620,7 @@ export default function Editor() {
       autoSaveTimerRef.current = setTimeout(async () => {
         const file = openFiles.find((f: { path: string; isDirty?: boolean }) => f.path === filePath)
         if (file?.isDirty) {
-          const success = await window.electronAPI.writeFile(file.path, file.content)
+          const success = await api.file.write(file.path, file.content)
           if (success) {
             markFileSaved(file.path)
           }
@@ -637,7 +638,7 @@ export default function Editor() {
       // 保存所有脏文件
       for (const file of openFiles) {
         if ((file as any).isDirty) {
-          const success = await window.electronAPI.writeFile(file.path, file.content)
+          const success = await api.file.write(file.path, file.content)
           if (success) {
             markFileSaved(file.path)
           }
@@ -663,7 +664,7 @@ export default function Editor() {
     const file = openFiles.find((f: { path: string }) => f.path === filePath)
     if (file) {
       try {
-        const success = await window.electronAPI.writeFile(file.path, file.content)
+        const success = await api.file.write(file.path, file.content)
         if (success) {
           markFileSaved(file.path)
           toast.success(

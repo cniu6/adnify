@@ -10,6 +10,7 @@
  * - Context-aware completion ranking
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useStore } from '@store'
 import { getEditorConfig } from '@renderer/config/editorConfig'
@@ -592,27 +593,27 @@ class CompletionService {
       // Handle abort signal
       const abortHandler = () => {
         isAborted = true
-        window.electronAPI.abortMessage()
+        api.llm.abort()
         reject(new DOMException('Aborted', 'AbortError'))
       }
       signal.addEventListener('abort', abortHandler)
 
       // Set up listeners
-      const unsubStream = window.electronAPI.onLLMStream((chunk) => {
+      const unsubStream = api.llm.onStream((chunk: { type: string; content?: string }) => {
         if (isAborted) return
         if (chunk.type === 'text' && chunk.content) {
           completionText += chunk.content
         }
       })
 
-      const unsubError = window.electronAPI.onLLMError((error) => {
+      const unsubError = api.llm.onError((error: { message: string }) => {
         cleanup()
         if (!isAborted) {
           reject(new Error(error.message))
         }
       })
 
-      const unsubDone = window.electronAPI.onLLMDone(() => {
+      const unsubDone = api.llm.onDone(() => {
         cleanup()
         if (isAborted) return
 
@@ -640,7 +641,7 @@ class CompletionService {
       }
 
       // Send the completion request
-      window.electronAPI.sendMessage({
+      api.llm.send({
         config: llmConfig,
         messages: [{ role: 'user', content: prompt }],
         systemPrompt: 'You are a code completion assistant. Output ONLY the code completion, no explanations or markdown.'

@@ -4,6 +4,7 @@
  * 双重存储：localStorage（快速读取）+ 文件（持久化备份）
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { IGNORED_DIRECTORIES } from '@shared/languages'
 
@@ -196,13 +197,13 @@ export async function initEditorConfig(): Promise<EditorConfig> {
   if (localConfig) {
     const merged = deepMerge(defaultEditorConfig, localConfig)
     // 异步同步到文件（不阻塞）
-    window.electronAPI.setSetting(FILE_STORAGE_KEY, merged).catch(console.error)
+    api.settings.set(FILE_STORAGE_KEY, merged).catch(console.error)
     return merged
   }
 
   // 2. localStorage 没有，从文件读取
   try {
-    const fileConfig = await window.electronAPI.getSetting(FILE_STORAGE_KEY)
+    const fileConfig = await api.settings.get(FILE_STORAGE_KEY)
     if (fileConfig) {
       const merged = deepMerge(defaultEditorConfig, fileConfig as Partial<EditorConfig>)
       // 同步到 localStorage
@@ -215,7 +216,7 @@ export async function initEditorConfig(): Promise<EditorConfig> {
 
   // 3. 都没有，使用默认配置并保存
   writeToLocalStorage(defaultEditorConfig)
-  window.electronAPI.setSetting(FILE_STORAGE_KEY, defaultEditorConfig).catch(console.error)
+  api.settings.set(FILE_STORAGE_KEY, defaultEditorConfig).catch(console.error)
   return defaultEditorConfig
 }
 
@@ -242,7 +243,7 @@ export function saveEditorConfig(config: Partial<EditorConfig>): void {
   writeToLocalStorage(merged)
 
   // 异步写入文件（持久化备份，不阻塞）
-  window.electronAPI.setSetting(FILE_STORAGE_KEY, merged).catch((e) => {
+  api.settings.set(FILE_STORAGE_KEY, merged).catch((e) => {
     logger.settings.error('[EditorConfig] Failed to save to file:', e)
   })
 }
@@ -252,7 +253,7 @@ export function saveEditorConfig(config: Partial<EditorConfig>): void {
  */
 export function resetEditorConfig(): void {
   writeToLocalStorage(defaultEditorConfig)
-  window.electronAPI.setSetting(FILE_STORAGE_KEY, defaultEditorConfig).catch(console.error)
+  api.settings.set(FILE_STORAGE_KEY, defaultEditorConfig).catch(console.error)
 }
 
 /**
@@ -260,7 +261,7 @@ export function resetEditorConfig(): void {
  */
 export async function restoreFromFile(): Promise<EditorConfig> {
   try {
-    const fileConfig = await window.electronAPI.getSetting(FILE_STORAGE_KEY)
+    const fileConfig = await api.settings.get(FILE_STORAGE_KEY)
     if (fileConfig) {
       const merged = deepMerge(defaultEditorConfig, fileConfig as Partial<EditorConfig>)
       writeToLocalStorage(merged)

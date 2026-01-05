@@ -3,6 +3,7 @@
  * 提供三方合并视图和冲突解决操作
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect, useCallback } from 'react'
 import { GitMerge, Check, X, ArrowLeft, ArrowRight, RefreshCw } from 'lucide-react'
 import { useStore } from '@store'
@@ -122,7 +123,7 @@ export function ConflictResolver({ filePath, onResolved, onCancel }: ConflictRes
     const loadFile = async () => {
       setIsLoading(true)
       try {
-        const fileContent = await window.electronAPI.readFile(filePath)
+        const fileContent = await api.file.read(filePath)
         if (fileContent) {
           setContent(fileContent)
           setResolvedContent(fileContent)
@@ -214,7 +215,7 @@ export function ConflictResolver({ filePath, onResolved, onCancel }: ConflictRes
     }
     
     try {
-      await window.electronAPI.writeFile(filePath, resolvedContent)
+      await api.file.write(filePath, resolvedContent)
       await gitService.stageFile(filePath)
       toast.success(tt('git.conflictResolved'))
       onResolved()

@@ -2,6 +2,7 @@
  * 系统设置组件
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useState, useEffect } from 'react'
 import { HardDrive, AlertTriangle, Monitor } from 'lucide-react'
@@ -17,7 +18,7 @@ function DataPathDisplay() {
     const [path, setPath] = useState('')
     useEffect(() => {
         // @ts-ignore
-        window.electronAPI.getConfigPath?.().then(setPath)
+        api.settings.getConfigPath?.().then(setPath)
     }, [])
     return <span>{path || '...'}</span>
 }
@@ -34,7 +35,7 @@ export function SystemSettings({ language }: SystemSettingsProps) {
                 // @ts-ignore
                 await (window.electronAPI as any).clearIndex?.()
             } catch { }
-            await window.electronAPI.setSetting('editorConfig', undefined)
+            await api.settings.set('editorConfig', undefined)
             toast.success(language === 'zh' ? '缓存已清除' : 'Cache cleared')
         } catch (error) {
             logger.settings.error('Failed to clear cache:', error)
@@ -46,14 +47,14 @@ export function SystemSettings({ language }: SystemSettingsProps) {
 
     const handleReset = async () => {
         if (confirm(language === 'zh' ? '确定要重置所有设置吗？这将丢失所有自定义配置。' : 'Are you sure you want to reset all settings? This will lose all custom configurations.')) {
-            await window.electronAPI.setSetting('llmConfig', undefined)
-            await window.electronAPI.setSetting('editorSettings', undefined)
-            await window.electronAPI.setSetting('editorConfig', undefined)
-            await window.electronAPI.setSetting('autoApprove', undefined)
-            await window.electronAPI.setSetting('providerConfigs', undefined)
-            await window.electronAPI.setSetting('promptTemplateId', undefined)
-            await window.electronAPI.setSetting('aiInstructions', undefined)
-            await window.electronAPI.setSetting('currentTheme', undefined)
+            await api.settings.set('llmConfig', undefined)
+            await api.settings.set('editorSettings', undefined)
+            await api.settings.set('editorConfig', undefined)
+            await api.settings.set('autoApprove', undefined)
+            await api.settings.set('providerConfigs', undefined)
+            await api.settings.set('promptTemplateId', undefined)
+            await api.settings.set('aiInstructions', undefined)
+            await api.settings.set('currentTheme', undefined)
             localStorage.clear()
             window.location.reload()
         }
@@ -77,10 +78,10 @@ export function SystemSettings({ language }: SystemSettingsProps) {
                                 </div>
                             </div>
                             <Button variant="secondary" size="sm" onClick={async () => {
-                                const newPath = await window.electronAPI.openFolder()
+                                const newPath = await api.file.openFolder()
                                 if (newPath) {
                                     // @ts-ignore
-                                    const success = await window.electronAPI.setConfigPath?.(newPath)
+                                    const success = await api.settings.setConfigPath?.(newPath)
                                     if (success) {
                                         toast.success(language === 'zh' ? '路径已更新，重启后生效' : 'Path updated, restart required to take effect')
                                     } else {

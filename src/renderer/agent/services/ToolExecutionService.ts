@@ -1,12 +1,12 @@
 /**
  * 工具执行服务
  * 负责工具的审批流程和执行管理
- * 从 AgentService 拆分出来，专注于工具执行职责
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
-import { performanceMonitor } from '@shared/utils/PerformanceMonitor'
-import { AppError, ErrorCode } from '@/shared/errors'
+import { performanceMonitor, withRetry, withTimeout, isRetryableError } from '@shared/utils'
+import { AppError } from '@/shared/errors'
 import { useAgentStore } from '../store/AgentStore'
 import { useStore } from '@store'
 import { toolManager, initializeToolProviders } from '../tools'
@@ -90,7 +90,7 @@ export class ToolExecutionService {
       const filePath = args.path as string
       if (filePath && workspacePath) {
         fullPath = filePath.startsWith(workspacePath) ? filePath : `${workspacePath}/${filePath}`
-        originalContent = await window.electronAPI.readFile(fullPath)
+        originalContent = await api.file.read(fullPath)
         store.addSnapshotToCurrentCheckpoint(fullPath, originalContent)
         
         // 启动流式编辑追踪
@@ -163,71 +163,34 @@ export class ToolExecutionService {
     workspacePath: string | null
   ): Promise<ToolExecutionResult> {
     const config = getAgentConfig()
-    const timeoutMs = config.toolTimeoutMs
-    const maxRetries = config.maxRetries
-    const retryDelayMs = config.retryDelayMs
 
-    let result: ToolExecutionResult | undefined
-    let lastError: string = ''
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // 使用 AbortController 实现可取消的超时
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
-        try {
-          result = await toolManager.execute(name, args, { workspacePath })
-          clearTimeout(timeoutId)
-          
-          if (result.success) break
-          lastError = result.error || 'Unknown error'
-        } catch (e: unknown) {
-          clearTimeout(timeoutId)
-          const appError = AppError.fromError(e)
-          if (appError.code === ErrorCode.TIMEOUT || controller.signal.aborted) {
-            lastError = `Tool execution timed out after ${timeoutMs / 1000}s`
-          } else {
-            throw appError
+    try {
+      return await withRetry(
+        async () => {
+          const result = await withTimeout(
+            toolManager.execute(name, args, { workspacePath }),
+            config.toolTimeoutMs,
+            new Error(`Tool execution timed out after ${config.toolTimeoutMs / 1000}s`)
+          )
+          if (!result.success && result.error && isRetryableError(result.error)) {
+            throw new Error(result.error)
           }
+          return result
+        },
+        {
+          maxRetries: config.maxRetries,
+          initialDelayMs: config.retryDelayMs,
+          backoffMultiplier: 1.5,
+          isRetryable: isRetryableError,
+          onRetry: (attempt, error) => {
+            logger.agent.info(`[ToolExecutionService] Tool ${name} failed (attempt ${attempt}), retrying...`, error)
+          },
         }
-
-        if (attempt < maxRetries && this.isRetryableError(lastError)) {
-          logger.agent.info(`[ToolExecutionService] Tool ${name} failed (attempt ${attempt}/${maxRetries}), retrying...`)
-          await new Promise(resolve => setTimeout(resolve, retryDelayMs * attempt))
-        } else {
-          break
-        }
-      } catch (error: unknown) {
-        const appError = AppError.fromError(error)
-        lastError = appError.message
-        if (attempt < maxRetries && this.isRetryableError(lastError)) {
-          logger.agent.info(`[ToolExecutionService] Tool ${name} error (attempt ${attempt}/${maxRetries}): ${lastError}, retrying...`)
-          await new Promise(resolve => setTimeout(resolve, retryDelayMs * attempt))
-        } else {
-          result = { success: false, result: '', error: lastError }
-          break
-        }
-      }
+      )
+    } catch (error) {
+      const appError = AppError.fromError(error)
+      return { success: false, result: '', error: appError.message }
     }
-
-    return result ?? { success: false, result: '', error: lastError || 'Tool execution failed' }
-  }
-
-  /**
-   * 判断错误是否可重试
-   */
-  private isRetryableError(error: string): boolean {
-    const retryablePatterns = [
-      'timeout',
-      'ECONNRESET',
-      'ETIMEDOUT',
-      'ENOTFOUND',
-      'network',
-      'temporarily unavailable'
-    ]
-    const lowerError = error.toLowerCase()
-    return retryablePatterns.some(pattern => lowerError.includes(pattern.toLowerCase()))
   }
 
   /**

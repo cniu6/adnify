@@ -1,3 +1,4 @@
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso'
@@ -194,7 +195,7 @@ export default function ChatPanel() {
   // 处理文件点击
   const handleFileClick = useCallback(async (filePath: string) => {
     const fullPath = toFullPath(filePath, workspacePath)
-    const content = await window.electronAPI.readFile(fullPath)
+    const content = await api.file.read(fullPath)
     if (content === null) return
     openFile(fullPath, content)
     setActiveFile(fullPath)
@@ -206,7 +207,7 @@ export default function ChatPanel() {
   // 处理显示 diff
   const handleShowDiff = useCallback(async (filePath: string, oldContent: string, newContent: string) => {
     const fullPath = toFullPath(filePath, workspacePath)
-    const currentContent = await window.electronAPI.readFile(fullPath)
+    const currentContent = await api.file.read(fullPath)
     if (currentContent !== null) {
       openFile(fullPath, currentContent)
       setActiveFile(fullPath)
@@ -270,7 +271,7 @@ export default function ChatPanel() {
     // 辅助函数：检测路径是否是文件夹
     const isDirectory = async (path: string): Promise<boolean> => {
       try {
-        const result = await window.electronAPI.readDir(path)
+        const result = await api.file.readDir(path)
         return Array.isArray(result)
       } catch {
         return false
@@ -1014,7 +1015,7 @@ export default function ChatPanel() {
                   const change = pendingChanges.find(c => c.filePath === filePath)
                   if (!change) return
 
-                  const currentContent = await window.electronAPI.readFile(filePath)
+                  const currentContent = await api.file.read(filePath)
                   if (currentContent !== null) {
                     openFile(filePath, currentContent)
                     setActiveFile(filePath)

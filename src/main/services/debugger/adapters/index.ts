@@ -3,7 +3,6 @@
  * 定义各种语言的调试适配器配置
  */
 
-import { join } from 'path'
 import type { DebugAdapterInfo, DebugAdapterDescriptor, DebugConfig } from '../types'
 
 /**

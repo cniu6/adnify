@@ -2,6 +2,7 @@
  * 虚拟化文件树组件
  * 只渲染可见区域的节点，提升大目录性能
  */
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   ChevronRight,
@@ -283,7 +284,7 @@ export function VirtualFileTree({
         loadChildren(node.item.path)
       }
     } else {
-      const content = await window.electronAPI.readFile(node.item.path)
+      const content = await api.file.read(node.item.path)
       if (content !== null) {
         openFile(node.item.path, content)
         setActiveFile(node.item.path)
@@ -306,7 +307,7 @@ export function VirtualFileTree({
   // 菜单操作
   const handleDelete = useCallback(async (node: FlattenedNode) => {
     if (confirm(t('confirmDelete', language, { name: node.item.name }))) {
-      await window.electronAPI.deleteFile(node.item.path)
+      await api.file.delete(node.item.path)
       directoryCacheService.invalidate(getDirPath(node.item.path))
       setChildrenCache((prev) => {
         const next = new Map(prev)
@@ -335,7 +336,7 @@ export function VirtualFileTree({
     }
 
     const newPath = joinPath(getDirPath(renamingPath), renameValue)
-    const success = await window.electronAPI.renameFile(renamingPath, newPath)
+    const success = await api.file.rename(renamingPath, newPath)
     if (success) {
       directoryCacheService.invalidate(getDirPath(renamingPath))
       setChildrenCache((prev) => {
@@ -362,7 +363,7 @@ export function VirtualFileTree({
   }, [workspacePath])
 
   const handleRevealInExplorer = useCallback((node: FlattenedNode) => {
-    window.electronAPI.showItemInFolder(node.item.path)
+    api.file.showInFolder(node.item.path)
   }, [])
 
   const handleNewFile = useCallback((node: FlattenedNode) => {

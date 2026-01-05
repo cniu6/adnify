@@ -3,6 +3,7 @@
  * 解析用户输入中的 @file, @codebase, @web 等提及
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { FileText, Folder, Database, Globe, FileCode, Terminal, GitBranch } from 'lucide-react'
 
@@ -132,7 +133,7 @@ export class MentionParser {
         const collect = async (dir: string, depth: number) => {
             if (depth > 3) return
 
-            const items = await window.electronAPI.readDir(dir)
+            const items = await api.file.readDir(dir)
             if (!items) return
 
             for (const item of items) {

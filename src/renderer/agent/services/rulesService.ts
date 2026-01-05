@@ -4,6 +4,7 @@
  * 让用户定义项目级 AI 行为偏好
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useStore } from '@store'
 import { joinPath } from '@utils/pathUtils'
@@ -47,7 +48,7 @@ class RulesService {
     // 按优先级查找规则文件
     for (const ruleFile of this.ruleFiles) {
       const fullPath = this.joinPath(workspacePath, ruleFile)
-      const content = await window.electronAPI.readFile(fullPath)
+      const content = await api.file.read(fullPath)
       
       if (content !== null) {
         this.cachedRules = {
@@ -101,11 +102,11 @@ class RulesService {
 
     // 创建 .adnify 目录
     const adnifyDir = this.joinPath(workspacePath, '.adnify')
-    await window.electronAPI.mkdir(adnifyDir)
+    await api.file.mkdir(adnifyDir)
 
     // 写入规则文件
     const rulesPath = this.joinPath(workspacePath, '.adnify/rules.md')
-    const success = await window.electronAPI.writeFile(rulesPath, defaultRules)
+    const success = await api.file.write(rulesPath, defaultRules)
     
     if (success) {
       this.cachedRules = {

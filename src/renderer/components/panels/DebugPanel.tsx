@@ -3,6 +3,7 @@
  * 类似 VSCode 的调试体验
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Play, Square, SkipForward, ArrowDownToLine, ArrowUpFromLine, Pause,
@@ -49,9 +50,9 @@ export default function DebugPanel() {
     const launchPath = `${workspacePath}/.adnify/launch.json`
     
     // 检查文件是否存在，不存在则创建默认配置
-    let content = await window.electronAPI.readFile(launchPath)
+    let content = await api.file.read(launchPath)
     if (!content) {
-      await window.electronAPI.ensureDir(`${workspacePath}/.adnify`)
+      await api.file.ensureDir(`${workspacePath}/.adnify`)
       const defaultConfig = {
         version: '0.2.0',
         configurations: [
@@ -72,7 +73,7 @@ export default function DebugPanel() {
         ]
       }
       content = JSON.stringify(defaultConfig, null, 2)
-      await window.electronAPI.writeFile(launchPath, content)
+      await api.file.write(launchPath, content)
     }
     
     // 打开文件
@@ -86,7 +87,7 @@ export default function DebugPanel() {
     
     try {
       const launchPath = `${workspacePath}/.adnify/launch.json`
-      const content = await window.electronAPI.readFile(launchPath)
+      const content = await api.file.read(launchPath)
       if (content) {
         // 移除注释后解析
         const cleaned = content.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
@@ -111,7 +112,7 @@ export default function DebugPanel() {
 
   // 加载会话
   const loadSessions = useCallback(async () => {
-    const result = await window.electronAPI.debugGetAllSessions()
+    const result = await api.debug.getAllSessions()
     setSessions(result)
   }, [setSessions])
 
@@ -124,7 +125,7 @@ export default function DebugPanel() {
 
   // 加载作用域
   const loadScopes = useCallback(async (sessionId: string, frameId: number) => {
-    const result = await window.electronAPI.debugGetScopes(sessionId, frameId)
+    const result = await api.debug.getScopes(sessionId, frameId)
     if (result.success && result.scopes) {
       setScopes(result.scopes)
     }
@@ -132,7 +133,7 @@ export default function DebugPanel() {
 
   // 加载堆栈
   const loadStackTrace = useCallback(async (sessionId: string, threadId: number) => {
-    const result = await window.electronAPI.debugGetStackTrace(sessionId, threadId)
+    const result = await api.debug.getStackTrace(sessionId, threadId)
     if (result.success && result.frames) {
       setStackFrames(result.frames)
       if (result.frames.length > 0) {
@@ -172,7 +173,7 @@ export default function DebugPanel() {
 
   // 监听调试事件
   useEffect(() => {
-    const unsubscribe = window.electronAPI.onDebugEvent(({ sessionId, event }) => {
+    const unsubscribe = api.debug.onEvent(({ sessionId, event }: { sessionId: string; event: any }) => {
       handleDebugEvent(sessionId, event)
     })
     return unsubscribe
@@ -235,7 +236,7 @@ export default function DebugPanel() {
 
     try {
       // 创建会话
-      const createResult = await window.electronAPI.debugCreateSession(resolvedConfig)
+      const createResult = await api.debug.createSession(resolvedConfig)
       if (!createResult.success || !createResult.sessionId) {
         toast.error('Failed to create session', createResult.error)
         return
@@ -249,7 +250,7 @@ export default function DebugPanel() {
       await syncBreakpoints(sessionId)
 
       // 启动（启动后 adapter 会自动应用缓存的断点）
-      const launchResult = await window.electronAPI.debugLaunch(sessionId)
+      const launchResult = await api.debug.launch(sessionId)
       if (launchResult.success) {
         addConsoleOutput('▶ Launching...')
         loadSessions()
@@ -274,7 +275,7 @@ export default function DebugPanel() {
 
     // 发送到调试器
     for (const [filePath, lines] of fileBreakpoints) {
-      await window.electronAPI.debugSetBreakpoints(
+      await api.debug.setBreakpoints(
         sessionId,
         filePath,
         lines.map(line => ({ line }))
@@ -285,40 +286,40 @@ export default function DebugPanel() {
   // 调试控制
   const handleStop = async () => {
     if (!activeSessionId) return
-    await window.electronAPI.debugStop(activeSessionId)
+    await api.debug.stop(activeSessionId)
     setActiveSessionId(null)
     loadSessions()
   }
 
   const handleContinue = async () => {
     if (!activeSessionId) return
-    await window.electronAPI.debugContinue(activeSessionId)
+    await api.debug.continue(activeSessionId)
   }
 
   const handleStepOver = async () => {
     if (!activeSessionId) return
-    await window.electronAPI.debugStepOver(activeSessionId)
+    await api.debug.stepOver(activeSessionId)
   }
 
   const handleStepInto = async () => {
     if (!activeSessionId) return
-    await window.electronAPI.debugStepInto(activeSessionId)
+    await api.debug.stepInto(activeSessionId)
   }
 
   const handleStepOut = async () => {
     if (!activeSessionId) return
-    await window.electronAPI.debugStepOut(activeSessionId)
+    await api.debug.stepOut(activeSessionId)
   }
 
   const handlePause = async () => {
     if (!activeSessionId) return
-    await window.electronAPI.debugPause(activeSessionId)
+    await api.debug.pause(activeSessionId)
   }
 
   // 加载变量
   const loadVariables = async (variablesReference: number) => {
     if (!activeSessionId) return
-    const result = await window.electronAPI.debugGetVariables(activeSessionId, variablesReference)
+    const result = await api.debug.getVariables(activeSessionId, variablesReference)
     if (result.success && result.variables) {
       setVariables(variablesReference, result.variables)
     }

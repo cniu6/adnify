@@ -3,6 +3,7 @@
  * 支持多根目录工作区
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useStore } from '@store'
 import { EXTENSION_TO_LANGUAGE, LSP_SUPPORTED_LANGUAGES } from '@shared/languages'
@@ -116,7 +117,7 @@ export function lspUriToPath(uri: string): string {
  */
 export async function startLspServer(workspacePath: string): Promise<boolean> {
   try {
-    const result = await window.electronAPI.lspStart(workspacePath)
+    const result = await api.lsp.start(workspacePath)
     return result.success
   } catch (error) {
     logger.lsp.error('[LSP] Failed to start:', error)
@@ -129,7 +130,7 @@ export async function startLspServer(workspacePath: string): Promise<boolean> {
  */
 export async function stopLspServer(): Promise<void> {
   try {
-    await window.electronAPI.lspStop()
+    await api.lsp.stop()
     documentVersions.clear()
     openedDocuments.clear()
   } catch (error) {
@@ -155,7 +156,7 @@ export async function didOpenDocument(filePath: string, content: string): Promis
   openedDocuments.add(uri)
 
   const workspacePath = getFileWorkspaceRoot(filePath)
-  await window.electronAPI.lspDidOpen({
+  await api.lsp.didOpen({
     uri,
     languageId,
     version,
@@ -176,7 +177,7 @@ export async function didChangeDocument(filePath: string, content: string): Prom
   documentVersions.set(uri, newVersion)
 
   const workspacePath = getFileWorkspaceRoot(filePath)
-  await window.electronAPI.lspDidChange({
+  await api.lsp.didChange({
     uri,
     version: newVersion,
     text: content,
@@ -196,7 +197,7 @@ export async function didCloseDocument(filePath: string): Promise<void> {
   openedDocuments.delete(uri)
 
   const workspacePath = getFileWorkspaceRoot(filePath)
-  await window.electronAPI.lspDidClose({
+  await api.lsp.didClose({
     uri,
     workspacePath,
   } as any)
@@ -211,7 +212,7 @@ export async function didSaveDocument(filePath: string, content?: string): Promi
   if (!isLanguageSupported(languageId)) return
 
   const workspacePath = getFileWorkspaceRoot(filePath)
-  await window.electronAPI.lspDidSave?.({
+  await api.lsp.didSave?.({
     uri,
     text: content, // 可选：一些 LSP 需要保存时的文本内容
     workspacePath,
@@ -229,7 +230,7 @@ export async function goToDefinition(
   return executeLspPositionRequest(
     filePath, line, character,
     async (params) => {
-      const result = await window.electronAPI.lspDefinition(params as any)
+      const result = await api.lsp.definition(params as any)
       if (!result) return null
       return Array.isArray(result) ? result : [result]
     },
@@ -247,7 +248,7 @@ export async function findReferences(
 ): Promise<{ uri: string; range: any }[] | null> {
   return executeLspPositionRequest(
     filePath, line, character,
-    (params) => window.electronAPI.lspReferences(params as any),
+    (params) => api.lsp.references(params as any),
     null
   )
 }
@@ -262,7 +263,7 @@ export async function getHoverInfo(
 ): Promise<{ contents: any; range?: any } | null> {
   return executeLspPositionRequest(
     filePath, line, character,
-    (params) => window.electronAPI.lspHover(params as any),
+    (params) => api.lsp.hover(params as any),
     null
   )
 }
@@ -277,7 +278,7 @@ export async function getCompletions(
 ): Promise<any> {
   return executeLspPositionRequest(
     filePath, line, character,
-    (params) => window.electronAPI.lspCompletion(params as any),
+    (params) => api.lsp.completion(params as any),
     null
   )
 }
@@ -294,7 +295,7 @@ export async function renameSymbol(
   const uri = pathToLspUri(filePath)
   const workspacePath = getFileWorkspaceRoot(filePath)
   try {
-    return await window.electronAPI.lspRename({ uri, line, character, newName, workspacePath } as any)
+    return await api.lsp.rename({ uri, line, character, newName, workspacePath } as any)
   } catch {
     return null
   }
@@ -306,7 +307,7 @@ export async function renameSymbol(
 export function onDiagnostics(
   callback: (uri: string, diagnostics: any[]) => void
 ): () => void {
-  return window.electronAPI.onLspDiagnostics((params) => {
+  return api.lsp.onDiagnostics((params: { uri: string; diagnostics: any[] }) => {
     callback(params.uri, params.diagnostics)
   })
 }
@@ -322,7 +323,7 @@ export async function goToTypeDefinition(
   return executeLspPositionRequest(
     filePath, line, character,
     async (params) => {
-      const result = await window.electronAPI.lspTypeDefinition(params as any)
+      const result = await api.lsp.typeDefinition(params as any)
       if (!result) return null
       return Array.isArray(result) ? result : [result]
     },
@@ -341,7 +342,7 @@ export async function goToImplementation(
   return executeLspPositionRequest(
     filePath, line, character,
     async (params) => {
-      const result = await window.electronAPI.lspImplementation(params as any)
+      const result = await api.lsp.implementation(params as any)
       if (!result) return null
       return Array.isArray(result) ? result : [result]
     },
@@ -359,7 +360,7 @@ export async function getSignatureHelp(
 ): Promise<any> {
   return executeLspPositionRequest(
     filePath, line, character,
-    (params) => window.electronAPI.lspSignatureHelp(params as any),
+    (params) => api.lsp.signatureHelp(params as any),
     null
   )
 }
@@ -374,7 +375,7 @@ export async function prepareRename(
 ): Promise<{ range: any; placeholder: string } | null> {
   return executeLspPositionRequest(
     filePath, line, character,
-    (params) => window.electronAPI.lspPrepareRename(params as any),
+    (params) => api.lsp.prepareRename(params as any),
     null
   )
 }
@@ -385,7 +386,7 @@ export async function prepareRename(
 export async function getDocumentSymbols(filePath: string): Promise<any[]> {
   return executeLspRequest(
     filePath,
-    (params) => window.electronAPI.lspDocumentSymbol(params as any),
+    (params) => api.lsp.documentSymbol(params as any),
     []
   ) as Promise<any[]>
 }
@@ -395,7 +396,7 @@ export async function getDocumentSymbols(filePath: string): Promise<any[]> {
  */
 export async function searchWorkspaceSymbols(query: string): Promise<any[]> {
   try {
-    return await window.electronAPI.lspWorkspaceSymbol({ query }) || []
+    return await api.lsp.workspaceSymbol({ query }) || []
   } catch {
     return []
   }
@@ -411,7 +412,7 @@ export async function getCodeActions(
 ): Promise<any[]> {
   return executeLspRequest(
     filePath,
-    (params) => window.electronAPI.lspCodeAction({ ...params, range, diagnostics } as any),
+    (params) => api.lsp.codeAction({ ...params, range, diagnostics } as any),
     []
   ) as Promise<any[]>
 }
@@ -425,7 +426,7 @@ export async function formatDocument(
 ): Promise<any[]> {
   return executeLspRequest(
     filePath,
-    (params) => window.electronAPI.lspFormatting({ ...params, options } as any),
+    (params) => api.lsp.formatting({ ...params, options } as any),
     []
   ) as Promise<any[]>
 }
@@ -440,7 +441,7 @@ export async function formatRange(
 ): Promise<any[]> {
   return executeLspRequest(
     filePath,
-    (params) => window.electronAPI.lspRangeFormatting({ ...params, range, options } as any),
+    (params) => api.lsp.rangeFormatting({ ...params, range, options } as any),
     []
   ) as Promise<any[]>
 }
@@ -455,7 +456,7 @@ export async function getDocumentHighlights(
 ): Promise<any[]> {
   return executeLspPositionRequest(
     filePath, line, character,
-    (params) => window.electronAPI.lspDocumentHighlight(params as any),
+    (params) => api.lsp.documentHighlight(params as any),
     []
   ) as Promise<any[]>
 }
@@ -466,7 +467,7 @@ export async function getDocumentHighlights(
 export async function getFoldingRanges(filePath: string): Promise<any[]> {
   return executeLspRequest(
     filePath,
-    (params) => window.electronAPI.lspFoldingRange(params as any),
+    (params) => api.lsp.foldingRange(params as any),
     []
   ) as Promise<any[]>
 }
@@ -476,7 +477,7 @@ export async function getFoldingRanges(filePath: string): Promise<any[]> {
  */
 export async function resolveCompletionItem(item: any): Promise<any> {
   try {
-    return await window.electronAPI.lspCompletionResolve(item)
+    return await api.lsp.completionResolve(item)
   } catch {
     return item
   }
@@ -491,7 +492,7 @@ export async function getInlayHints(
 ): Promise<any[]> {
   return executeLspRequest(
     filePath,
-    (params) => window.electronAPI.lspInlayHint({ ...params, range } as any),
+    (params) => api.lsp.inlayHint({ ...params, range } as any),
     []
   ) as Promise<any[]>
 }

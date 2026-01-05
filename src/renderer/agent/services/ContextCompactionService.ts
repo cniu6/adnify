@@ -3,6 +3,7 @@
  * 使用 LLM 生成对话摘要，实现智能上下文压缩
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useAgentStore } from '../store/AgentStore'
 import { ChatMessage } from '../types'
@@ -173,7 +174,7 @@ class ContextCompactionServiceClass {
       }
 
       // 使用独立的压缩 API（不与主对话冲突）
-      const result = await window.electronAPI.compactContext({
+      const result = await api.llm.compactContext({
         config: {
           ...llmConfig,
           maxTokens: 1000, // 摘要不需要太长

@@ -3,6 +3,7 @@
  * 负责文件快照、撤销恢复功能
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import type { StateCreator } from 'zustand'
 import { logger } from '@utils/Logger'
 import type { FileSnapshot, PendingChange, MessageCheckpoint } from '../../types'
@@ -89,14 +90,14 @@ export const createCheckpointSlice: StateCreator<
         for (const change of changes) {
             try {
                 if (change.snapshot.content === null) {
-                    const deleted = await window.electronAPI.deleteFile(change.filePath)
+                    const deleted = await api.file.delete(change.filePath)
                     if (deleted) {
                         restoredFiles.push(change.filePath)
                     } else {
                         errors.push(`Failed to delete: ${change.filePath}`)
                     }
                 } else {
-                    const written = await window.electronAPI.writeFile(change.filePath, change.snapshot.content)
+                    const written = await api.file.write(change.filePath, change.snapshot.content)
                     if (written) {
                         restoredFiles.push(change.filePath)
                     } else {
@@ -127,10 +128,10 @@ export const createCheckpointSlice: StateCreator<
 
         try {
             if (change.snapshot.content === null) {
-                const deleted = await window.electronAPI.deleteFile(change.filePath)
+                const deleted = await api.file.delete(change.filePath)
                 if (!deleted) return false
             } else {
-                const written = await window.electronAPI.writeFile(change.filePath, change.snapshot.content)
+                const written = await api.file.write(change.filePath, change.snapshot.content)
                 if (!written) return false
             }
 
@@ -250,12 +251,12 @@ export const createCheckpointSlice: StateCreator<
         for (const [filePath, snapshot] of Object.entries(filesToRestore)) {
             try {
                 if (snapshot.content === null) {
-                    const deleted = await window.electronAPI.deleteFile(filePath)
+                    const deleted = await api.file.delete(filePath)
                     if (deleted) {
                         restoredFiles.push(filePath)
                     }
                 } else {
-                    const written = await window.electronAPI.writeFile(filePath, snapshot.content)
+                    const written = await api.file.write(filePath, snapshot.content)
                     if (written) {
                         restoredFiles.push(filePath)
                     } else {

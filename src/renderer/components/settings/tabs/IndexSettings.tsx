@@ -2,6 +2,7 @@
  * 索引设置组件
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, AlertTriangle, Database, Settings2 } from 'lucide-react'
@@ -60,7 +61,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
     ]
 
     useEffect(() => {
-        window.electronAPI.getSetting('embeddingConfig').then(config => {
+        api.settings.get('embeddingConfig').then(config => {
             if (config) {
                 const cfg = config as Partial<EmbeddingConfigState>
                 setEmbeddingConfig(prev => ({
@@ -73,7 +74,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                 }))
             }
         })
-        window.electronAPI.getSetting('indexOptions').then(options => {
+        api.settings.get('indexOptions').then(options => {
             if (options) {
                 setIndexOptions({ ...DEFAULT_INDEX_OPTIONS, ...(options as typeof DEFAULT_INDEX_OPTIONS) })
             }
@@ -92,7 +93,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
 
     useEffect(() => {
         if (workspacePath) {
-            window.electronAPI.indexStatus?.(workspacePath).then(status => {
+            api.index.status?.(workspacePath).then(status => {
                 setIndexStatus(status)
             }).catch(() => { })
         }
@@ -127,10 +128,10 @@ export function IndexSettings({ language }: IndexSettingsProps) {
         logger.settings.info('[IndexSettings] Saving embedding config:', configToSave)
 
         try {
-            await window.electronAPI.setSetting('embeddingConfig', configToSave)
-            await window.electronAPI.setSetting('indexOptions', indexOptions)
+            await api.settings.set('embeddingConfig', configToSave)
+            await api.settings.set('indexOptions', indexOptions)
             if (workspacePath) {
-                await window.electronAPI.indexUpdateEmbeddingConfig?.(workspacePath, configToSave)
+                await api.index.updateEmbeddingConfig?.(workspacePath, configToSave)
             }
             toast.success(language === 'zh' ? '索引配置已保存' : 'Indexing configuration saved')
         } catch (error) {
@@ -147,7 +148,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
         setIsIndexing(true)
         try {
             await handleSaveEmbeddingConfig()
-            await window.electronAPI.indexStart(workspacePath)
+            await api.index.start(workspacePath)
             toast.success(language === 'zh' ? '索引已开始，后台运行中...' : 'Indexing started, running in background...')
         } catch (error) {
             logger.settings.error('[IndexSettings] Start indexing failed:', error)
@@ -160,7 +161,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
     const handleClearIndex = async () => {
         if (!workspacePath) return
         try {
-            await window.electronAPI.indexClear?.(workspacePath)
+            await api.index.clear?.(workspacePath)
             toast.success(language === 'zh' ? '索引已清除' : 'Index cleared')
             setIndexStatus(null)
         } catch {

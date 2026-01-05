@@ -4,6 +4,7 @@
  * 使用 chatThreadService 的消息格式
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { LLMConfig } from '@store'
 import { WorkMode } from '@/renderer/modes/types'
@@ -76,7 +77,7 @@ class SessionService {
 	 */
 	async getSessions(): Promise<SessionSummary[]> {
 		try {
-			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
+			const data = await api.settings.get(SESSIONS_KEY)
 			if (!data || typeof data !== 'string') return []
 			
 			const sessions: ChatSession[] = JSON.parse(data)
@@ -99,7 +100,7 @@ class SessionService {
 	 */
 	async getSession(id: string): Promise<ChatSession | null> {
 		try {
-			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
+			const data = await api.settings.get(SESSIONS_KEY)
 			if (!data || typeof data !== 'string') return null
 			
 			const sessions: ChatSession[] = JSON.parse(data)
@@ -133,7 +134,7 @@ class SessionService {
 		existingId?: string,
 		config?: Partial<LLMConfig>
 	): Promise<string> {
-		const data = await window.electronAPI.getSetting(SESSIONS_KEY)
+		const data = await api.settings.get(SESSIONS_KEY)
 		let sessions: ChatSession[] = data && typeof data === 'string' ? JSON.parse(data) : []
 		
 		const now = Date.now()
@@ -150,7 +151,7 @@ class SessionService {
 					updatedAt: now,
 					config,
 				}
-				await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))
+				await api.settings.set(SESSIONS_KEY, JSON.stringify(sessions))
 				return existingId
 			}
 		}
@@ -173,7 +174,7 @@ class SessionService {
 			sessions = sessions.slice(0, MAX_SESSIONS)
 		}
 		
-		await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))
+		await api.settings.set(SESSIONS_KEY, JSON.stringify(sessions))
 		return newSession.id
 	}
 
@@ -187,7 +188,7 @@ class SessionService {
 		existingId?: string,
 		config?: Partial<LLMConfig>
 	): Promise<string> {
-		const data = await window.electronAPI.getSetting(SESSIONS_KEY)
+		const data = await api.settings.get(SESSIONS_KEY)
 		let sessions: ChatSession[] = data && typeof data === 'string' ? JSON.parse(data) : []
 		
 		const now = Date.now()
@@ -203,7 +204,7 @@ class SessionService {
 					updatedAt: now,
 					config,
 				}
-				await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))
+				await api.settings.set(SESSIONS_KEY, JSON.stringify(sessions))
 				return existingId
 			}
 		}
@@ -226,7 +227,7 @@ class SessionService {
 			sessions = sessions.slice(0, MAX_SESSIONS)
 		}
 		
-		await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))
+		await api.settings.set(SESSIONS_KEY, JSON.stringify(sessions))
 		return newSession.id
 	}
 
@@ -235,7 +236,7 @@ class SessionService {
 	 */
 	async deleteSession(id: string): Promise<boolean> {
 		try {
-			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
+			const data = await api.settings.get(SESSIONS_KEY)
 			if (!data || typeof data !== 'string') return false
 			
 			let sessions: ChatSession[] = JSON.parse(data)
@@ -243,7 +244,7 @@ class SessionService {
 			sessions = sessions.filter(s => s.id !== id)
 			
 			if (sessions.length < initialLength) {
-				await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))
+				await api.settings.set(SESSIONS_KEY, JSON.stringify(sessions))
 				return true
 			}
 			return false
@@ -257,7 +258,7 @@ class SessionService {
 	 */
 	async renameSession(id: string, name: string): Promise<boolean> {
 		try {
-			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
+			const data = await api.settings.get(SESSIONS_KEY)
 			if (!data || typeof data !== 'string') return false
 			
 			const sessions: ChatSession[] = JSON.parse(data)
@@ -266,7 +267,7 @@ class SessionService {
 			if (session) {
 				session.name = name
 				session.updatedAt = Date.now()
-				await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))
+				await api.settings.set(SESSIONS_KEY, JSON.stringify(sessions))
 				return true
 			}
 			return false
@@ -279,7 +280,7 @@ class SessionService {
 	 * 清除所有会话
 	 */
 	async clearAllSessions(): Promise<void> {
-		await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify([]))
+		await api.settings.set(SESSIONS_KEY, JSON.stringify([]))
 	}
 
 	/**
@@ -308,11 +309,11 @@ class SessionService {
 			session.createdAt = Date.now()
 			session.updatedAt = Date.now()
 			
-			const data = await window.electronAPI.getSetting(SESSIONS_KEY)
+			const data = await api.settings.get(SESSIONS_KEY)
 			const sessions: ChatSession[] = data && typeof data === 'string' ? JSON.parse(data) : []
 			
 			sessions.unshift(session)
-			await window.electronAPI.setSetting(SESSIONS_KEY, JSON.stringify(sessions))
+			await api.settings.set(SESSIONS_KEY, JSON.stringify(sessions))
 			
 			return session.id
 		} catch {

@@ -24,3 +24,23 @@ export {
   type MetricCategory,
   type MemorySnapshot,
 } from './PerformanceMonitor'
+
+// 缓存服务
+export {
+  CacheService,
+  fileContentCache,
+  searchResultCache,
+  llmResponseCache,
+  type CacheConfig,
+  type CacheStats,
+} from './CacheService'
+
+// 重试工具
+export {
+  withRetry,
+  withTimeout,
+  sleep,
+  cancellable,
+  isRetryableError,
+  type RetryConfig,
+} from './retry'

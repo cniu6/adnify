@@ -3,6 +3,7 @@
  * 引导用户完成初始配置
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import React, { useState, useEffect } from 'react'
 import {
   ChevronRight, ChevronLeft, Check, Sparkles, Palette,
@@ -63,7 +64,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
   // 加载当前数据路径
   useEffect(() => {
     // @ts-ignore
-    window.electronAPI.getConfigPath?.().then(setDataPath)
+    api.settings.getConfigPath?.().then(setDataPath)
   }, [])
 
   const currentStepIndex = STEPS.indexOf(currentStep)
@@ -125,7 +126,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
   }
 
   const handleOpenFolder = async () => {
-    const result = await window.electronAPI.openFolder()
+    const result = await api.file.openFolder()
     if (result && typeof result === 'string') {
       await workspaceManager.openFolder(result)
     }
@@ -755,11 +756,11 @@ function DataPathStep({
   const [loading, setLoading] = useState(false)
 
   const handleChangePath = async () => {
-    const newPath = await window.electronAPI.openFolder()
+    const newPath = await api.file.openFolder()
     if (newPath && newPath !== dataPath) {
       setLoading(true)
       // @ts-ignore
-      const success = await window.electronAPI.setConfigPath?.(newPath)
+      const success = await api.settings.setConfigPath?.(newPath)
       setLoading(false)
       if (success) {
         setDataPath(newPath)

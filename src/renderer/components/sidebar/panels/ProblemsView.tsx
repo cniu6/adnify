@@ -2,6 +2,7 @@
  * 问题面板 - 显示所有诊断错误
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useMemo } from 'react'
 import { ChevronRight, FileText, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 import { useStore } from '@store'
@@ -38,7 +39,7 @@ export function ProblemsView() {
       }
     }
 
-    const content = await window.electronAPI.readFile(filePath)
+    const content = await api.file.read(filePath)
     if (content !== null) {
       openFile(filePath, content)
       setActiveFile(filePath)

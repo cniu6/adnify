@@ -1,3 +1,4 @@
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 
 const LOCAL_STORAGE_KEY = 'adnify-keybindings'
@@ -115,7 +116,7 @@ class KeybindingService {
                 const parsed = JSON.parse(localData)
                 this.overrides = new Map(Object.entries(parsed))
                 // 异步同步到文件（不阻塞）
-                window.electronAPI.setSetting('keybindings', parsed).catch(() => {})
+                api.settings.set('keybindings', parsed).catch(() => {})
                 return
             }
         } catch (e) {
@@ -124,7 +125,7 @@ class KeybindingService {
         
         // 从文件读取
         try {
-            const saved = await window.electronAPI.getSetting('keybindings') as Record<string, string>
+            const saved = await api.settings.get('keybindings') as Record<string, string>
             if (saved) {
                 this.overrides = new Map(Object.entries(saved))
                 // 同步到 localStorage
@@ -145,7 +146,7 @@ class KeybindingService {
         }
         // 异步写入文件（持久化）
         try {
-            await window.electronAPI.setSetting('keybindings', obj)
+            await api.settings.set('keybindings', obj)
         } catch (e) {
             logger.system.error('Failed to save keybindings:', e)
         }

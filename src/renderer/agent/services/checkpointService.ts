@@ -5,6 +5,7 @@
  * 支持配置保留策略（数量、时间、文件大小限制）
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { Checkpoint, FileSnapshot } from '../types'
 import { adnifyDir, DEFAULT_PROJECT_SETTINGS } from '@services/adnifyDirService'
@@ -114,7 +115,7 @@ class CheckpointService {
    */
   async createSnapshot(filePath: string): Promise<FileSnapshot | null> {
     try {
-      const content = await window.electronAPI.readFile(filePath)
+      const content = await api.file.read(filePath)
       
       // 检查文件大小限制（如果文件存在）
       if (content !== null) {
@@ -231,14 +232,14 @@ class CheckpointService {
       try {
         if (snapshot.content === null) {
           // 文件原本不存在，删除它
-          const deleted = await window.electronAPI.deleteFile(path)
+          const deleted = await api.file.delete(path)
           if (deleted) {
             restoredFiles.push(path)
           } else {
             errors.push(`Failed to delete: ${path}`)
           }
         } else {
-          const success = await window.electronAPI.writeFile(path, snapshot.content)
+          const success = await api.file.write(path, snapshot.content)
           if (success) {
             restoredFiles.push(path)
           } else {

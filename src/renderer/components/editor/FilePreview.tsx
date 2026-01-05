@@ -2,6 +2,7 @@
  * 文件预览组件
  * 支持 Markdown 预览、图片显示、不支持文件类型提示
  */
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useState, useCallback, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -133,7 +134,7 @@ export function ImagePreview({ path }: ImagePreviewProps) {
             try {
                 setLoading(true)
                 // 读取文件为 base64 (已经是 base64 编码)
-                const base64 = await window.electronAPI.readBinaryFile(path)
+                const base64 = await api.file.readBinary(path)
                 if (base64) {
                     // 检测图片类型
                     const ext = path.split('.').pop()?.toLowerCase() || 'png'
@@ -243,7 +244,7 @@ export function UnsupportedFile({ path, fileType }: UnsupportedFileProps) {
     const handleOpenExternal = useCallback(() => {
         // 使用 shell:openPath IPC 打开文件
         ; (window.electronAPI as any).openPath?.(path) ||
-            window.electronAPI.executeSecureCommand?.({ command: 'start', args: ['""', path], cwd: '.' })
+            api.shell.executeSecure?.({ command: 'start', args: ['""', path], cwd: '.' })
     }, [path])
 
     return (

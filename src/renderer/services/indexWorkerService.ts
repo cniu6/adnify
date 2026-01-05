@@ -3,6 +3,7 @@
  * Manages the background indexing via Electron IPC
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import type { IndexStatus } from '@app-types/electron'
 
@@ -42,7 +43,7 @@ class IndexWorkerService {
     if (this.isInitialized) return
 
     try {
-      this.stopListener = window.electronAPI.onIndexProgress((status: IndexStatus) => {
+      this.stopListener = api.index.onProgress((status: IndexStatus) => {
         this.handleStatusUpdate(status)
       })
       
@@ -65,7 +66,7 @@ class IndexWorkerService {
    */
   async startIndexing(workspacePath: string): Promise<void> {
     if (!this.isInitialized) this.initialize()
-    await window.electronAPI.indexStart(workspacePath)
+    await api.index.start(workspacePath)
   }
 
   /**
@@ -80,14 +81,14 @@ class IndexWorkerService {
    * Update a single file
    */
   async updateFile(workspacePath: string, filePath: string): Promise<void> {
-    await window.electronAPI.indexUpdateFile(workspacePath, filePath)
+    await api.index.updateFile(workspacePath, filePath)
   }
 
   /**
    * Clear the index
    */
   async clear(workspacePath: string): Promise<void> {
-    await window.electronAPI.indexClear(workspacePath)
+    await api.index.clear(workspacePath)
   }
 
   /**

@@ -3,6 +3,7 @@
  * 配置 TypeScript 编译选项以支持跨文件跳转和智能感知
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import type * as Monaco from 'monaco-editor'
 import { getEditorConfig } from '@renderer/config/editorConfig'
@@ -137,7 +138,7 @@ async function getProjectFiles(
   const ignoredDirs = config.ignoredDirectories
 
   try {
-    const entries = await window.electronAPI.readDir(dirPath)
+    const entries = await api.file.readDir(dirPath)
 
     for (const entry of entries) {
       // 跳过不需要的目录
@@ -183,7 +184,7 @@ export async function addProjectFilesToTypeService(workspacePath: string) {
     let addedCount = 0
     for (const filePath of filesToAdd) {
       try {
-        const content = await window.electronAPI.readFile(filePath)
+        const content = await api.file.read(filePath)
         if (content) {
           addFileToTypeService(filePath, content)
           addedCount++

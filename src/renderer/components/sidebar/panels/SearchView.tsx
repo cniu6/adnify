@@ -2,6 +2,7 @@
  * 搜索视图
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useState, useCallback, useMemo } from 'react'
 import { ChevronRight, ChevronDown, FileText, Edit2, Box, MoreHorizontal, Loader2 } from 'lucide-react'
 import { useStore } from '@store'
@@ -107,7 +108,7 @@ export function SearchView() {
       } else {
         const roots = (workspace?.roots || [workspacePath].filter(Boolean)) as string[]
         if (roots.length > 0) {
-          const results = await window.electronAPI.searchFiles(query, roots, {
+          const results = await api.file.search(query, roots, {
             isRegex,
             isCaseSensitive,
             isWholeWord,
@@ -129,7 +130,7 @@ export function SearchView() {
   }
 
   const handleResultClick = async (result: { path: string; line: number }) => {
-    const content = await window.electronAPI.readFile(result.path)
+    const content = await api.file.read(result.path)
     if (content !== null) {
       openFile(result.path, content)
       setActiveFile(result.path)
@@ -162,7 +163,7 @@ export function SearchView() {
     const firstResult = searchResults[0]
     if (!firstResult) return
 
-    const content = await window.electronAPI.readFile(firstResult.path)
+    const content = await api.file.read(firstResult.path)
     if (content === null) return
 
     let newContent = content
@@ -181,7 +182,7 @@ export function SearchView() {
     }
 
     if (newContent !== content) {
-      await window.electronAPI.writeFile(firstResult.path, newContent)
+      await api.file.write(firstResult.path, newContent)
       handleSearch()
     }
   }
@@ -199,7 +200,7 @@ export function SearchView() {
     const filePaths = [...new Set(searchResults.map((r) => r.path))]
 
     for (const filePath of filePaths) {
-      const content = await window.electronAPI.readFile(filePath)
+      const content = await api.file.read(filePath)
       if (content === null) continue
 
       let newContent = content
@@ -218,7 +219,7 @@ export function SearchView() {
       }
 
       if (newContent !== content) {
-        await window.electronAPI.writeFile(filePath, newContent)
+        await api.file.write(filePath, newContent)
       }
     }
 

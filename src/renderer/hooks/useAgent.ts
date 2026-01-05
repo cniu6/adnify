@@ -3,6 +3,7 @@
  * 提供 Agent 功能的 React Hook 接口
  */
 
+import { api } from '@/renderer/services/electronAPI'
 import { useCallback, useMemo, useEffect, useState } from 'react'
 import { useStore, useModeStore } from '@/renderer/store'
 import {
@@ -31,7 +32,7 @@ export function useAgent() {
 
   // 加载 aiInstructions（从统一的 app-settings 读取）
   useEffect(() => {
-    window.electronAPI.getSetting('app-settings').then((settings: any) => {
+    api.settings.get('app-settings').then((settings: any) => {
       if (settings?.aiInstructions) setAiInstructions(settings.aiInstructions)
     })
   }, [])
