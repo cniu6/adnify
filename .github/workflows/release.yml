@@ -57,9 +57,8 @@ jobs:
           path: |
             release/*.exe
             release/*.zip
-            release/*.yml
-            release/*.blockmap
           if-no-files-found: ignore
+
 
   build-macos:
     needs: get-version
@@ -105,8 +104,6 @@ jobs:
           path: |
             release/*.dmg
             release/*.zip
-            release/*.yml
-            release/*.blockmap
           if-no-files-found: ignore
 
   build-linux:
@@ -153,9 +150,8 @@ jobs:
           path: |
             release/*.AppImage
             release/*.tar.gz
-            release/*.yml
-            release/*.blockmap
           if-no-files-found: ignore
+
 
   release:
     needs: [get-version, build-windows, build-macos, build-linux]
@@ -174,28 +170,10 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R artifacts
 
-      - name: Deduplicate update metadata files
-        run: |
-          find artifacts -name "builder-debug.yml" -delete 2>/dev/null || true
-          
-          find artifacts -name "latest.yml" | head -1 | xargs -I {} cp {} artifacts/latest.yml 2>/dev/null || true
-          find artifacts -path "*/windows-*/*" -name "latest.yml" -delete 2>/dev/null || true
-          
-          find artifacts -name "latest-mac.yml" | head -1 | xargs -I {} cp {} artifacts/latest-mac.yml 2>/dev/null || true
-          find artifacts -path "*/macos-*/*" -name "latest-mac.yml" -delete 2>/dev/null || true
-          
-          find artifacts -name "latest-linux.yml" | head -1 | xargs -I {} cp {} artifacts/latest-linux.yml 2>/dev/null || true
-          find artifacts -path "*/linux-*/*" -name "latest-linux.yml" -delete 2>/dev/null || true
-          
-          find artifacts -name "latest-linux-arm64.yml" | head -1 | xargs -I {} cp {} artifacts/latest-linux-arm64.yml 2>/dev/null || true
-          find artifacts -path "*/linux-*/*" -name "latest-linux-arm64.yml" -delete 2>/dev/null || true
-          
-          echo "After deduplication:"
-          find artifacts -name "*.yml" -type f
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.get-version.outputs.version }}
           name: Adnify v${{ needs.get-version.outputs.version }}
           body: |
             ## Adnify v${{ needs.get-version.outputs.version }}
@@ -228,16 +206,15 @@ jobs:
             artifacts/**/*.zip
             artifacts/**/*.AppImage
             artifacts/**/*.tar.gz
-            artifacts/**/*.yml
-            artifacts/**/*.blockmap
           fail_on_unmatched_files: false
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+
   sync-to-gitee:
-    needs: release
+    needs: [get-version, release]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -245,9 +222,71 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync to Gitee
+      - name: Sync code to Gitee
         run: |
           git remote add gitee https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_TOKEN }}@gitee.com/adnaan/adnify.git
           git push gitee --all --force
           git push gitee --tags --force
         continue-on-error: true
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: assets
+
+      - name: Flatten assets
+        run: |
+          mkdir -p release-files
+          find assets -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" \) -exec cp {} release-files/ \;
+          ls -la release-files/
+
+      - name: Create Gitee Release and Upload
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          VERSION: ${{ needs.get-version.outputs.version }}
+        run: |
+          TAG="v$VERSION"
+          
+          RESPONSE=$(curl -s -X POST \
+            "https://gitee.com/api/v5/repos/adnaan/adnify/releases" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"access_token\": \"$GITEE_TOKEN\",
+              \"tag_name\": \"$TAG\",
+              \"name\": \"Adnify v$VERSION\",
+              \"body\": \"## Adnify v$VERSION\n\n从 GitHub 自动同步\n\n详细说明请查看 [GitHub Release](https://github.com/adnaan-worker/adnify/releases/tag/$TAG)\",
+              \"prerelease\": false
+            }")
+          
+          echo "Create release response: $RESPONSE"
+          
+          RELEASE_ID=$(echo $RESPONSE | jq -r '.id // empty')
+          
+          if [ -z "$RELEASE_ID" ]; then
+            echo "Release may already exist, trying to get existing release..."
+            RELEASE_ID=$(curl -s "https://gitee.com/api/v5/repos/adnaan/adnify/releases/tags/$TAG?access_token=$GITEE_TOKEN" | jq -r '.id // empty')
+          fi
+          
+          if [ -z "$RELEASE_ID" ]; then
+            echo "Failed to get release ID, skipping asset upload"
+            exit 0
+          fi
+          
+          echo "Release ID: $RELEASE_ID"
+          
+          for file in release-files/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Uploading $filename..."
+              
+              curl -s -X POST \
+                "https://gitee.com/api/v5/repos/adnaan/adnify/releases/$RELEASE_ID/attach_files" \
+                -H "Content-Type: multipart/form-data" \
+                -F "access_token=$GITEE_TOKEN" \
+                -F "file=@$file" || echo "Failed to upload $filename"
+              
+              echo "Done: $filename"
+            fi
+          done
+          
+          echo "All assets uploaded to Gitee!"
