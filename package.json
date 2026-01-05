@@ -136,13 +136,15 @@
       "shortcutName": "Adnify",
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
-      "installerHeaderIcon": "resources/icon.ico"
+      "installerHeaderIcon": "resources/icon.ico",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-Portable.${ext}"
+      "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
     },
     "mac": {
       "icon": "resources/icon.icns",
+      "artifactName": "${productName}-${version}-${arch}-mac.${ext}",
       "target": [
         {
           "target": "dmg",
@@ -163,6 +165,7 @@
     },
     "linux": {
       "icon": "resources/icon.png",
+      "artifactName": "${productName}-${version}-${arch}-linux.${ext}",
       "target": [
         {
           "target": "AppImage",

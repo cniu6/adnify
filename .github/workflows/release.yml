@@ -182,14 +182,14 @@ jobs:
             
             | 平台 | 架构 | 文件 |
             |------|------|------|
-            | Windows 安装版 | x64 | `Adnify-Setup-${{ needs.get-version.outputs.version }}.exe` |
+            | Windows 安装版 | x64 | `Adnify-Setup-${{ needs.get-version.outputs.version }}-x64.exe` |
             | Windows 安装版 | arm64 | `Adnify-Setup-${{ needs.get-version.outputs.version }}-arm64.exe` |
-            | Windows 便携版 | x64 | `Adnify-${{ needs.get-version.outputs.version }}-Portable.exe` |
+            | Windows 便携版 | x64 | `Adnify-${{ needs.get-version.outputs.version }}-x64-Portable.exe` |
             | Windows 便携版 | arm64 | `Adnify-${{ needs.get-version.outputs.version }}-arm64-Portable.exe` |
-            | macOS | Intel (x64) | `Adnify-${{ needs.get-version.outputs.version }}.dmg` |
-            | macOS | Apple Silicon (arm64) | `Adnify-${{ needs.get-version.outputs.version }}-arm64.dmg` |
-            | Linux | x64 | `Adnify-${{ needs.get-version.outputs.version }}.AppImage` |
-            | Linux | arm64 | `Adnify-${{ needs.get-version.outputs.version }}-arm64.AppImage` |
+            | macOS | Intel (x64) | `Adnify-${{ needs.get-version.outputs.version }}-x64-mac.dmg` |
+            | macOS | Apple Silicon (arm64) | `Adnify-${{ needs.get-version.outputs.version }}-arm64-mac.dmg` |
+            | Linux | x64 | `Adnify-${{ needs.get-version.outputs.version }}-x64-linux.AppImage` |
+            | Linux | arm64 | `Adnify-${{ needs.get-version.outputs.version }}-arm64-linux.AppImage` |
             
             ### 安装说明
             - **Windows**: 下载对应架构的 Setup.exe 运行安装，或下载 Portable 版本直接运行
