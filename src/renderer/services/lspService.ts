@@ -139,6 +139,16 @@ export async function stopLspServer(): Promise<void> {
 }
 
 /**
+ * 重置 LSP 服务状态（工作区切换时调用）
+ * 只清理客户端状态，不停止服务器
+ */
+export function resetLspState(): void {
+  documentVersions.clear()
+  openedDocuments.clear()
+  logger.lsp.info('[LSP] State reset')
+}
+
+/**
  * 通知服务器文档已打开
  */
 export async function didOpenDocument(filePath: string, content: string): Promise<void> {

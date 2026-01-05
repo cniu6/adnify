@@ -18,6 +18,11 @@ import { adnifyDir } from './adnifyDirService'
 import { checkpointService } from '@renderer/agent/services/checkpointService'
 import { mcpService } from './mcpService'
 import { gitService } from '@renderer/agent/services/gitService'
+import { resetLspState } from './lspService'
+import { clearExtraLibs } from './monacoTypeService'
+import { lintService } from '@renderer/agent/services/lintService'
+import { streamingEditService } from '@renderer/agent/services/streamingEditService'
+import { clearHealthCache } from './healthCheckService'
 import type { WorkspaceConfig } from '@store'
 
 class WorkspaceManager {
@@ -239,6 +244,21 @@ class WorkspaceManager {
     
     // 重置工具调用日志
     useStore.getState().clearToolCallLogs()
+    
+    // 重置 LSP 状态（文档版本追踪等）
+    resetLspState()
+    
+    // 清理 Monaco extraLib 缓存
+    clearExtraLibs()
+    
+    // 清理 Lint 服务缓存
+    lintService.clearCache()
+    
+    // 清理流式编辑状态
+    streamingEditService.clearAll()
+    
+    // 清理健康检查缓存
+    clearHealthCache()
     
     // 重置 adnifyDir
     adnifyDir.reset()

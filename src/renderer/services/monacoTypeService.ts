@@ -12,8 +12,32 @@ import { getEditorConfig } from '@renderer/config/editorConfig'
 let monacoInstance: typeof Monaco | null = null
 let isInitialized = false
 
-// 已添加的 extraLib 缓存
-const extraLibCache = new Map<string, Monaco.IDisposable>()
+// 已添加的 extraLib 缓存（带 LRU 淘汰）
+const extraLibCache = new Map<string, { disposable: Monaco.IDisposable; lastAccessed: number }>()
+const EXTRA_LIB_MAX_SIZE = 300 // 最大缓存数量
+
+/**
+ * 淘汰最旧的 extraLib
+ */
+function evictOldestExtraLib(): void {
+  if (extraLibCache.size < EXTRA_LIB_MAX_SIZE) return
+  
+  let oldestKey: string | null = null
+  let oldestTime = Infinity
+  
+  for (const [key, entry] of extraLibCache) {
+    if (entry.lastAccessed < oldestTime) {
+      oldestTime = entry.lastAccessed
+      oldestKey = key
+    }
+  }
+  
+  if (oldestKey) {
+    const entry = extraLibCache.get(oldestKey)
+    entry?.disposable.dispose()
+    extraLibCache.delete(oldestKey)
+  }
+}
 
 /**
  * 初始化 Monaco TypeScript 服务
@@ -91,11 +115,14 @@ export function addFileToTypeService(filePath: string, content: string) {
   }
 
   // 移除旧的 extraLib
-  const oldDisposable = extraLibCache.get(uriString)
-  if (oldDisposable) {
-    oldDisposable.dispose()
+  const oldEntry = extraLibCache.get(uriString)
+  if (oldEntry) {
+    oldEntry.disposable.dispose()
     extraLibCache.delete(uriString)
   }
+
+  // 检查是否需要淘汰
+  evictOldestExtraLib()
 
   // 获取语言
   const ext = filePath.split('.').pop()?.toLowerCase() || ''
@@ -117,7 +144,7 @@ export function addFileToTypeService(filePath: string, content: string) {
   }
 
   if (disposable) {
-    extraLibCache.set(uriString, disposable)
+    extraLibCache.set(uriString, { disposable, lastAccessed: Date.now() })
   }
 }
 
@@ -204,8 +231,11 @@ export async function addProjectFilesToTypeService(workspacePath: string) {
  * 清理所有 extraLib
  */
 export function clearExtraLibs() {
-  extraLibCache.forEach((disposable) => disposable.dispose())
+  for (const entry of extraLibCache.values()) {
+    entry.disposable.dispose()
+  }
   extraLibCache.clear()
+  logger.system.info(`[MonacoTypeService] Cleared all extraLibs`)
 }
 
 /**
@@ -217,9 +247,9 @@ export function removeFileFromTypeService(filePath: string) {
   const uri = monacoInstance.Uri.file(filePath)
   const uriString = uri.toString()
 
-  const disposable = extraLibCache.get(uriString)
-  if (disposable) {
-    disposable.dispose()
+  const entry = extraLibCache.get(uriString)
+  if (entry) {
+    entry.disposable.dispose()
     extraLibCache.delete(uriString)
   }
 }

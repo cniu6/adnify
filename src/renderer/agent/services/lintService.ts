@@ -150,6 +150,7 @@ class LintService {
 	private cache: Map<string, { errors: LintError[]; timestamp: number }> = new Map()
 	private lspDiagnostics: Map<string, LintError[]> = new Map()
 	private cacheTimeout = 30000 // 30秒缓存
+	private maxCacheSize = 100 // 最大缓存文件数
 	private lspDisposer: (() => void) | null = null
 
 	constructor() {
@@ -164,6 +165,12 @@ class LintService {
 				endLine: d.range.end.line + 1,
 				file: filePath,
 			}))
+			
+			// LSP 诊断也需要限制大小
+			if (this.lspDiagnostics.size >= this.maxCacheSize) {
+				const firstKey = this.lspDiagnostics.keys().next().value
+				if (firstKey) this.lspDiagnostics.delete(firstKey)
+			}
 			this.lspDiagnostics.set(filePath, errors)
 		})
 	}
@@ -216,7 +223,19 @@ class LintService {
 			const output = (result.output || '') + (result.errorOutput || '')
 			const errors = lintConfig.parser(output, filePath)
 
-			// 更新缓存
+			// 更新缓存（带大小限制）
+			if (this.cache.size >= this.maxCacheSize) {
+				// 删除最旧的条目
+				let oldestKey: string | null = null
+				let oldestTime = Infinity
+				for (const [key, entry] of this.cache) {
+					if (entry.timestamp < oldestTime) {
+						oldestTime = entry.timestamp
+						oldestKey = key
+					}
+				}
+				if (oldestKey) this.cache.delete(oldestKey)
+			}
 			this.cache.set(filePath, { errors, timestamp: Date.now() })
 
 			return errors
@@ -326,8 +345,10 @@ class LintService {
 	clearCache(filePath?: string): void {
 		if (filePath) {
 			this.cache.delete(filePath)
+			this.lspDiagnostics.delete(filePath)
 		} else {
 			this.cache.clear()
+			this.lspDiagnostics.clear()
 		}
 	}
 
