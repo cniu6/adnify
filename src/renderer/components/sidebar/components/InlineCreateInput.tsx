@@ -30,6 +30,9 @@ export function InlineCreateInput({ type, depth, onSubmit, onCancel }: InlineCre
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 忽略 IME 组合状态中的按键
+    if (e.nativeEvent.isComposing) return
+
     if (e.key === 'Enter') handleSubmit()
     if (e.key === 'Escape') onCancel()
   }

@@ -578,6 +578,9 @@ export default function ChatPanel() {
 
   // 键盘处理
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // 忽略 IME 组合状态中的按键（如中文输入法确认拼音）
+    if (e.nativeEvent.isComposing) return
+
     if (showFileMention) {
       if (keybindingService.matches(e, 'list.cancel')) {
         e.preventDefault()
