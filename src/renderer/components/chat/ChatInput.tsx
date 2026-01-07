@@ -143,7 +143,7 @@ export default function ChatInput({
             {images.map((img) => (
               <div
                 key={img.id}
-                className="relative group/img flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-white/10 shadow-sm"
+                className="relative group/img flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-border shadow-sm"
               >
                 <img src={img.previewUrl} alt="preview" className="w-full h-full object-cover" />
                 <button
@@ -174,10 +174,10 @@ export default function ChatInput({
             {contextItems.filter(item => ['File', 'Folder', 'CodeSelection'].includes(item.type)).map((item, i) => {
               const getContextStyle = (type: string) => {
                 switch (type) {
-                  case 'File': return { bg: 'bg-white/5', text: 'text-text-secondary', border: 'border-white/5', Icon: FileText }
+                  case 'File': return { bg: 'bg-white/5', text: 'text-text-secondary', border: 'border-border', Icon: FileText }
                   case 'CodeSelection': return { bg: 'bg-purple-500/10', text: 'text-purple-300', border: 'border-purple-500/10', Icon: Code }
                   case 'Folder': return { bg: 'bg-yellow-500/10', text: 'text-yellow-300', border: 'border-yellow-500/10', Icon: Folder }
-                  default: return { bg: 'bg-white/5', text: 'text-text-muted', border: 'border-white/5', Icon: FileText }
+                  default: return { bg: 'bg-white/5', text: 'text-text-muted', border: 'border-border', Icon: FileText }
                 }
               }
 
@@ -275,7 +275,7 @@ export default function ChatInput({
               }
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1)
                   ${isStreaming
-                  ? 'bg-surface/50 text-text-primary border border-white/10 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20'
+                  ? 'bg-surface/50 text-text-primary border border-border hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20'
                   : input.trim() || images.length > 0
                     ? 'bg-white text-black shadow-lg shadow-white/10 hover:scale-105 active:scale-95'
                     : 'bg-white/5 text-text-muted/20 cursor-not-allowed'

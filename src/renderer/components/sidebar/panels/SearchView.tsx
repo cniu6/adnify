@@ -231,13 +231,13 @@ export function SearchView() {
 
   return (
     <div className="flex flex-col h-full bg-transparent text-sm">
-      <div className="h-10 px-3 flex items-center border-b border-white/5 sticky top-0 z-10 bg-transparent">
+      <div className="h-10 px-3 flex items-center border-b border-border sticky top-0 z-10 bg-transparent">
         <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider opacity-80">
           {t('search', language)}
         </span>
       </div>
 
-      <div className="p-3 border-b border-white/5 flex flex-col gap-2 bg-transparent">
+      <div className="p-3 border-b border-border flex flex-col gap-2 bg-transparent">
         <div className="relative flex items-center">
           <div className="absolute left-0 z-10 p-1">
             <button

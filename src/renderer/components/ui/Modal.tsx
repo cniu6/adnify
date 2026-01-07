@@ -63,7 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
             <div className={`
                 relative w-full ${sizes[size]} 
                 bg-background/80 backdrop-blur-2xl 
-                border border-white/10 
+                border border-border 
                 rounded-3xl shadow-2xl shadow-black/50 
                 overflow-hidden animate-scale-in 
                 flex flex-col
@@ -77,7 +77,7 @@ export const Modal: React.FC<ModalProps> = ({
 
                 {/* Header */}
                 {title && (
-                    <div className="relative flex items-center justify-between px-6 py-5 border-b border-white/5 bg-white/[0.02] z-10 shrink-0">
+                    <div className="relative flex items-center justify-between px-6 py-5 border-b border-border bg-white/[0.02] z-10 shrink-0">
                         <h3 className="text-lg font-bold text-text-primary tracking-tight">{title}</h3>
                         {showCloseButton && (
                             <button 

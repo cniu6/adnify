@@ -72,14 +72,14 @@ export function MarkdownPreview({ content, fontSize = 14 }: MarkdownPreviewProps
                                     style={vscDarkPlus}
                                     language={match?.[1] || 'text'}
                                     PreTag="div"
-                                    className="!bg-surface/50 !rounded-lg !border !border-white/10 !my-4"
+                                    className="!bg-surface/50 !rounded-lg !border !border-border !my-4"
                                     customStyle={{ fontSize: `${fontSize}px` }}
                                 >
                                     {String(children).replace(/\n$/, '')}
                                 </SyntaxHighlighter>
                             )
                         },
-                        h1: ({ children }) => <h1 className="text-2xl font-bold mt-8 mb-4 text-text-primary border-b border-white/10 pb-2">{children}</h1>,
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mt-8 mb-4 text-text-primary border-b border-border pb-2">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-xl font-bold mt-6 mb-3 text-text-primary">{children}</h2>,
                         h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-text-primary">{children}</h3>,
                         p: ({ children }) => <p className="mb-4 text-text-secondary leading-relaxed">{children}</p>,
@@ -98,15 +98,15 @@ export function MarkdownPreview({ content, fontSize = 14 }: MarkdownPreviewProps
                         ),
                         table: ({ children }) => (
                             <div className="overflow-x-auto my-4">
-                                <table className="min-w-full border-collapse border border-white/10">{children}</table>
+                                <table className="min-w-full border-collapse border border-border">{children}</table>
                             </div>
                         ),
-                        th: ({ children }) => <th className="border border-white/10 px-4 py-2 bg-surface/50 text-left font-semibold">{children}</th>,
-                        td: ({ children }) => <td className="border border-white/10 px-4 py-2">{children}</td>,
+                        th: ({ children }) => <th className="border border-border px-4 py-2 bg-surface/50 text-left font-semibold">{children}</th>,
+                        td: ({ children }) => <td className="border border-border px-4 py-2">{children}</td>,
                         img: ({ src, alt }) => (
-                            <img src={src} alt={alt} className="max-w-full rounded-lg border border-white/10 my-4" />
+                            <img src={src} alt={alt} className="max-w-full rounded-lg border border-border my-4" />
                         ),
-                        hr: () => <hr className="border-white/10 my-6" />,
+                        hr: () => <hr className="border-border my-6" />,
                     }}
                 >
                     {content}
@@ -186,7 +186,7 @@ export function ImagePreview({ path }: ImagePreviewProps) {
     return (
         <div className="h-full flex flex-col bg-[#1a1a1a]">
             {/* 工具栏 */}
-            <div className="flex-shrink-0 flex items-center justify-center gap-2 p-2 border-b border-white/10 bg-surface/50">
+            <div className="flex-shrink-0 flex items-center justify-center gap-2 p-2 border-b border-border bg-surface/50">
                 <Button
                     variant="ghost"
                     size="sm"
@@ -250,7 +250,7 @@ export function UnsupportedFile({ path, fileType }: UnsupportedFileProps) {
     return (
         <div className="h-full flex items-center justify-center bg-background">
             <div className="text-center p-8 max-w-md">
-                <div className="w-16 h-16 rounded-2xl bg-surface/50 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-surface/50 border border-border flex items-center justify-center mx-auto mb-6">
                     {fileType === 'binary' ? (
                         <FileQuestion className="w-8 h-8 text-text-muted" />
                     ) : (
@@ -292,7 +292,7 @@ interface MarkdownToolbarProps {
 
 export function MarkdownToolbar({ mode, onModeChange, isPlan }: MarkdownToolbarProps) {
     return (
-        <div className="flex items-center gap-1 px-2 py-1 border-b border-white/10 bg-surface/30">
+        <div className="flex items-center gap-1 px-2 py-1 border-b border-border bg-surface/30">
             {!isPlan && (
                 <>
                     <Button

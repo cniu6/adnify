@@ -92,7 +92,7 @@ export default function BranchManager({ language = 'en', onClose }: BranchManage
         className={`p-3 rounded-xl cursor-pointer transition-all duration-200 border group ${
           !isOnBranch
             ? 'bg-accent/10 border-accent/20 text-accent'
-            : 'bg-surface/30 border-white/5 hover:border-white/10 hover:bg-surface/50 text-text-secondary'
+            : 'bg-surface/30 border-border hover:border-border hover:bg-surface/50 text-text-secondary'
         }`}
         onClick={handleSwitchToMainline}
       >
@@ -121,7 +121,7 @@ export default function BranchManager({ language = 'en', onClose }: BranchManage
               className={`p-3 rounded-xl cursor-pointer transition-all duration-200 border group ${
                 activeBranch?.id === branch.id
                   ? 'bg-accent/10 border-accent/20 text-accent'
-                  : 'bg-surface/30 border-white/5 hover:border-white/10 hover:bg-surface/50 text-text-secondary'
+                  : 'bg-surface/30 border-border hover:border-border hover:bg-surface/50 text-text-secondary'
               }`}
               onClick={() => handleSwitchBranch(branch.id)}
             >
@@ -217,7 +217,7 @@ export default function BranchManager({ language = 'en', onClose }: BranchManage
       )}
 
       {/* Help Text */}
-      <div className="pt-2 border-t border-white/5">
+      <div className="pt-2 border-t border-border">
         <p className="text-xs text-text-muted leading-relaxed">
           {language === 'zh'
             ? '分支允许你从对话的任意点探索不同的方向，而不会丢失原有的对话内容。'
@@ -341,7 +341,7 @@ export function MessageBranchActions({
       </Button>
 
       {showConfirm && (
-        <div className="absolute bottom-full left-0 mb-1 p-2 rounded-lg bg-surface border border-white/10 shadow-xl z-50 min-w-[200px]">
+        <div className="absolute bottom-full left-0 mb-1 p-2 rounded-lg bg-surface border border-border shadow-xl z-50 min-w-[200px]">
           <p className="text-xs text-text-muted mb-2">
             {language === 'zh' 
               ? '这将创建一个新分支并重新生成回复' 

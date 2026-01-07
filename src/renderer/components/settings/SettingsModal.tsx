@@ -214,7 +214,7 @@ export default function SettingsModal() {
                             value={localLanguage}
                             onChange={(value) => setLocalLanguage(value as any)}
                             options={LANGUAGES.map(l => ({ value: l.id, label: l.name }))}
-                            className="w-full text-sm bg-surface/50 border-white/5"
+                            className="w-full text-sm bg-surface/50 border-border"
                         />
                     </div>
                 </div>

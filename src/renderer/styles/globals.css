@@ -78,6 +78,10 @@
   --radius-full: 9999px;
 }
 
+[data-theme='light'] {
+  color-scheme: light;
+}
+
 body {
   @apply bg-background text-text-primary antialiased font-sans overflow-hidden;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -96,8 +100,8 @@ body {
 
 /* --- Premium Scrollbars (MacOS Style) --- */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
@@ -105,11 +109,15 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-surface-active/50 rounded-full border-[3px] border-solid border-transparent bg-clip-content transition-colors;
+  background-color: rgba(120, 120, 120, 0.2); /* Neutral gray for both themes */
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 99px;
+  transition: background-color 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-surface-active/80;
+  background-color: rgba(120, 120, 120, 0.4);
 }
 
 ::-webkit-scrollbar-corner {
@@ -143,11 +151,11 @@ body {
 
 /* Glassmorphism & Effects */
 .glass-panel {
-  @apply bg-background/60 backdrop-blur-2xl border border-white/5 shadow-2xl;
+  @apply bg-background/60 backdrop-blur-2xl border border-border shadow-2xl;
 }
 
 .glass-panel-light {
-  @apply bg-surface/30 backdrop-blur-lg border border-white/5;
+  @apply bg-surface/30 backdrop-blur-lg border border-border;
 }
 
 .text-glow {
@@ -160,7 +168,7 @@ body {
 
 /* Panel Header Gradient */
 .panel-header {
-  @apply h-9 px-3 flex items-center justify-between border-b border-border-subtle bg-background-secondary/50 backdrop-blur-sm select-none;
+  @apply h-9 px-3 flex items-center justify-between border-b border-border bg-background-secondary/50 backdrop-blur-sm select-none;
 }
 
 /* Interactive elements transition */
@@ -170,7 +178,7 @@ body {
 
 /* Custom Tooltip Arrow */
 .tooltip-arrow {
-  @apply absolute w-2 h-2 bg-surface border border-border-subtle transform rotate-45;
+  @apply absolute w-2 h-2 bg-surface border border-border transform rotate-45;
 }
 
 /* Tool Call Card Animations */
@@ -239,4 +247,30 @@ body {
 .animate-shimmer {
   animation: shimmer 8s linear infinite;
   background-size: 200% 100%;
+}
+
+/* Scale In Animation */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Fade In Animation */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
 }

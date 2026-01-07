@@ -147,7 +147,7 @@ export default function FileChangeCard({
         if (isAwaitingApproval) return 'border-yellow-500/30 bg-yellow-500/5 shadow-[0_0_15px_-3px_rgba(234,179,8,0.1)]'
         if (isError) return 'border-red-500/20 bg-red-500/5 shadow-[0_0_15px_-3px_rgba(239,68,68,0.1)]'
         if (isStreaming || isRunning) return 'border-accent/30 bg-accent/5 shadow-[0_0_15px_-3px_rgba(var(--accent)/0.15)]'
-        return 'border-white/5 bg-surface/30 backdrop-blur-sm hover:bg-surface/50 hover:border-white/10 hover:shadow-lg hover:shadow-black/20'
+        return 'border-border bg-surface/30 backdrop-blur-sm hover:bg-surface/50 hover:border-border hover:shadow-lg hover:shadow-black/20'
     }, [isAwaitingApproval, isError, isStreaming, isRunning])
 
     return (
@@ -191,7 +191,7 @@ export default function FileChangeCard({
                             <X className="w-3 h-3 text-red-400" />
                         </div>
                     ) : (
-                        <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                        <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-border">
                             <FileCode className="w-3 h-3 text-text-muted" />
                         </div>
                     )}
@@ -207,7 +207,7 @@ export default function FileChangeCard({
                         <motion.span 
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="text-[10px] font-mono opacity-60 flex items-center gap-1.5 px-1.5 py-0.5 bg-white/5 rounded border border-white/5"
+                            className="text-[10px] font-mono opacity-60 flex items-center gap-1.5 px-1.5 py-0.5 bg-white/5 rounded border border-border"
                         >
                             {diffStats.added > 0 && (
                                 <span className="text-green-400">+{diffStats.added}</span>
@@ -259,7 +259,7 @@ export default function FileChangeCard({
                     >
                         <div className="px-3 pb-3 pt-0">
                             <div>
-                                <div className="rounded-lg border border-white/5 bg-black/20 overflow-hidden shadow-inner">
+                                <div className="rounded-lg border border-border bg-black/20 overflow-hidden shadow-inner">
                                     <div className="max-h-64 overflow-auto custom-scrollbar relative min-h-[60px]">
                                         {showContent || isRunning || isStreaming ? (
                                             <InlineDiffPreview

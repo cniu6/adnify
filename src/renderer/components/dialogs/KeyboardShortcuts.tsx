@@ -50,7 +50,7 @@ interface KeyboardShortcutsProps {
 
 const ShortcutKey = memo(function ShortcutKey({ keyName }: { keyName: string }) {
   return (
-    <kbd className="px-2 py-1 text-xs font-mono bg-editor-bg border border-editor-border rounded shadow-sm">
+    <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded shadow-sm">
       {keyName}
     </kbd>
   )
@@ -69,18 +69,18 @@ export default function KeyboardShortcuts({ onClose }: KeyboardShortcutsProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-editor-sidebar border border-editor-border rounded-xl shadow-2xl w-[600px] max-h-[80vh] overflow-hidden">
+      <div className="bg-editor-sidebar border border-border rounded-xl shadow-2xl w-[600px] max-h-[80vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-editor-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <Keyboard className="w-5 h-5 text-editor-accent" />
-            <h2 className="text-lg font-semibold text-editor-text">Keyboard Shortcuts</h2>
+            <h2 className="text-lg font-semibold text-text-primary">Keyboard Shortcuts</h2>
           </div>
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
           >
-            <X className="w-5 h-5 text-editor-text-muted" />
+            <X className="w-5 h-5 text-text-primary-muted" />
           </button>
         </div>
 
@@ -96,7 +96,7 @@ export default function KeyboardShortcuts({ onClose }: KeyboardShortcutsProps) {
                       key={idx}
                       className="flex items-center justify-between py-1.5"
                     >
-                      <span className="text-sm text-editor-text-muted">
+                      <span className="text-sm text-text-primary-muted">
                         {shortcut.description}
                       </span>
                       <div className="flex items-center gap-1">
@@ -104,7 +104,7 @@ export default function KeyboardShortcuts({ onClose }: KeyboardShortcutsProps) {
                           <span key={keyIdx} className="flex items-center">
                             <ShortcutKey keyName={key} />
                             {keyIdx < shortcut.keys.length - 1 && (
-                              <span className="mx-1 text-editor-text-muted">+</span>
+                              <span className="mx-1 text-text-primary-muted">+</span>
                             )}
                           </span>
                         ))}
@@ -118,8 +118,8 @@ export default function KeyboardShortcuts({ onClose }: KeyboardShortcutsProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-editor-border bg-editor-bg/50">
-          <p className="text-xs text-editor-text-muted text-center">
+        <div className="px-6 py-3 border-t border-border bg-background/50">
+          <p className="text-xs text-text-primary-muted text-center">
             Press <ShortcutKey keyName="?" /> to toggle this panel
           </p>
         </div>

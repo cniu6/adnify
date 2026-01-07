@@ -81,7 +81,7 @@ export default function ModeSelector({ mode, onModeChange, className = '' }: Mod
             ? 'bg-surface/80 text-text-primary ring-1 ring-white/10'
             : 'bg-black/20 text-text-muted hover:text-text-secondary hover:bg-black/30'
           }
-          border border-white/5
+          border border-border
         `}
       >
         <Icon className={`w-3.5 h-3.5 ${currentMode.color}`} />
@@ -91,7 +91,7 @@ export default function ModeSelector({ mode, onModeChange, className = '' }: Mod
 
       {/* 下拉菜单 */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-48 bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl shadow-black/40 z-50 py-1 animate-scale-in">
+        <div className="absolute bottom-full left-0 mb-2 w-48 bg-surface/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl shadow-black/40 z-50 py-1 animate-scale-in">
           {MODES.map((m) => {
             const ModeIcon = m.icon
             const isSelected = mode === m.id

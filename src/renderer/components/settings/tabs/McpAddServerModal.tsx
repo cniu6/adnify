@@ -346,46 +346,46 @@ export default function McpAddServerModal({
     return (
       <div
         key={preset.id}
-        className={`p-4 rounded-lg border transition-all cursor-pointer ${
+        className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer group ${
           isAdded
-            ? 'bg-surface/30 border-white/5 opacity-50 cursor-not-allowed'
-            : 'bg-surface/50 border-white/10 hover:border-accent/50 hover:bg-surface/70'
+            ? 'bg-surface/10 border-border opacity-50 cursor-not-allowed grayscale'
+            : 'bg-surface/20 backdrop-blur-md border-border hover:border-accent/30 hover:bg-surface/40 hover:shadow-md'
         }`}
         onClick={() => !isAdded && handleSelectPreset(preset)}
       >
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-accent/10 text-accent">
-            {renderIcon(preset.icon, 'w-5 h-5')}
+        <div className="flex items-start gap-4">
+          <div className="p-2.5 rounded-lg bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors duration-300">
+            {renderIcon(preset.icon, 'w-6 h-6')}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="font-medium text-text-primary">{preset.name}</h4>
+              <h4 className="font-bold text-text-primary group-hover:text-accent transition-colors">{preset.name}</h4>
               {preset.official && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-accent/20 text-accent rounded">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-accent/20 text-accent rounded border border-accent/20 uppercase tracking-tight">
                   Official
                 </span>
               )}
               {isAdded && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-green-500/20 text-green-400 rounded flex items-center gap-1">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-500/20 text-green-400 rounded flex items-center gap-1">
                   <Check className="w-3 h-3" />
                   {language === 'zh' ? '已添加' : 'Added'}
                 </span>
               )}
             </div>
-            <p className="text-sm text-text-muted mt-1 line-clamp-2">
+            <p className="text-xs text-text-muted mt-1 line-clamp-2 leading-relaxed opacity-80">
               {language === 'zh' ? preset.descriptionZh : preset.description}
             </p>
             {preset.tags && (
-              <div className="flex flex-wrap gap-1 mt-2">
+              <div className="flex flex-wrap gap-1.5 mt-3">
                 {preset.tags.slice(0, 3).map(tag => (
-                  <span key={tag} className="px-1.5 py-0.5 text-[10px] bg-white/5 text-text-muted rounded">
+                  <span key={tag} className="px-2 py-0.5 text-[10px] bg-white/5 text-text-secondary rounded-md border border-white/5">
                     {tag}
                   </span>
                 ))}
               </div>
             )}
           </div>
-          {!isAdded && <ChevronRight className="w-4 h-4 text-text-muted" />}
+          {!isAdded && <ChevronRight className="w-4 h-4 text-text-muted/50 group-hover:text-accent transition-colors" />}
         </div>
       </div>
     )
@@ -450,16 +450,16 @@ export default function McpAddServerModal({
           <>
             {/* 搜索和分类 */}
             <div className="flex gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+              <div className="relative flex-1 group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted group-focus-within:text-accent transition-colors" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={language === 'zh' ? '搜索服务器...' : 'Search servers...'}
-                  className="pl-9"
+                  className="pl-10 h-10 rounded-xl bg-surface/20 border-border focus:bg-surface/40"
                 />
               </div>
-              <Button variant="secondary" onClick={handleCustomMode}>
+              <Button variant="secondary" onClick={handleCustomMode} className="rounded-xl h-10 px-4 hover:border-accent/30 hover:bg-surface/40">
                 <Plus className="w-4 h-4 mr-2" />
                 {language === 'zh' ? '自定义' : 'Custom'}
               </Button>
@@ -470,10 +470,10 @@ export default function McpAddServerModal({
               {categories.map(cat => (
                 <button
                   key={cat.id}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                  className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 ${
                     selectedCategory === cat.id
-                      ? 'bg-accent text-white'
-                      : 'bg-surface/50 text-text-secondary hover:bg-surface/70'
+                      ? 'bg-accent text-white shadow-lg shadow-accent/20 scale-105'
+                      : 'bg-surface/30 text-text-secondary hover:bg-surface/50 hover:text-text-primary border border-transparent hover:border-border'
                   }`}
                   onClick={() => setSelectedCategory(cat.id)}
                 >
@@ -770,7 +770,7 @@ export default function McpAddServerModal({
         )}
 
         {/* 底部按钮 */}
-        <div className="flex justify-between pt-4 border-t border-white/5">
+        <div className="flex justify-between pt-4 border-t border-border">
           {viewMode !== 'presets' ? (
             <Button variant="ghost" onClick={handleBack}>
               {language === 'zh' ? '返回' : 'Back'}

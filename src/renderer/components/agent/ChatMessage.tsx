@@ -141,7 +141,7 @@ const ThinkingBlock = React.memo(({ content, startTime, isStreaming, fontSize }:
       </button>
 
       {isExpanded && (
-        <div className="mt-2 pl-5 border-l border-white/5 space-y-2">
+        <div className="mt-2 pl-5 border-l border-border space-y-2">
           {content ? (
             <div
               style={{ fontSize: `${fontSize - 1}px` }}
@@ -345,7 +345,7 @@ const ChatMessage = React.memo(({
         <div className="flex items-center gap-3 mb-3 select-none">
           <div className="flex-shrink-0">
             {isUser ? (
-              <div className="w-6 h-6 rounded-full bg-surface-active/50 border border-white/10 flex items-center justify-center shadow-sm">
+              <div className="w-6 h-6 rounded-full bg-surface-active/50 border border-border flex items-center justify-center shadow-sm">
                 <User className="w-3.5 h-3.5 text-text-secondary" />
               </div>
             ) : (
@@ -397,7 +397,7 @@ const ChatMessage = React.memo(({
             images.length > 0 && (
               <div className="flex flex-wrap gap-3 mb-3">
                 {images.map((img, i) => (
-                  <div key={i} className="rounded-lg overflow-hidden border border-white/10 shadow-sm max-w-[200px]">
+                  <div key={i} className="rounded-lg overflow-hidden border border-border shadow-sm max-w-[200px]">
                     <img
                       src={`data:${img.source.media_type};base64,${img.source.data}`}
                       alt="User upload"
@@ -412,11 +412,11 @@ const ChatMessage = React.memo(({
           {/* Editing */}
           {
             isEditing ? (
-              <div className="space-y-3 bg-surface/40 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
+              <div className="space-y-3 bg-surface/40 p-3 rounded-xl border border-border backdrop-blur-sm">
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-sm text-text-primary resize-none focus:outline-none focus:border-accent/50 transition-colors"
+                  className="w-full bg-black/20 border border-border rounded-lg px-3 py-2 text-sm text-text-primary resize-none focus:outline-none focus:border-accent/50 transition-colors"
                   rows={4}
                   autoFocus
                   style={{ fontSize: `${fontSize}px` }}

@@ -60,7 +60,7 @@ export default function ChatContextStats({ stats, language, compact = false }: C
   }
 
   return (
-    <div className="px-4 py-1.5 border-b border-white/5 bg-surface/30 flex items-center gap-4 text-[10px] text-text-muted animate-fade-in">
+    <div className="px-4 py-1.5 border-b border-border bg-transparent flex items-center gap-4 text-[10px] text-text-muted animate-fade-in select-none">
       {/* 上下文使用量 */}
       <div
         className="flex items-center gap-1.5"
@@ -70,9 +70,9 @@ export default function ChatContextStats({ stats, language, compact = false }: C
         <span className="font-medium">
           {(stats.totalChars / 1000).toFixed(1)}K / {(stats.maxChars / 1000).toFixed(0)}K
         </span>
-        <div className="w-16 h-1 bg-surface-active rounded-full overflow-hidden">
+        <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${usagePercent > 0.95
+            className={`h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(var(--accent),0.5)] ${usagePercent > 0.95
                 ? 'bg-status-error'
                 : usagePercent > 0.8
                   ? 'bg-status-warning'

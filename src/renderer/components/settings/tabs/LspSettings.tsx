@@ -199,7 +199,7 @@ export function LspSettings({ language }: LspSettingsProps) {
 
         <p className="text-sm text-text-muted">{tt('pathNote')}</p>
 
-        <div className="space-y-3 p-4 bg-surface/30 rounded-lg border border-white/5">
+        <div className="space-y-3 p-4 bg-surface/30 rounded-lg border border-border">
           {/* 当前路径 */}
           <div className="space-y-1">
             <label className="text-xs text-text-muted uppercase tracking-wider">{tt('currentPath')}</label>
@@ -289,7 +289,7 @@ export function LspSettings({ language }: LspSettingsProps) {
             return (
               <div
                 key={server.id}
-                className="flex items-center justify-between p-4 bg-surface/30 rounded-lg border border-white/5 hover:border-white/10 transition-colors"
+                className="flex items-center justify-between p-4 bg-surface/30 rounded-lg border border-border hover:border-border transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

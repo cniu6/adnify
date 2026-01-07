@@ -171,7 +171,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       >
         {/* 进度指示器 */}
         <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-2 bg-background-secondary/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/5 shadow-sm">
+          <div className="flex items-center gap-2 bg-background-secondary/50 backdrop-blur-md px-4 py-2 rounded-full border border-border shadow-sm">
             {STEPS.slice(0, -1).map((step, index) => (
               <React.Fragment key={step}>
                 <motion.div
@@ -197,7 +197,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         </div>
 
         {/* 内容卡片 */}
-        <div className="bg-background-secondary/90 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden relative ring-1 ring-white/5">
+        <div className="bg-background-secondary/90 backdrop-blur-2xl border border-border rounded-3xl shadow-2xl overflow-hidden relative ring-1 ring-white/5">
           <div className="min-h-[460px] flex flex-col">
             <div className="flex-1 relative p-1 overflow-hidden">
               <AnimatePresence initial={false} custom={direction} mode="wait">
@@ -235,7 +235,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
             </div>
 
             {/* 底部导航 */}
-            <div className="flex items-center justify-between px-8 py-6 border-t border-white/5 bg-background/20 backdrop-blur-sm">
+            <div className="flex items-center justify-between px-8 py-6 border-t border-border bg-background/20 backdrop-blur-sm">
               <button
                 onClick={goPrev}
                 disabled={currentStepIndex === 0}
@@ -263,7 +263,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     onClick={goNext}
-                    className="flex items-center gap-2 px-8 py-3 bg-white/10 hover:bg-white/15 text-text-primary border border-white/5 hover:border-white/10 rounded-xl text-sm font-medium backdrop-blur-sm transition-all shadow-lg"
+                    className="flex items-center gap-2 px-8 py-3 bg-white/10 hover:bg-white/15 text-text-primary border border-border hover:border-border rounded-xl text-sm font-medium backdrop-blur-sm transition-all shadow-lg"
                   >
                     {isZh ? '下一步' : 'Next'}
                     <ChevronRight className="w-4 h-4" />
@@ -306,7 +306,7 @@ function WelcomeStep({ isZh }: { isZh: boolean }) {
       >
         <div className="relative group">
           <div className="absolute -inset-1 bg-gradient-to-r from-accent to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500" />
-          <div className="relative w-28 h-28 rounded-2xl bg-gradient-to-br from-surface to-surface-active border border-white/10 flex items-center justify-center shadow-2xl">
+          <div className="relative w-28 h-28 rounded-2xl bg-gradient-to-br from-surface to-surface-active border border-border flex items-center justify-center shadow-2xl">
             <Logo className="w-16 h-16" glow />
           </div>
         </div>
@@ -359,7 +359,7 @@ function FeatureItem({ icon, label, delay }: { icon: React.ReactNode, label: str
       transition={{ delay }}
       className="flex flex-col items-center gap-3"
     >
-      <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center shadow-lg">
+      <div className="w-12 h-12 rounded-2xl bg-white/5 border border-border flex items-center justify-center shadow-lg">
         {icon}
       </div>
       <span className="text-sm font-medium text-text-secondary">{label}</span>
@@ -406,7 +406,7 @@ function LanguageStep({
             className={`relative p-8 rounded-3xl border-2 text-left transition-all duration-300 group flex flex-col justify-center gap-2 ${
               selectedLanguage === lang.id
                 ? 'border-accent bg-accent/5 shadow-xl shadow-accent/5'
-                : 'border-white/5 hover:border-accent/30 bg-white/5 hover:bg-white/10'
+                : 'border-border hover:border-accent/30 bg-white/5 hover:bg-white/10'
             }`}
           >
             <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-500 ease-out origin-left">
@@ -470,15 +470,15 @@ function ThemeStep({
             className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-300 ${
               selectedTheme === theme.id
                 ? 'border-accent bg-accent/5 shadow-lg shadow-accent/10'
-                : 'border-white/5 hover:border-accent/30 bg-white/5'
+                : 'border-border hover:border-accent/30 bg-white/5'
             }`}
           >
             <div
-              className="h-24 rounded-xl mb-3 border border-white/5 overflow-hidden shadow-sm flex flex-col"
+              className="h-24 rounded-xl mb-3 border border-border overflow-hidden shadow-sm flex flex-col"
               style={{ backgroundColor: `rgb(${theme.colors.background})` }}
             >
               <div
-                className="h-5 w-full border-b border-white/5 flex items-center px-2 gap-1"
+                className="h-5 w-full border-b border-border flex items-center px-2 gap-1"
                 style={{ backgroundColor: `rgb(${theme.colors.backgroundSecondary})` }}
               >
                  <div className="w-1.5 h-1.5 rounded-full bg-red-400/50" />
@@ -486,7 +486,7 @@ function ThemeStep({
                  <div className="w-1.5 h-1.5 rounded-full bg-green-400/50" />
               </div>
               <div className="flex-1 p-2 flex gap-2">
-                 <div className="w-1/4 h-full rounded bg-white/5 border border-white/5" />
+                 <div className="w-1/4 h-full rounded bg-white/5 border border-border" />
                  <div className="flex-1 flex flex-col gap-1.5">
                     <div className="w-1/2 h-1.5 rounded bg-white/10" />
                     <div className="w-3/4 h-1.5 rounded bg-white/10" />
@@ -572,7 +572,7 @@ function ProviderStep({
                 className={`px-3 py-4 rounded-xl border text-sm font-medium transition-all flex flex-col items-center gap-2 ${
                   config.provider === p.id
                     ? 'border-accent bg-accent/10 text-accent shadow-lg shadow-accent/5 ring-1 ring-accent/50'
-                    : 'border-white/10 hover:border-white/20 text-text-muted bg-white/5'
+                    : 'border-border hover:border-white/20 text-text-muted bg-white/5'
                 }`}
               >
                  {/* 这里的 Icon 可以在 providers 配置中增加，暂时用文字首字母代替图形 */}
@@ -598,7 +598,7 @@ function ProviderStep({
               value={config.model}
               onChange={(value) => setConfig({ ...config, model: value })}
               options={selectedProvider.models.map(m => ({ value: m, label: m }))}
-              className="w-full bg-white/5 border-white/10 hover:border-accent/50 transition-colors py-2"
+              className="w-full bg-white/5 border-border hover:border-accent/50 transition-colors py-2"
             />
           </motion.div>
         )}
@@ -616,7 +616,7 @@ function ProviderStep({
               value={config.apiKey}
               onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
               placeholder={selectedProvider?.auth.placeholder || 'sk-...'}
-              className="w-full pr-10 bg-white/5 border-white/10 focus:border-accent focus:ring-1 focus:ring-accent/50 transition-all py-2.5"
+              className="w-full pr-10 bg-white/5 border-border focus:border-accent focus:ring-1 focus:ring-accent/50 transition-all py-2.5"
             />
             <button
               type="button"
@@ -683,7 +683,7 @@ function WorkspaceStep({
                <Check className="w-12 h-12 text-status-success" />
             </div>
             <h3 className="text-text-primary font-bold text-xl mb-3">{isZh ? '项目已就绪' : 'Project Ready'}</h3>
-            <div className="text-sm text-text-muted font-mono bg-white/5 px-6 py-4 rounded-2xl border border-white/5 break-all shadow-inner">
+            <div className="text-sm text-text-muted font-mono bg-white/5 px-6 py-4 rounded-2xl border border-border break-all shadow-inner">
               {workspacePath}
             </div>
             <button
@@ -700,7 +700,7 @@ function WorkspaceStep({
               whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.08)' }}
               whileTap={{ scale: 0.98 }}
               onClick={onOpenFolder}
-              className="w-full aspect-[4/3] rounded-3xl border-2 border-dashed border-white/10 bg-white/5 hover:border-accent/50 transition-all duration-300 flex flex-col items-center justify-center gap-5 group"
+              className="w-full aspect-[4/3] rounded-3xl border-2 border-dashed border-border bg-white/5 hover:border-accent/50 transition-all duration-300 flex flex-col items-center justify-center gap-5 group"
             >
               <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 group-hover:bg-accent/10 group-hover:text-accent">
                 <FolderOpen className="w-10 h-10 text-text-muted group-hover:text-accent transition-colors" />
@@ -759,7 +759,7 @@ function CompleteStep({ isZh }: { isZh: boolean }) {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="bg-white/5 backdrop-blur-md rounded-2xl p-6 max-w-md w-full text-left border border-white/5 hover:border-white/10 transition-colors"
+        className="bg-white/5 backdrop-blur-md rounded-2xl p-6 max-w-md w-full text-left border border-border hover:border-border transition-colors"
       >
         <div className="flex items-center gap-2 mb-4">
           <Settings className="w-4 h-4 text-accent" />
@@ -782,12 +782,12 @@ function CompleteStep({ isZh }: { isZh: boolean }) {
            ))}
         </div>
 
-        <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+        <div className="pt-4 border-t border-border flex items-center justify-between text-xs">
           <span className="text-text-muted">{isZh ? '稍后在设置中探索' : 'Explore in Settings later'}</span>
           <div className="flex items-center gap-1">
-             <kbd className="px-2 py-1 bg-black/20 rounded-md border border-white/5 font-mono text-text-muted">Ctrl</kbd>
+             <kbd className="px-2 py-1 bg-black/20 rounded-md border border-border font-mono text-text-muted">Ctrl</kbd>
              <span className="text-text-muted/50">+</span>
-             <kbd className="px-2 py-1 bg-black/20 rounded-md border border-white/5 font-mono text-text-muted">,</kbd>
+             <kbd className="px-2 py-1 bg-black/20 rounded-md border border-border font-mono text-text-muted">,</kbd>
           </div>
         </div>
       </motion.div>

@@ -61,23 +61,26 @@ export function SystemSettings({ language }: SystemSettingsProps) {
     }
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in pb-10">
             <section>
-                <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-4">
-                    {language === 'zh' ? '存储与缓存' : 'Storage & Cache'}
-                </h4>
+                <div className="flex items-center gap-2 mb-5 ml-1">
+                    <HardDrive className="w-4 h-4 text-accent" />
+                    <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.2em]">
+                        {language === 'zh' ? '存储与缓存' : 'Storage & Cache'}
+                    </h4>
+                </div>
                 <div className="space-y-4">
-                    <div className="p-5 bg-surface/30 rounded-xl border border-border-subtle space-y-4">
+                    <div className="p-6 bg-surface/20 backdrop-blur-md rounded-2xl border border-border space-y-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="text-sm font-medium text-text-primary">{language === 'zh' ? '配置存储路径' : 'Config Storage Path'}</div>
-                                <div className="text-xs text-text-muted mt-1">
+                                <div className="text-sm font-bold text-text-primary">{language === 'zh' ? '配置存储路径' : 'Config Storage Path'}</div>
+                                <div className="text-xs text-text-muted mt-1 opacity-70">
                                     {language === 'zh' 
                                         ? '所有配置文件（config.json、mcp.json 等）的存储位置' 
                                         : 'Storage location for all config files (config.json, mcp.json, etc.)'}
                                 </div>
                             </div>
-                            <Button variant="secondary" size="sm" onClick={async () => {
+                            <Button variant="secondary" size="sm" className="rounded-xl px-4" onClick={async () => {
                                 const newPath = await api.file.selectFolder()
                                 if (newPath) {
                                     // @ts-ignore
@@ -93,35 +96,37 @@ export function SystemSettings({ language }: SystemSettingsProps) {
                             </Button>
                         </div>
 
-                        <div className="flex items-start gap-2 p-3 bg-background/50 rounded-lg border border-border-subtle">
-                            <HardDrive className="w-4 h-4 text-text-muted mt-0.5" />
-                            <div className="text-xs text-text-secondary font-mono break-all">
+                        <div className="flex items-center gap-3 p-4 bg-black/30 rounded-xl border border-border shadow-inner">
+                            <div className="p-1.5 bg-white/5 rounded-lg">
+                                <HardDrive className="w-4 h-4 text-text-muted" />
+                            </div>
+                            <div className="text-xs text-text-secondary font-mono break-all opacity-90">
                                 <DataPathDisplay />
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 text-[10px] text-status-warning">
+                        <div className="flex items-center gap-2 text-[10px] font-medium text-yellow-500 bg-yellow-500/10 px-3 py-2 rounded-lg border border-yellow-500/20">
                             <AlertTriangle className="w-3.5 h-3.5" />
                             {language === 'zh' ? '更改路径后需要手动重启应用以应用所有变更' : 'Restart application manually after changing path to apply all changes'}
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-5 bg-surface/30 rounded-xl border border-border-subtle">
+                    <div className="flex items-center justify-between p-6 bg-surface/20 backdrop-blur-md rounded-2xl border border-border shadow-sm">
                         <div>
-                            <div className="text-sm font-medium text-text-primary">{language === 'zh' ? '清除缓存' : 'Clear Cache'}</div>
-                            <div className="text-xs text-text-muted mt-1">{language === 'zh' ? '清除编辑器缓存、索引数据和临时文件' : 'Clear editor cache, index data, and temporary files'}</div>
+                            <div className="text-sm font-bold text-text-primary">{language === 'zh' ? '清除缓存' : 'Clear Cache'}</div>
+                            <div className="text-xs text-text-muted mt-1 opacity-70">{language === 'zh' ? '清除编辑器缓存、索引数据和临时文件' : 'Clear editor cache, index data, and temporary files'}</div>
                         </div>
-                        <Button variant="secondary" size="sm" onClick={handleClearCache} disabled={isClearing}>
+                        <Button variant="secondary" size="sm" onClick={handleClearCache} disabled={isClearing} className="rounded-xl px-6">
                             {isClearing ? (language === 'zh' ? '清除中...' : 'Clearing...') : (language === 'zh' ? '清除' : 'Clear')}
                         </Button>
                     </div>
 
-                    <div className="flex items-center justify-between p-5 bg-red-500/5 rounded-xl border border-red-500/10">
+                    <div className="flex items-center justify-between p-6 bg-red-500/10 rounded-2xl border border-red-500/20 shadow-sm">
                         <div>
-                            <div className="text-sm font-medium text-red-400">{language === 'zh' ? '重置所有设置' : 'Reset All Settings'}</div>
-                            <div className="text-xs text-text-muted mt-1">{language === 'zh' ? '恢复出厂设置，不可撤销' : 'Restore factory settings, irreversible'}</div>
+                            <div className="text-sm font-bold text-red-400">{language === 'zh' ? '重置所有设置' : 'Reset All Settings'}</div>
+                            <div className="text-xs text-red-400/70 mt-1">{language === 'zh' ? '恢复出厂设置，不可撤销' : 'Restore factory settings, irreversible'}</div>
                         </div>
-                        <Button variant="danger" size="sm" onClick={handleReset}>
+                        <Button variant="danger" size="sm" onClick={handleReset} className="rounded-xl px-6">
                             {language === 'zh' ? '重置' : 'Reset'}
                         </Button>
                     </div>
@@ -129,16 +134,20 @@ export function SystemSettings({ language }: SystemSettingsProps) {
             </section>
 
             <section>
-                <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-4">
-                    {language === 'zh' ? '关于' : 'About'}
-                </h4>
-                <div className="p-8 bg-surface/30 rounded-xl border border-white/5 text-center">
-                    <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <Monitor className="w-6 h-6 text-accent" />
+                <div className="flex items-center gap-2 mb-5 ml-1">
+                    <Monitor className="w-4 h-4 text-accent" />
+                    <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.2em]">
+                        {language === 'zh' ? '关于' : 'About'}
+                    </h4>
+                </div>
+                <div className="p-10 bg-black/20 backdrop-blur-xl rounded-3xl border border-border text-center shadow-inner relative overflow-hidden">
+                    <div className="absolute inset-0 bg-accent/5 blur-3xl pointer-events-none" />
+                    <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-accent/20 shadow-xl shadow-accent/10 relative z-10">
+                        <Monitor className="w-8 h-8 text-accent" />
                     </div>
-                    <div className="text-xl font-bold text-text-primary mb-1">Adnify</div>
-                    <div className="text-xs text-text-muted font-mono mb-6">v0.1.0-alpha</div>
-                    <div className="text-xs text-text-secondary">
+                    <div className="text-2xl font-black text-text-primary mb-2 tracking-tight relative z-10">Adnify</div>
+                    <div className="inline-block px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-mono text-text-muted mb-8 relative z-10">v0.1.0-alpha</div>
+                    <div className="text-xs text-text-secondary opacity-60 font-medium relative z-10">
                         Built with Electron, React, Monaco Editor & Tailwind CSS
                     </div>
                 </div>

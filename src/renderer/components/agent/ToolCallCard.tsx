@@ -132,7 +132,7 @@ const ToolCallCard = memo(function ToolCallCard({
   const renderPreview = () => {
     // 动画期间（showContent 为 false）显示 Skeleton，无论状态如何，保证展开动画流畅
     if (!showContent) {
-        return <div className="bg-black/20 rounded-md border border-white/5 overflow-hidden">{renderSkeleton()}</div>
+        return <div className="bg-black/20 rounded-md border border-border overflow-hidden">{renderSkeleton()}</div>
     }
 
     const name = toolCall.name
@@ -141,8 +141,8 @@ const ToolCallCard = memo(function ToolCallCard({
     if (name === 'run_command') {
       const cmd = args.command as string
       return (
-        <div className="bg-black/40 rounded-md border border-white/5 overflow-hidden font-mono text-xs shadow-inner">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/5">
+        <div className="bg-black/40 rounded-md border border-border overflow-hidden font-mono text-xs shadow-inner">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-border">
             <span className="text-text-muted flex items-center gap-2">
               <Terminal className="w-3 h-3" />
               Terminal
@@ -174,7 +174,7 @@ const ToolCallCard = memo(function ToolCallCard({
               <span className="text-green-400">{cmd}</span>
             </div>
             {toolCall.result && (
-              <div className="mt-2 text-text-muted opacity-80 whitespace-pre-wrap break-all border-t border-white/5 pt-2">
+              <div className="mt-2 text-text-muted opacity-80 whitespace-pre-wrap break-all border-t border-border pt-2">
                 {toolCall.result.slice(0, 500)}
                 {toolCall.result.length > 500 && <span className="opacity-50">... (truncated)</span>}
               </div>
@@ -187,8 +187,8 @@ const ToolCallCard = memo(function ToolCallCard({
     // 2. 文件搜索预览
     if (name === 'search_files' || name === 'web_search') {
       return (
-        <div className="bg-black/20 rounded-md border border-white/5 overflow-hidden shadow-inner">
-          <div className="px-3 py-2 border-b border-white/5 flex items-center gap-2 text-xs text-text-muted">
+        <div className="bg-black/20 rounded-md border border-border overflow-hidden shadow-inner">
+          <div className="px-3 py-2 border-b border-border flex items-center gap-2 text-xs text-text-muted">
             <Search className="w-3 h-3" />
             <span>Query: <span className="text-text-primary font-medium">{(args.pattern || args.query) as string}</span></span>
           </div>
@@ -211,7 +211,7 @@ const ToolCallCard = memo(function ToolCallCard({
       <div className="space-y-2">
         {/* 参数 */}
         {Object.keys(args).filter(k => !k.startsWith('_')).length > 0 && (
-          <div className="bg-black/20 rounded-md border border-white/5 p-2 shadow-inner">
+          <div className="bg-black/20 rounded-md border border-border p-2 shadow-inner">
             <JsonHighlight
               data={Object.fromEntries(Object.entries(args).filter(([k]) => !k.startsWith('_')))}
               maxHeight="max-h-32"
@@ -227,8 +227,8 @@ const ToolCallCard = memo(function ToolCallCard({
 
         {/* 文本结果（仅在没有富内容时显示，或作为补充） */}
         {toolCall.result && (!toolCall.richContent || toolCall.richContent.length === 0) && (
-          <div className="bg-black/20 rounded-md border border-white/5 overflow-hidden shadow-inner">
-            <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/5">
+          <div className="bg-black/20 rounded-md border border-border overflow-hidden shadow-inner">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-border">
               <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">Result</span>
               <button
                 onClick={(e) => { e.stopPropagation(); handleCopyResult() }}
@@ -255,7 +255,7 @@ const ToolCallCard = memo(function ToolCallCard({
     if (isAwaitingApproval) return 'border-yellow-500/30 bg-yellow-500/5 shadow-[0_0_15px_-3px_rgba(234,179,8,0.1)]'
     if (isError) return 'border-red-500/20 bg-red-500/5 shadow-[0_0_15px_-3px_rgba(239,68,68,0.1)]'
     if (isStreaming || isRunning) return 'border-accent/30 bg-accent/5 shadow-[0_0_15px_-3px_rgba(var(--accent)/0.15)]'
-    return 'border-white/5 bg-surface/30 backdrop-blur-sm hover:bg-surface/50 hover:border-white/10 hover:shadow-lg hover:shadow-black/20'
+    return 'border-border bg-surface/30 backdrop-blur-sm hover:bg-surface/50 hover:border-border hover:shadow-lg hover:shadow-black/20'
   }, [isAwaitingApproval, isError, isStreaming, isRunning])
 
   return (

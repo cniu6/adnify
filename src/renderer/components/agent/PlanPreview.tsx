@@ -62,7 +62,7 @@ export function PlanPreview({ content, fontSize = 14 }: PlanPreviewProps) {
                                     style={vscDarkPlus}
                                     language={match?.[1] || 'text'}
                                     PreTag="div"
-                                    className="!bg-surface/50 !rounded-lg !border !border-white/10 !my-4"
+                                    className="!bg-surface/50 !rounded-lg !border !border-border !my-4"
                                     customStyle={{ fontSize: `${fontSize}px` }}
                                 >
                                     {String(children).replace(/\n$/, '')}
@@ -117,7 +117,7 @@ export function PlanPreview({ content, fontSize = 14 }: PlanPreviewProps) {
                             }
                             return <li className="leading-relaxed">{children}</li>
                         },
-                        h1: ({ children }) => <h1 className="text-2xl font-bold mt-8 mb-4 text-text-primary border-b border-white/10 pb-2">{children}</h1>,
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mt-8 mb-4 text-text-primary border-b border-border pb-2">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-xl font-bold mt-6 mb-3 text-text-primary">{children}</h2>,
                         h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-text-primary">{children}</h3>,
                         p: ({ children }) => <p className="mb-4 text-text-secondary leading-relaxed">{children}</p>,
@@ -128,7 +128,7 @@ export function PlanPreview({ content, fontSize = 14 }: PlanPreviewProps) {
                                 {children}
                             </blockquote>
                         ),
-                        hr: () => <hr className="border-white/10 my-6" />,
+                        hr: () => <hr className="border-border my-6" />,
                     }}
                 >
                     {content}

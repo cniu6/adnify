@@ -114,7 +114,7 @@ function ToastContainer({ toasts, removeToast }: { toasts: ToastMessage[]; remov
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <div key={toast.id}>
-            <ToastItem toast={toast} removeToast={removeToast} onDismiss={removeToast} />
+            <ToastItem toast={toast} onDismiss={removeToast} />
           </div>
         ))}
       </AnimatePresence>

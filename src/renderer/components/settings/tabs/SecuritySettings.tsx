@@ -15,14 +15,16 @@ export function SecuritySettings({ language }: SecuritySettingsProps) {
     const { securitySettings, setSecuritySettings } = useStore()
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+        <div className="space-y-8 animate-fade-in pb-10">
+            <div className="p-5 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl flex items-start gap-4 shadow-sm">
+                <div className="p-2 bg-yellow-500/10 rounded-lg shrink-0">
+                    <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                </div>
                 <div>
-                    <h3 className="text-sm font-medium text-yellow-500 mb-1">
+                    <h3 className="text-sm font-bold text-yellow-500 mb-1 tracking-tight">
                         {language === 'zh' ? '安全沙箱 (开发中)' : 'Security Sandbox (WIP)'}
                     </h3>
-                    <p className="text-xs text-text-secondary leading-relaxed opacity-80">
+                    <p className="text-xs text-text-secondary leading-relaxed opacity-90">
                         {language === 'zh'
                             ? 'Adnify 目前直接在您的系统上运行命令。请确保您只运行受信任的代码。未来版本将引入基于 Docker 的沙箱环境。'
                             : 'Adnify currently runs commands directly on your system. Ensure you only run trusted code. Future versions will introduce a Docker-based sandbox.'}
@@ -30,8 +32,8 @@ export function SecuritySettings({ language }: SecuritySettingsProps) {
                 </div>
             </div>
 
-            <section className="space-y-4 p-5 bg-surface/30 rounded-xl border border-border-subtle">
-                <h4 className="text-sm font-medium text-text-secondary uppercase tracking-wider text-xs mb-2">
+            <section className="space-y-5 p-6 bg-surface/20 backdrop-blur-md rounded-2xl border border-border shadow-sm">
+                <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-widest opacity-60 ml-1">
                     {language === 'zh' ? '安全选项' : 'Security Options'}
                 </h4>
                 <div className="space-y-4">

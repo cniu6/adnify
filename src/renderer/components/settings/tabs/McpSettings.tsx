@@ -180,38 +180,40 @@ export default function McpSettings({ language }: McpSettingsProps) {
     return (
       <div
         key={server.id}
-        className={`rounded-lg border overflow-hidden transition-all ${
+        className={`rounded-2xl border overflow-hidden transition-all duration-300 ${
           server.config.disabled
-            ? 'bg-surface/30 border-white/5 opacity-60'
-            : 'bg-surface/50 border-white/10'
+            ? 'bg-surface/10 border-border opacity-60 grayscale'
+            : 'bg-surface/20 backdrop-blur-md border-border shadow-sm hover:shadow-md hover:bg-surface/30'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center justify-between p-5">
           <div
-            className="flex items-center gap-3 flex-1 cursor-pointer"
+            className="flex items-center gap-4 flex-1 cursor-pointer"
             onClick={() => setExpandedServer(isExpanded ? null : server.id)}
           >
-            {isRemote ? (
-              <Globe className={`w-5 h-5 ${server.config.disabled ? 'text-text-muted' : 'text-blue-400'}`} />
-            ) : (
-              <Server className={`w-5 h-5 ${server.config.disabled ? 'text-text-muted' : 'text-accent'}`} />
-            )}
+            <div className={`p-2 rounded-xl ${server.config.disabled ? 'bg-white/5' : isRemote ? 'bg-blue-500/10' : 'bg-accent/10'}`}>
+              {isRemote ? (
+                <Globe className={`w-5 h-5 ${server.config.disabled ? 'text-text-muted' : 'text-blue-400'}`} />
+              ) : (
+                <Server className={`w-5 h-5 ${server.config.disabled ? 'text-text-muted' : 'text-accent'}`} />
+              )}
+            </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium text-text-primary">{server.config.name}</h4>
+              <div className="flex items-center gap-2.5">
+                <h4 className="text-sm font-bold text-text-primary">{server.config.name}</h4>
                 {isRemote && (
-                  <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/20 text-blue-400 rounded">
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 uppercase tracking-tight">
                     Remote
                   </span>
                 )}
                 {server.config.disabled && (
-                  <span className="px-1.5 py-0.5 text-[10px] bg-white/10 text-text-muted rounded">
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-white/5 text-text-muted rounded border border-white/10 uppercase tracking-tight">
                     {language === 'zh' ? '已禁用' : 'Disabled'}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-text-muted truncate">
+              <p className="text-xs text-text-secondary mt-0.5 truncate opacity-70 font-mono">
                 {isRemote 
                   ? (server.config as any).url 
                   : `${(server.config as any).command} ${(server.config as any).args?.join(' ') || ''}`
@@ -219,9 +221,9 @@ export default function McpSettings({ language }: McpSettingsProps) {
               </p>
             </div>
             {isExpanded ? (
-              <ChevronUp className="w-4 h-4 text-text-muted" />
+              <ChevronUp className="w-4 h-4 text-text-muted/50" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-text-muted" />
+              <ChevronDown className="w-4 h-4 text-text-muted/50" />
             )}
           </div>
 
@@ -356,23 +358,23 @@ export default function McpSettings({ language }: McpSettingsProps) {
 
         {/* Expanded Content */}
         {isExpanded && !showDeleteConfirm && (
-          <div className="border-t border-white/5 p-4 space-y-4">
+          <div className="border-t border-border/50 p-5 space-y-6 animate-slide-down">
             {/* Error Message */}
             {server.error && (
-              <div className="flex items-start gap-2 p-3 bg-red-500/10 rounded-lg text-red-400 text-sm">
+              <div className="flex items-start gap-3 p-4 bg-red-500/10 rounded-xl border border-red-500/20 text-red-400 text-xs font-medium">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>{server.error}</span>
+                <span className="leading-relaxed">{server.error}</span>
               </div>
             )}
 
             {/* Auth Status for remote servers */}
             {isRemote && server.authStatus && (
-              <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+              <div className={`flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium border ${
                 server.authStatus === 'authenticated' 
-                  ? 'bg-green-500/10 text-green-400'
+                  ? 'bg-green-500/10 text-green-400 border-green-500/20'
                   : server.authStatus === 'expired'
-                  ? 'bg-orange-500/10 text-orange-400'
-                  : 'bg-white/5 text-text-muted'
+                  ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                  : 'bg-white/5 text-text-muted border-border'
               }`}>
                 <Key className="w-4 h-4" />
                 <span>
@@ -385,30 +387,30 @@ export default function McpSettings({ language }: McpSettingsProps) {
 
             {/* Config Details */}
             <div className="space-y-2">
-              <h5 className="text-sm font-medium text-text-secondary">
-                {language === 'zh' ? '配置' : 'Configuration'}
+              <h5 className="text-[11px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                {language === 'zh' ? '配置详情' : 'Configuration'}
               </h5>
-              <div className="text-xs text-text-muted space-y-1 font-mono bg-black/20 p-3 rounded">
-                <div><span className="text-text-secondary">id:</span> {server.id}</div>
-                <div><span className="text-text-secondary">type:</span> {server.config.type}</div>
+              <div className="text-xs text-text-secondary space-y-1.5 font-mono bg-black/20 p-4 rounded-xl border border-border shadow-inner">
+                <div className="flex"><span className="text-text-muted w-20 shrink-0">id:</span> <span className="select-all">{server.id}</span></div>
+                <div className="flex"><span className="text-text-muted w-20 shrink-0">type:</span> <span>{server.config.type}</span></div>
                 {isRemote ? (
                   <>
-                    <div><span className="text-text-secondary">url:</span> {(server.config as any).url}</div>
+                    <div className="flex"><span className="text-text-muted w-20 shrink-0">url:</span> <span className="select-all">{(server.config as any).url}</span></div>
                     {(server.config as any).oauth !== false && (
-                      <div><span className="text-text-secondary">oauth:</span> enabled</div>
+                      <div className="flex"><span className="text-text-muted w-20 shrink-0">oauth:</span> <span>enabled</span></div>
                     )}
                   </>
                 ) : (
                   <>
-                    <div><span className="text-text-secondary">command:</span> {(server.config as any).command}</div>
+                    <div className="flex"><span className="text-text-muted w-20 shrink-0">command:</span> <span className="text-accent">{(server.config as any).command}</span></div>
                     {(server.config as any).args && (server.config as any).args.length > 0 && (
-                      <div><span className="text-text-secondary">args:</span> {(server.config as any).args.join(' ')}</div>
+                      <div className="flex"><span className="text-text-muted w-20 shrink-0">args:</span> <span>{(server.config as any).args.join(' ')}</span></div>
                     )}
                     {(server.config as any).env && Object.keys((server.config as any).env).length > 0 && (
                       <div>
-                        <span className="text-text-secondary">env:</span>
+                        <span className="text-text-muted block mb-1">env:</span>
                         {Object.entries((server.config as any).env as Record<string, string>).map(([k, v]) => (
-                          <div key={k} className="ml-4">{k}={v.length > 20 ? v.slice(0, 8) + '***' : v}</div>
+                          <div key={k} className="ml-4 flex gap-2"><span className="text-text-primary">{k}</span>=<span className="text-text-muted">{v.length > 20 ? v.slice(0, 8) + '***' : v}</span></div>
                         ))}
                       </div>
                     )}
@@ -419,21 +421,21 @@ export default function McpSettings({ language }: McpSettingsProps) {
 
             {/* Tools */}
             {server.tools.length > 0 && (
-              <div className="space-y-2">
-                <h5 className="text-sm font-medium text-text-secondary flex items-center gap-2">
-                  <Wrench className="w-4 h-4" />
-                  {language === 'zh' ? '工具' : 'Tools'} ({server.tools.length})
+              <div className="space-y-3">
+                <h5 className="text-[11px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-2 ml-1">
+                  <Wrench className="w-3.5 h-3.5" />
+                  {language === 'zh' ? '工具列表' : 'Tools'} <span className="bg-white/10 px-1.5 rounded-md text-[10px]">{server.tools.length}</span>
                 </h5>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {server.tools.map((tool) => (
                     <div
                       key={tool.name}
-                      className="p-2 bg-black/20 rounded text-xs"
+                      className="p-3 bg-black/20 rounded-lg border border-border hover:border-accent/30 transition-colors group"
                       title={tool.description}
                     >
-                      <div className="font-medium text-text-primary truncate">{tool.name}</div>
+                      <div className="font-bold text-xs text-text-primary mb-1 group-hover:text-accent transition-colors">{tool.name}</div>
                       {tool.description && (
-                        <div className="text-text-muted truncate">{tool.description}</div>
+                        <div className="text-[11px] text-text-muted line-clamp-2 leading-relaxed opacity-80">{tool.description}</div>
                       )}
                     </div>
                   ))}
@@ -592,7 +594,7 @@ export default function McpSettings({ language }: McpSettingsProps) {
             <Loader2 className="w-6 h-6 animate-spin text-accent" />
           </div>
         ) : mcpServers.length === 0 ? (
-          <div className="text-center py-12 text-text-muted border border-dashed border-white/10 rounded-lg">
+          <div className="text-center py-12 text-text-muted border border-dashed border-border rounded-lg">
             <Server className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="text-sm font-medium">
               {language === 'zh'

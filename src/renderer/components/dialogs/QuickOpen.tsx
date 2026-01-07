@@ -98,7 +98,7 @@ const HighlightedText = memo(function HighlightedText({
 
   if (lastIdx < text.length) {
     parts.push(
-      <span key={`text-${lastIdx}`} className="text-editor-text-muted">
+      <span key={`text-${lastIdx}`} className="text-text-primary-muted">
         {text.slice(lastIdx)}
       </span>
     )

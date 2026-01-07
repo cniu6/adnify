@@ -237,10 +237,10 @@ const VirtualRow = memo(function VirtualRow({
         ${line.type === 'remove' ? 'bg-red-500/10' : ''}
       `}
     >
-      <td className="w-12 px-2 py-0.5 text-right text-editor-text-muted select-none border-r border-editor-border text-xs">
+      <td className="w-12 px-2 py-0.5 text-right text-text-primary-muted select-none border-r border-border text-xs">
         {line.oldLineNum || ''}
       </td>
-      <td className="w-12 px-2 py-0.5 text-right text-editor-text-muted select-none border-r border-editor-border text-xs">
+      <td className="w-12 px-2 py-0.5 text-right text-text-primary-muted select-none border-r border-border text-xs">
         {line.newLineNum || ''}
       </td>
       <td className="w-6 px-1 py-0.5 text-center select-none">
@@ -250,7 +250,7 @@ const VirtualRow = memo(function VirtualRow({
       <td className="px-3 py-0.5 whitespace-pre overflow-hidden text-ellipsis">
         <span className={`
           ${line.type === 'add' ? 'text-green-300' : ''}
-          ${line.type === 'remove' ? 'text-red-300' : 'text-editor-text'}
+          ${line.type === 'remove' ? 'text-red-300' : 'text-text-primary'}
         `}>
           {line.content}
         </span>
@@ -267,26 +267,26 @@ const SplitRow = memo(function SplitRow({
   line: SplitDiffLine
   style?: React.CSSProperties
 }) {
-  const leftBg = line.left.type === 'remove' ? 'bg-red-500/10' : line.left.type === 'empty' ? 'bg-editor-bg/30' : ''
-  const rightBg = line.right.type === 'add' ? 'bg-green-500/10' : line.right.type === 'empty' ? 'bg-editor-bg/30' : ''
+  const leftBg = line.left.type === 'remove' ? 'bg-red-500/10' : line.left.type === 'empty' ? 'bg-background/30' : ''
+  const rightBg = line.right.type === 'add' ? 'bg-green-500/10' : line.right.type === 'empty' ? 'bg-background/30' : ''
 
   return (
     <tr style={style}>
       {/* Left side */}
-      <td className={`w-10 px-2 py-0.5 text-right text-editor-text-muted select-none border-r border-editor-border text-xs ${leftBg}`}>
+      <td className={`w-10 px-2 py-0.5 text-right text-text-primary-muted select-none border-r border-border text-xs ${leftBg}`}>
         {line.left.lineNum || ''}
       </td>
-      <td className={`w-1/2 px-3 py-0.5 whitespace-pre overflow-hidden text-ellipsis border-r border-editor-border ${leftBg}`}>
-        <span className={line.left.type === 'remove' ? 'text-red-300' : 'text-editor-text'}>
+      <td className={`w-1/2 px-3 py-0.5 whitespace-pre overflow-hidden text-ellipsis border-r border-border ${leftBg}`}>
+        <span className={line.left.type === 'remove' ? 'text-red-300' : 'text-text-primary'}>
           {line.left.content}
         </span>
       </td>
       {/* Right side */}
-      <td className={`w-10 px-2 py-0.5 text-right text-editor-text-muted select-none border-r border-editor-border text-xs ${rightBg}`}>
+      <td className={`w-10 px-2 py-0.5 text-right text-text-primary-muted select-none border-r border-border text-xs ${rightBg}`}>
         {line.right.lineNum || ''}
       </td>
       <td className={`w-1/2 px-3 py-0.5 whitespace-pre overflow-hidden text-ellipsis ${rightBg}`}>
-        <span className={line.right.type === 'add' ? 'text-green-300' : 'text-editor-text'}>
+        <span className={line.right.type === 'add' ? 'text-green-300' : 'text-text-primary'}>
           {line.right.content}
         </span>
       </td>
@@ -444,12 +444,12 @@ export default function DiffViewer({
         <table className="w-full text-sm font-mono table-fixed">
           <thead className="sticky top-0 bg-editor-sidebar z-10">
             <tr>
-              <th className="w-10 px-2 py-1 text-left text-xs text-editor-text-muted border-b border-editor-border">#</th>
-              <th className="w-1/2 px-3 py-1 text-left text-xs text-editor-text-muted border-b border-r border-editor-border">
+              <th className="w-10 px-2 py-1 text-left text-xs text-text-primary-muted border-b border-border">#</th>
+              <th className="w-1/2 px-3 py-1 text-left text-xs text-text-primary-muted border-b border-r border-border">
                 {t('original', language)}
               </th>
-              <th className="w-10 px-2 py-1 text-left text-xs text-editor-text-muted border-b border-editor-border">#</th>
-              <th className="w-1/2 px-3 py-1 text-left text-xs text-editor-text-muted border-b border-editor-border">
+              <th className="w-10 px-2 py-1 text-left text-xs text-text-primary-muted border-b border-border">#</th>
+              <th className="w-1/2 px-3 py-1 text-left text-xs text-text-primary-muted border-b border-border">
                 {t('modified', language)}
               </th>
             </tr>
@@ -467,19 +467,19 @@ export default function DiffViewer({
   // 极简模式下，直接返回内容区域
   if (minimal) {
       return (
-          <div className="bg-editor-bg border border-editor-border rounded-lg overflow-hidden">
+          <div className="bg-background border border-border rounded-lg overflow-hidden">
              {viewMode === 'unified' ? renderUnifiedView() : renderSplitView()}
           </div>
       )
   }
 
   return (
-    <div className="bg-editor-sidebar border border-editor-border rounded-xl overflow-hidden shadow-xl">
+    <div className="bg-editor-sidebar border border-border rounded-xl overflow-hidden shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border bg-editor-bg/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/50">
         <div className="flex items-center gap-3">
           <FileEdit className="w-5 h-5 text-editor-accent" />
-          <span className="font-medium text-editor-text">{fileName}</span>
+          <span className="font-medium text-text-primary">{fileName}</span>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-400">+{stats.added}</span>
             <span className="text-red-400">-{stats.removed}</span>
@@ -493,14 +493,14 @@ export default function DiffViewer({
           <div className="flex items-center bg-editor-hover rounded-lg p-0.5">
             <button
               onClick={() => setViewMode('unified')}
-              className={`p-1.5 rounded transition-colors ${ viewMode === 'unified' ? 'bg-editor-accent text-white' : 'text-editor-text-muted hover:text-editor-text'}`}
+              className={`p-1.5 rounded transition-colors ${ viewMode === 'unified' ? 'bg-editor-accent text-white' : 'text-text-primary-muted hover:text-text-primary'}`}
               title={t('unifiedView', language)}
             >
               <AlignJustify className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('split')}
-              className={`p-1.5 rounded transition-colors ${ viewMode === 'split' ? 'bg-editor-accent text-white' : 'text-editor-text-muted hover:text-editor-text'}`}
+              className={`p-1.5 rounded transition-colors ${ viewMode === 'split' ? 'bg-editor-accent text-white' : 'text-text-primary-muted hover:text-text-primary'}`}
               title={t('splitView', language)}
             >
               <Columns className="w-4 h-4" />
@@ -511,16 +511,16 @@ export default function DiffViewer({
             className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
             title={t('copyModified', language)}
           >
-            <Copy className="w-4 h-4 text-editor-text-muted" />
+            <Copy className="w-4 h-4 text-text-primary-muted" />
           </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
           >
             {collapsed ? (
-              <ChevronDown className="w-4 h-4 text-editor-text-muted" />
+              <ChevronDown className="w-4 h-4 text-text-primary-muted" />
             ) : (
-              <ChevronUp className="w-4 h-4 text-editor-text-muted" />
+              <ChevronUp className="w-4 h-4 text-text-primary-muted" />
             )}
           </button>
           {onClose && (
@@ -528,7 +528,7 @@ export default function DiffViewer({
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-editor-hover transition-colors"
             >
-              <X className="w-4 h-4 text-editor-text-muted" />
+              <X className="w-4 h-4 text-text-primary-muted" />
             </button>
           )}
         </div>
@@ -540,8 +540,8 @@ export default function DiffViewer({
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-editor-border bg-editor-bg/50">
-        <div className="text-xs text-editor-text-muted">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background/50">
+        <div className="text-xs text-text-primary-muted">
           {stats.total} {t('lines', language)} • {useVirtualization ? t('virtualized', language) : t('fullRender', language)}
         </div>
         <div className="flex items-center gap-2">

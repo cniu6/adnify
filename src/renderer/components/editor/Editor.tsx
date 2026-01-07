@@ -1005,7 +1005,7 @@ export default function Editor() {
           <>
             {/* Markdown 工具栏 */}
             {activeFileType === 'markdown' && (
-              <div className="absolute top-0 right-0 z-10 flex items-center gap-1 px-2 py-1 bg-surface/80 backdrop-blur-sm rounded-bl-lg border-l border-b border-white/10">
+              <div className="absolute top-0 right-0 z-10 flex items-center gap-1 px-2 py-1 bg-surface/80 backdrop-blur-sm rounded-bl-lg border-l border-b border-border">
                 {!isPlanFile(activeFile.path) && (
                   <>
                     <button
@@ -1051,7 +1051,7 @@ export default function Editor() {
             ) : activeFileType === 'markdown' && markdownMode === 'split' ? (
               /* Markdown 分屏模式 */
               <div className="flex h-full">
-                <div className="flex-1 border-r border-white/10">
+                <div className="flex-1 border-r border-border">
                   <MonacoEditor
                     height="100%"
                     key={activeFile.path}

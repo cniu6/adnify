@@ -800,7 +800,7 @@ export default function ChatPanel() {
                       key={thread.id}
                       className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200 border group ${currentThreadId === thread.id
                         ? 'bg-accent/10 border-accent/20 text-accent'
-                        : 'bg-surface/30 border-white/5 hover:border-white/10 hover:bg-surface/50 text-text-secondary'
+                        : 'bg-surface/30 border-border hover:border-border hover:bg-surface/50 text-text-secondary'
                         }`}
                       onClick={() => { switchThread(thread.id); setShowThreads(false) }}
                     >
@@ -920,7 +920,7 @@ export default function ChatPanel() {
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute inset-0 bg-accent/20 blur-3xl rounded-full" 
                   />
-                  <div className="relative w-20 h-20 bg-surface/40 backdrop-blur-2xl rounded-2xl border border-white/10 flex items-center justify-center shadow-2xl shadow-accent/10">
+                  <div className="relative w-20 h-20 bg-surface/40 backdrop-blur-2xl rounded-2xl border border-border flex items-center justify-center shadow-2xl shadow-accent/10">
                     <Logo className="w-10 h-10 text-accent opacity-90" glow />
                   </div>
                 </motion.div>
@@ -968,7 +968,7 @@ export default function ChatPanel() {
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => scrollToBottom('smooth')}
-                className="absolute bottom-44 right-4 z-30 p-2.5 rounded-full bg-surface/95 border border-white/10 shadow-xl hover:bg-surface hover:border-accent/30 hover:shadow-accent/10 transition-all"
+                className="absolute bottom-44 right-4 z-30 p-2.5 rounded-full bg-surface/95 border border-border shadow-xl hover:bg-surface hover:border-accent/30 hover:shadow-accent/10 transition-all"
                 title={language === 'zh' ? '滚动到底部' : 'Scroll to bottom'}
               >
                 <svg className="w-4 h-4 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -131,7 +131,7 @@ export function OutlineView() {
 
   return (
     <div className="flex flex-col h-full bg-transparent">
-      <div className="h-10 px-3 flex items-center justify-between border-b border-white/5 bg-transparent sticky top-0 z-10">
+      <div className="h-10 px-3 flex items-center justify-between border-b border-border bg-transparent sticky top-0 z-10">
         <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider opacity-80">
           {language === 'zh' ? '大纲' : 'Outline'}
         </span>

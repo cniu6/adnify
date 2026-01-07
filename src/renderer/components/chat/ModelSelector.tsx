@@ -129,7 +129,7 @@ export default function ModelSelector({ className = '' }: ModelSelectorProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium border border-white/5
+          flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium border border-border
           transition-all duration-200
           ${isOpen
             ? 'bg-surface/80 text-text-primary ring-1 ring-white/10'
@@ -143,10 +143,10 @@ export default function ModelSelector({ className = '' }: ModelSelectorProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-64 max-h-80 overflow-y-auto bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl shadow-black/40 z-50 animate-scale-in">
+        <div className="absolute bottom-full left-0 mb-2 w-64 max-h-80 overflow-y-auto bg-surface/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl shadow-black/40 z-50 animate-scale-in">
           {groupedModels.map(group => (
             <div key={group.providerId}>
-              <div className="sticky top-0 px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider bg-surface/95 backdrop-blur-sm border-b border-white/5">
+              <div className="sticky top-0 px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider bg-surface/95 backdrop-blur-sm border-b border-border">
                 <span className="mr-1.5">{getIcon(group.providerId)}</span>
                 {group.providerName}
               </div>

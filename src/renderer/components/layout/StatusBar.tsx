@@ -126,27 +126,27 @@ export default function StatusBar() {
     <div className="h-6 bg-background-secondary border-t border-border flex items-center justify-between px-3 text-[10px] select-none text-text-muted z-50 font-medium">
       <div className="flex items-center gap-4">
         {isGitRepo && gitStatus && (
-          <button className="flex items-center gap-1.5 hover:text-text-primary transition-colors group">
-            <GitBranch className="w-3 h-3 text-accent group-hover:drop-shadow-[0_0_5px_rgba(var(--accent)/0.5)] transition-all" />
-            <span className="group-hover:text-accent transition-colors">{gitStatus.branch}</span>
+          <button className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/5 text-text-muted hover:text-text-primary transition-all group">
+            <GitBranch className="w-3.5 h-3.5 text-accent opacity-80 group-hover:opacity-100 transition-opacity" />
+            <span className="font-bold tracking-tight">{gitStatus.branch}</span>
           </button>
         )}
 
-        {/* Diagnostics - 显示当前文件的错误/警告，tooltip 显示全局统计 */}
+        {/* Diagnostics */}
         <button 
           onClick={handleDiagnosticsClick}
-          className="flex items-center gap-3 hover:text-text-primary transition-colors"
+          className="flex items-center gap-3 px-2 py-1 rounded-md hover:bg-white/5 transition-all text-text-muted hover:text-text-primary"
           title={language === 'zh' 
             ? `当前文件: ${currentFileStats.errors} 错误, ${currentFileStats.warnings} 警告\n全部: ${totalErrorCount} 错误, ${totalWarningCount} 警告`
             : `Current file: ${currentFileStats.errors} errors, ${currentFileStats.warnings} warnings\nTotal: ${totalErrorCount} errors, ${totalWarningCount} warnings`}
         >
           <div className={`flex items-center gap-1 ${currentFileStats.errors > 0 ? 'text-red-400' : ''}`}>
-            <XCircle className="w-3 h-3" />
-            <span>{currentFileStats.errors}</span>
+            <XCircle className="w-3.5 h-3.5" />
+            <span className="font-bold">{currentFileStats.errors}</span>
           </div>
           <div className={`flex items-center gap-1 ${currentFileStats.warnings > 0 ? 'text-yellow-400' : ''}`}>
-            <AlertCircle className="w-3 h-3" />
-            <span>{currentFileStats.warnings}</span>
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span className="font-bold">{currentFileStats.warnings}</span>
           </div>
         </button>
 
@@ -267,27 +267,29 @@ export default function StatusBar() {
           </BottomBarPopover>
         )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center h-full">
           {/* 终端切换按钮 */}
           <button
             onClick={() => setTerminalVisible(!terminalVisible)}
-            className={`flex items-center gap-1.5 transition-colors ${terminalVisible ? 'text-text-primary' : 'hover:text-text-primary'}`}
+            className={`h-full px-2.5 transition-all ${terminalVisible ? 'text-accent bg-accent/5 shadow-[inset_0_-2px_0_rgba(var(--accent),0.8)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
             title={`${t('terminal', language)} (Ctrl+\`)`}
           >
-            <Terminal className={`w-3 h-3 ${terminalVisible ? 'text-accent drop-shadow-[0_0_5px_rgba(var(--accent)/0.5)]' : ''}`} />
+            <Terminal className="w-3.5 h-3.5" />
           </button>
 
           {/* 调试切换按钮 */}
           <button
             onClick={() => setDebugVisible(!debugVisible)}
-            className={`flex items-center gap-1.5 transition-colors ${debugVisible ? 'text-text-primary' : 'hover:text-text-primary'}`}
+            className={`h-full px-2.5 transition-all ${debugVisible ? 'text-accent bg-accent/5 shadow-[inset_0_-2px_0_rgba(var(--accent),0.8)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
             title={`${language === 'zh' ? '调试' : 'Debug'} (Ctrl+Shift+D)`}
           >
-            <Bug className={`w-3 h-3 ${debugVisible ? 'text-accent drop-shadow-[0_0_5px_rgba(var(--accent)/0.5)]' : ''}`} />
+            <Bug className="w-3.5 h-3.5" />
           </button>
 
+          <div className="w-px h-3 bg-border mx-1 opacity-50" />
+
           <BottomBarPopover
-            icon={<ScrollText className="w-3 h-3" />}
+            icon={<ScrollText className="w-3.5 h-3.5" />}
             tooltip={language === 'zh' ? '工具调用日志' : 'Tool Call Logs'}
             title={language === 'zh' ? '工具调用日志' : 'Tool Call Logs'}
             width={380}
@@ -305,10 +307,12 @@ export default function StatusBar() {
           <LspStatusIndicator />
 
           {activeFilePath && (
-            <span className="font-medium text-accent/80">{activeFilePath.split('.').pop()?.toUpperCase() || 'TXT'}</span>
+            <span className="px-3 text-[10px] font-black uppercase tracking-widest text-accent opacity-80 border-l border-border h-full flex items-center">
+              {activeFilePath.split('.').pop() || 'TXT'}
+            </span>
           )}
 
-          <div className="flex items-center gap-2 cursor-pointer hover:text-text-primary font-mono opacity-60 hover:opacity-100 transition-opacity">
+          <div className="h-full px-3 flex items-center gap-2 border-l border-border cursor-pointer hover:bg-white/5 transition-colors font-mono opacity-60 hover:opacity-100">
             <span>Ln {cursorPosition?.line || 1}, Col {cursorPosition?.column || 1}</span>
           </div>
         </div>

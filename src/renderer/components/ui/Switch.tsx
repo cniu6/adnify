@@ -13,7 +13,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
                     {/* Track */}
                     <div className="
                         w-11 h-6 rounded-full 
-                        bg-surface/30 border border-white/10 backdrop-blur-sm
+                        bg-surface/30 border border-border backdrop-blur-sm
                         peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent/50 
                         peer-checked:bg-accent peer-checked:border-accent
                         transition-all duration-300 ease-in-out

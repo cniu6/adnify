@@ -73,7 +73,7 @@ export default function ContextCompactionIndicator({
 
       {/* Expanded Panel */}
       {isExpanded && (
-        <div className="absolute top-full left-0 mt-1 w-80 p-3 rounded-xl bg-surface border border-white/10 shadow-xl z-50 animate-scale-in">
+        <div className="absolute top-full left-0 mt-1 w-80 p-3 rounded-xl bg-surface border border-border shadow-xl z-50 animate-scale-in">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium text-text-primary">
               {language === 'zh' ? '对话摘要' : 'Conversation Summary'}
@@ -110,7 +110,7 @@ export default function ContextCompactionIndicator({
 
           {/* Stats */}
           {stats.lastCompactedAt && (
-            <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-xs text-text-muted">
+            <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-xs text-text-muted">
               <span>
                 {language === 'zh' 
                   ? `已压缩 ${stats.compactedMessageCount} 条消息`

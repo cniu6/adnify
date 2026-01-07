@@ -88,13 +88,13 @@ export default function ToolCallGroup({
                     // 多个已完成工具，折叠显示
                     <motion.div 
                         layout
-                        className="rounded-xl border border-white/5 bg-surface/30 backdrop-blur-sm overflow-hidden transition-colors hover:bg-surface/50"
+                        className="rounded-xl border border-border bg-surface/30 backdrop-blur-sm overflow-hidden transition-colors hover:bg-surface/50"
                     >
                         <div
                             className="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none"
                             onClick={() => setIsExpanded(!isExpanded)}
                         >
-                            <div className="p-1.5 rounded-md bg-white/5 text-text-muted border border-white/5">
+                            <div className="p-1.5 rounded-md bg-white/5 text-text-muted border border-border">
                                 <Layers className="w-3.5 h-3.5" />
                             </div>
                             <div className="flex-1 min-w-0 flex items-center gap-2">
@@ -122,7 +122,7 @@ export default function ToolCallGroup({
                                     exit={{ height: 0, opacity: 0 }}
                                     transition={{ duration: 0.25, ease: "easeInOut" }}
                                 >
-                                    <div className="border-t border-white/5 p-2 space-y-2 bg-black/5">
+                                    <div className="border-t border-border p-2 space-y-2 bg-black/5">
                                         {completedCalls.map(renderToolCard)}
                                     </div>
                                 </motion.div>
