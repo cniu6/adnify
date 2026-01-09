@@ -165,7 +165,7 @@ export interface Plan {
 // ============================================
 
 /** 上下文项类型 */
-export type ContextItemType = 'File' | 'CodeSelection' | 'Folder' | 'Codebase' | 'Git' | 'Terminal' | 'Symbols' | 'Web'
+export type ContextItemType = 'File' | 'CodeSelection' | 'Folder' | 'Codebase' | 'Git' | 'Terminal' | 'Symbols' | 'Web' | 'Problems'
 
 export interface FileContext { type: 'File'; uri: string }
 export interface CodeSelectionContext { type: 'CodeSelection'; uri: string; range: [number, number] }
@@ -175,6 +175,7 @@ export interface GitContext { type: 'Git' }
 export interface TerminalContext { type: 'Terminal' }
 export interface SymbolsContext { type: 'Symbols' }
 export interface WebContext { type: 'Web'; query?: string }
+export interface ProblemsContext { type: 'Problems'; uri?: string }
 
 /** 上下文项联合类型 */
 export type ContextItem =
@@ -182,7 +183,11 @@ export type ContextItem =
     | CodeSelectionContext
     | FolderContext
     | CodebaseContext
+    | GitContext
+    | TerminalContext
+    | SymbolsContext
     | WebContext
+    | ProblemsContext
     | GitContext
     | TerminalContext
     | SymbolsContext
@@ -236,6 +241,9 @@ export interface FileSnapshot {
     timestamp?: number
 }
 
+/** 变更类型 */
+export type ChangeType = 'create' | 'modify' | 'delete'
+
 /** 待确认的更改 */
 export interface PendingChange {
     id: string
@@ -244,6 +252,10 @@ export interface PendingChange {
     toolName: string
     status: 'pending' | 'accepted' | 'rejected'
     snapshot: FileSnapshot
+    /** 新内容（用于 Diff 展示） */
+    newContent: string | null
+    /** 变更类型 */
+    changeType: ChangeType
     timestamp: number
     linesAdded: number
     linesRemoved: number

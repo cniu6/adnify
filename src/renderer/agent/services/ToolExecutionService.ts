@@ -199,7 +199,7 @@ export class ToolExecutionService {
   }
 
   /**
-   * 记录文件变更到 Composer
+   * 记录文件变更
    */
   private async recordFileChange(
     store: ReturnType<typeof useAgentStore.getState>,
@@ -208,35 +208,24 @@ export class ToolExecutionService {
     toolName: string,
     originalContent: string | null,
     result: ToolExecutionResult,
-    workspacePath: string | null
+    _workspacePath: string | null
   ): Promise<void> {
     const meta = result.meta as { linesAdded?: number; linesRemoved?: number; newContent?: string; isNewFile?: boolean } | undefined
+    
+    // 确定变更类型
+    const changeType = toolName === 'delete_file_or_folder' ? 'delete' as const
+      : (meta?.isNewFile ? 'create' as const : 'modify' as const)
     
     store.addPendingChange({
       filePath: fullPath,
       toolCallId,
       toolName,
       snapshot: { path: fullPath, content: originalContent },
+      newContent: meta?.newContent || null,
+      changeType,
       linesAdded: meta?.linesAdded || 0,
       linesRemoved: meta?.linesRemoved || 0,
     })
-
-    try {
-      const { composerService } = await import('./composerService')
-      const relativePath = workspacePath ? fullPath.replace(workspacePath, '').replace(/^[\\/]/, '') : fullPath
-      composerService.addChange({
-        filePath: fullPath,
-        relativePath,
-        oldContent: originalContent,
-        newContent: meta?.newContent || null,
-        changeType: toolName === 'delete_file_or_folder' ? 'delete' : (meta?.isNewFile ? 'create' : 'modify'),
-        linesAdded: meta?.linesAdded || 0,
-        linesRemoved: meta?.linesRemoved || 0,
-        toolCallId,
-      })
-    } catch (e) {
-      logger.agent.warn('[ToolExecutionService] Failed to add to composer:', e)
-    }
   }
 
   /**

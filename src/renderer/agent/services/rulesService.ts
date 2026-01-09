@@ -11,14 +11,14 @@ import { joinPath } from '@shared/utils/pathUtils'
 
 export interface ProjectRules {
   content: string
-  source: string  // 规则文件路径
+  source: string
   lastModified: number
 }
 
 class RulesService {
   private cachedRules: ProjectRules | null = null
   private lastCheckTime = 0
-  private checkInterval = 5000 // 5秒检查一次文件变化
+  private checkInterval = 5000
 
   // 支持的规则文件名（按优先级）
   private ruleFiles = [
@@ -38,16 +38,14 @@ class RulesService {
 
     const now = Date.now()
     
-    // 使用缓存（除非强制刷新或超过检查间隔）
     if (!forceRefresh && this.cachedRules && (now - this.lastCheckTime) < this.checkInterval) {
       return this.cachedRules
     }
 
     this.lastCheckTime = now
 
-    // 按优先级查找规则文件
     for (const ruleFile of this.ruleFiles) {
-      const fullPath = this.joinPath(workspacePath, ruleFile)
+      const fullPath = joinPath(workspacePath, ruleFile)
       const content = await api.file.read(fullPath)
       
       if (content !== null) {
@@ -61,56 +59,27 @@ class RulesService {
       }
     }
 
-    // 没有找到规则文件
     this.cachedRules = null
     return null
   }
 
   /**
-   * 创建默认规则文件
+   * 保存规则到文件
    */
-  async createDefaultRules(): Promise<boolean> {
+  async saveRules(content: string): Promise<boolean> {
     const { workspacePath } = useStore.getState()
     if (!workspacePath) return false
 
-    const defaultRules = `# Project Rules for AI Assistant
-
-## Code Style
-- Use TypeScript for all new files
-- Prefer functional components with hooks
-- Use meaningful variable names
-- Add comments for complex logic
-
-## Project Structure
-- Components go in src/components/
-- Utilities go in src/utils/
-- Types go in src/types/
-
-## Conventions
-- Use async/await over .then()
-- Prefer const over let
-- Use template literals for string interpolation
-
-## Testing
-- Write tests for critical business logic
-- Use descriptive test names
-
-## Documentation
-- Add JSDoc comments for public APIs
-- Keep README up to date
-`
-
-    // 创建 .adnify 目录
-    const adnifyDir = this.joinPath(workspacePath, '.adnify')
+    // 确保 .adnify 目录存在
+    const adnifyDir = joinPath(workspacePath, '.adnify')
     await api.file.mkdir(adnifyDir)
 
-    // 写入规则文件
-    const rulesPath = this.joinPath(workspacePath, '.adnify/rules.md')
-    const success = await api.file.write(rulesPath, defaultRules)
+    const rulesPath = joinPath(workspacePath, '.adnify/rules.md')
+    const success = await api.file.write(rulesPath, content)
     
     if (success) {
       this.cachedRules = {
-        content: defaultRules,
+        content: content.trim(),
         source: '.adnify/rules.md',
         lastModified: Date.now(),
       }
@@ -120,22 +89,25 @@ class RulesService {
   }
 
   /**
-   * 构建包含规则的系统提示
+   * 获取默认规则模板
    */
-  async buildSystemPromptWithRules(basePrompt: string): Promise<string> {
-    const rules = await this.getRules()
-    
-    if (!rules || !rules.content) {
-      return basePrompt
-    }
+  getDefaultRulesTemplate(): string {
+    return `# Project Rules
 
-    return `${basePrompt}
+## Code Style
+- Use TypeScript for all new files
+- Prefer functional components with hooks
+- Use meaningful variable names
 
-<project_rules>
-The user has defined the following project-specific rules and guidelines. Follow them strictly:
+## Conventions
+- Use async/await over .then()
+- Prefer const over let
 
-${rules.content}
-</project_rules>`
+## Project Structure
+- Components: src/components/
+- Utilities: src/utils/
+- Types: src/types/
+`
   }
 
   /**
@@ -144,13 +116,6 @@ ${rules.content}
   clearCache(): void {
     this.cachedRules = null
     this.lastCheckTime = 0
-  }
-
-  /**
-   * 路径拼接辅助函数 - 使用 pathUtils
-   */
-  private joinPath(base: string, relative: string): string {
-    return joinPath(base, relative)
   }
 }
 

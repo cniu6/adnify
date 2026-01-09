@@ -9,8 +9,10 @@ import { useStore } from '@store'
 import { useAgentStore } from '../store/AgentStore'
 import { toolRegistry } from '../tools'
 import { getAgentConfig } from '../utils/AgentConfig'
-import { ContextItem, MessageContent, TextContent } from '../types'
+import { ContextItem, MessageContent, TextContent, ProblemsContext } from '../types'
 import { createTypedCache } from '@shared/utils/CacheService'
+import { useDiagnosticsStore } from '@/renderer/services/diagnosticsStore'
+import { normalizePath } from '@shared/utils/pathUtils'
 
 // 创建缓存实例
 const fileContentCache = createTypedCache<string>('fileContent')
@@ -77,6 +79,9 @@ async function processContextItem(
 
     case 'Symbols':
       return processSymbolsContext(workspacePath)
+
+    case 'Problems':
+      return processProblemsContext(item as ProblemsContext, workspacePath)
 
     default:
       return null
@@ -236,6 +241,84 @@ async function processSymbolsContext(workspacePath: string | null): Promise<stri
     logger.agent.error('[ContextBuilder] Symbols context failed:', e)
     return '\n[Symbols retrieval failed]\n'
   }
+}
+
+/**
+ * 处理问题/诊断上下文
+ */
+async function processProblemsContext(
+  item: ProblemsContext,
+  _workspacePath: string | null
+): Promise<string | null> {
+  const diagnosticsState = useDiagnosticsStore.getState()
+  const diagnostics = diagnosticsState.diagnostics
+  
+  // 如果指定了文件，只获取该文件的诊断
+  const targetFile = item.uri || useStore.getState().activeFilePath
+  
+  if (targetFile) {
+    const normalizedTarget = normalizePath(targetFile)
+    const parts: string[] = []
+    
+    for (const [uri, diags] of diagnostics) {
+      let uriPath = uri
+      if (uri.startsWith('file:///')) {
+        uriPath = decodeURIComponent(uri.slice(8))
+      } else if (uri.startsWith('file://')) {
+        uriPath = decodeURIComponent(uri.slice(7))
+      }
+      
+      const normalizedUri = normalizePath(uriPath)
+      if (normalizedUri === normalizedTarget || normalizedUri.endsWith(normalizedTarget)) {
+        if (diags.length > 0) {
+          parts.push(`### Problems in ${targetFile}:`)
+          diags.forEach((d, i) => {
+            const severity = d.severity === 1 ? 'Error' : d.severity === 2 ? 'Warning' : 'Info'
+            parts.push(`${i + 1}. [${severity}] Line ${d.range.start.line + 1}: ${d.message}`)
+          })
+        }
+        break
+      }
+    }
+    
+    if (parts.length > 0) {
+      return '\n' + parts.join('\n') + '\n'
+    }
+    return '\n[No problems found in current file]\n'
+  }
+  
+  // 没有指定文件，返回所有诊断
+  if (diagnostics.size === 0) {
+    return '\n[No problems detected in workspace]\n'
+  }
+  
+  const parts: string[] = ['### All Problems:']
+  let count = 0
+  const maxProblems = 50
+  
+  for (const [uri, diags] of diagnostics) {
+    if (count >= maxProblems) {
+      parts.push(`\n... and more (${diagnosticsState.errorCount} errors, ${diagnosticsState.warningCount} warnings total)`)
+      break
+    }
+    
+    let filePath = uri
+    if (uri.startsWith('file:///')) {
+      filePath = decodeURIComponent(uri.slice(8))
+    } else if (uri.startsWith('file://')) {
+      filePath = decodeURIComponent(uri.slice(7))
+    }
+    
+    parts.push(`\n#### ${filePath}:`)
+    for (const d of diags) {
+      if (count >= maxProblems) break
+      const severity = d.severity === 1 ? 'Error' : d.severity === 2 ? 'Warning' : 'Info'
+      parts.push(`- [${severity}] Line ${d.range.start.line + 1}: ${d.message}`)
+      count++
+    }
+  }
+  
+  return '\n' + parts.join('\n') + '\n'
 }
 
 /**

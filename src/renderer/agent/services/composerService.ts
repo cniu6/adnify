@@ -12,6 +12,7 @@
 // ============ Types ============
 import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
+import { getDirname } from '@shared/utils/pathUtils'
 
 
 export interface FileChange {
@@ -270,7 +271,7 @@ class ComposerServiceClass {
     const groups = new Map<string, FileChange[]>()
     
     for (const change of this.state.currentSession.changes) {
-      const dir = change.relativePath.replace(/[/\\][^/\\]+$/, '') || '.'
+      const dir = getDirname(change.relativePath) || '.'
       
       if (!groups.has(dir)) {
         groups.set(dir, [])

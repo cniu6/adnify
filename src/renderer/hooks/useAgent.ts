@@ -18,7 +18,7 @@ import {
 } from '@/renderer/agent/store/AgentStore'
 import { AgentService } from '@/renderer/agent/services/AgentService'
 import { MessageContent, ChatThread, ToolCall } from '@/renderer/agent/types'
-import { buildSystemPrompt } from '@/renderer/agent/prompts/prompts'
+import { buildAgentSystemPrompt } from '@/renderer/agent/prompts/prompts'
 import { AGENT_DEFAULTS } from '@/shared/constants'
 
 export function useAgent() {
@@ -108,7 +108,7 @@ export function useAgent() {
     const openFilePaths = openFiles.map(f => f.path)
     const activeFile = activeFilePath || undefined
 
-    const systemPrompt = await buildSystemPrompt(chatMode, workspacePath, {
+    const systemPrompt = await buildAgentSystemPrompt(chatMode, workspacePath, {
       openFiles: openFilePaths,
       activeFile,
       customInstructions: aiInstructions,

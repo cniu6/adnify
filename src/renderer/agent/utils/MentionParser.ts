@@ -5,9 +5,9 @@
 
 import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
-import { FileText, Folder, Database, Globe, FileCode, Terminal, GitBranch } from 'lucide-react'
+import { FileText, Folder, Database, Globe, FileCode, Terminal, GitBranch, AlertCircle } from 'lucide-react'
 
-export type MentionType = 'file' | 'folder' | 'codebase' | 'web' | 'git' | 'terminal' | 'symbols'
+export type MentionType = 'file' | 'folder' | 'codebase' | 'web' | 'git' | 'terminal' | 'symbols' | 'problems'
 
 export interface MentionCandidate {
     id: string
@@ -60,6 +60,13 @@ export const SPECIAL_MENTIONS: MentionCandidate[] = [
         label: '@terminal',
         description: 'Reference terminal output',
         icon: Terminal,
+    },
+    {
+        id: 'problems',
+        type: 'problems',
+        label: '@problems',
+        description: 'Reference current file diagnostics/errors',
+        icon: AlertCircle,
     },
 ]
 

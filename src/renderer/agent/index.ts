@@ -43,6 +43,8 @@ export { lintService } from './services/lintService'
 export { streamingEditService } from './services/streamingEditService'
 export { sessionService } from './services/sessionService'
 export { rulesService } from './services/rulesService'
+export { memoryService } from './services/memoryService'
+export type { MemoryItem } from './services/memoryService'
 export { composerService } from './services/composerService'
 
 // 新增服务
@@ -66,7 +68,7 @@ export { getAgentConfig } from './utils/AgentConfig'
 export { isRetryableError } from '@shared/utils'
 
 // Prompts
-export { buildSystemPrompt } from './prompts/prompts'
+export { buildAgentSystemPrompt } from './prompts/prompts'
 
 // 分支类型
 export type { Branch } from './store/slices/branchSlice'

@@ -60,6 +60,8 @@ export const createCheckpointSlice: StateCreator<
                     ...existing,
                     toolCallId: change.toolCallId,
                     toolName: change.toolName,
+                    newContent: change.newContent,
+                    changeType: change.changeType,
                     linesAdded: existing.linesAdded + change.linesAdded,
                     linesRemoved: existing.linesRemoved + change.linesRemoved,
                 }

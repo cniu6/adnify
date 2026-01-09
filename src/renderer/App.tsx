@@ -18,7 +18,7 @@ import { keybindingService } from './services/keybindingService'
 import { LAYOUT_LIMITS } from '@shared/constants'
 import { startupMetrics } from '@shared/utils/startupMetrics'
 import { useWindowTitle } from './hooks/useWindowTitle'
-import { getFileName } from '@shared/utils/pathUtils'
+import { getFileName, pathEquals } from '@shared/utils/pathUtils'
 import { removeFileFromTypeService } from './services/monacoTypeService'
 
 // 记录 App 模块加载时间
@@ -169,7 +169,8 @@ function AppContent() {
       if (event.event !== 'update') return // 只处理文件修改事件
 
       const { openFiles, reloadFileFromDisk } = useStore.getState()
-      const openFile = openFiles.find(f => f.path === event.path)
+      // 使用 pathEquals 进行路径比较，忽略大小写和斜杠方向差异
+      const openFile = openFiles.find(f => pathEquals(f.path, event.path))
 
       if (!openFile) return // 文件未打开，忽略
 
@@ -186,11 +187,11 @@ function AppContent() {
           `文件 "${getFileName(event.path)}" 已被外部修改。\n\n是否重新加载？（本地更改将丢失）`
         )
         if (shouldReload) {
-          reloadFileFromDisk(event.path, newContent)
+          reloadFileFromDisk(openFile.path, newContent)
         }
       } else {
         // 文件无更改，直接刷新
-        reloadFileFromDisk(event.path, newContent)
+        reloadFileFromDisk(openFile.path, newContent)
       }
     })
 
