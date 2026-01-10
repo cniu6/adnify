@@ -121,7 +121,7 @@ export class McpClient extends EventEmitter {
 
     const client = new Client({
       name: 'adnify',
-      version: '1.0.0',
+      version: process.env.npm_package_version || '1.0.0',
     })
 
     this.registerNotificationHandlers(client)
@@ -184,7 +184,7 @@ export class McpClient extends EventEmitter {
         const transport = create()
         const client = new Client({
           name: 'adnify',
-          version: '1.0.0',
+          version: process.env.npm_package_version || '1.0.0',
         })
 
         this.registerNotificationHandlers(client)

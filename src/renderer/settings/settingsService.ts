@@ -570,7 +570,7 @@ export function exportSettings(settings: RuntimeSettings, includeApiKeys = false
   }
 
   return {
-    version: '1.0.0',
+    version: 'export-v1',
     exportedAt: new Date().toISOString(),
     settings: exported,
   }

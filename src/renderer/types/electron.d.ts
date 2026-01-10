@@ -94,6 +94,21 @@ export interface EmbeddingConfigInput {
 }
 
 // ============================================
+// Updater 类型
+// ============================================
+
+export interface UpdateStatus {
+  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+  version?: string
+  releaseNotes?: string
+  releaseDate?: string
+  downloadUrl?: string
+  progress?: number
+  error?: string
+  isPortable: boolean
+}
+
+// ============================================
 // Debug 类型
 // ============================================
 
@@ -390,6 +405,14 @@ export interface ElectronAPI {
   debugGetSessionState: (sessionId: string) => Promise<DebugSessionState | null>
   debugGetAllSessions: () => Promise<DebugSessionState[]>
   onDebugEvent: (callback: (event: { sessionId: string; event: DebugEvent }) => void) => () => void
+
+  // Updater
+  updaterCheck: () => Promise<UpdateStatus>
+  updaterGetStatus: () => Promise<UpdateStatus>
+  updaterDownload: () => Promise<UpdateStatus>
+  updaterInstall: () => void
+  updaterOpenDownloadPage: (url?: string) => void
+  onUpdaterStatus: (callback: (status: UpdateStatus) => void) => () => void
 
   // Command
   onExecuteCommand: (callback: (commandId: string) => void) => () => void

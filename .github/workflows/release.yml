@@ -57,6 +57,8 @@ jobs:
           path: |
             release/*.exe
             release/*.zip
+            release/*.yml
+            release/*.yaml
           if-no-files-found: ignore
 
 
@@ -104,6 +106,9 @@ jobs:
           path: |
             release/*.dmg
             release/*.zip
+            release/*.yml
+            release/*.yaml
+            release/*.blockmap
           if-no-files-found: ignore
 
   build-linux:
@@ -150,6 +155,8 @@ jobs:
           path: |
             release/*.AppImage
             release/*.tar.gz
+            release/*.yml
+            release/*.yaml
           if-no-files-found: ignore
 
 
@@ -173,7 +180,10 @@ jobs:
       - name: Flatten artifacts
         run: |
           mkdir -p release-files
+          # 复制安装包
           find artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" \) -exec cp {} release-files/ \;
+          # 复制更新元数据文件（electron-updater 需要）
+          find artifacts -type f \( -name "*.yml" -o -name "*.yaml" -o -name "*.blockmap" \) -exec cp {} release-files/ \;
           ls -la release-files/
 
       - name: Create GitHub Release

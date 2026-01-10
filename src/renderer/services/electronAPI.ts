@@ -237,6 +237,16 @@ function createGroupedAPI() {
       onEvent: (callback: Parameters<typeof raw.onDebugEvent>[0]) => raw.onDebugEvent(callback),
     },
 
+    // 更新服务
+    updater: {
+      check: () => raw.updaterCheck(),
+      getStatus: () => raw.updaterGetStatus(),
+      download: () => raw.updaterDownload(),
+      install: () => raw.updaterInstall(),
+      openDownloadPage: (url?: string) => raw.updaterOpenDownloadPage(url),
+      onStatus: (callback: Parameters<typeof raw.onUpdaterStatus>[0]) => raw.onUpdaterStatus(callback),
+    },
+
     // 命令执行
     onExecuteCommand: (callback: Parameters<typeof raw.onExecuteCommand>[0]) => raw.onExecuteCommand(callback),
   }

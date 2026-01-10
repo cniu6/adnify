@@ -3,6 +3,7 @@ import { Minus, Square, X, Search, HelpCircle } from 'lucide-react'
 import { useStore } from '@store'
 import { Logo } from '../common/Logo'
 import WorkspaceDropdown from './WorkspaceDropdown'
+import UpdateIndicator from './UpdateIndicator'
 
 export default function TitleBar() {
   const { setShowQuickOpen, setShowAbout } = useStore()
@@ -38,6 +39,9 @@ export default function TitleBar() {
       {/* Right - Window Controls (Refined) */}
       <div className="flex items-center justify-end min-w-[160px] w-1/3 h-full pr-2">
         <div className="no-drag flex items-center gap-1 h-full">
+          {/* Update Indicator */}
+          <UpdateIndicator />
+
           {/* About Button */}
           <button
             onClick={() => setShowAbout(true)}

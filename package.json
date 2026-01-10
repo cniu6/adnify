@@ -43,6 +43,7 @@
     "diff": "^8.0.2",
     "dugite": "^2.7.1",
     "electron-store": "^8.1.0",
+    "electron-updater": "^6.7.3",
     "file-icons-js": "^1.1.0",
     "framer-motion": "^12.23.26",
     "iconv-lite": "^0.6.3",
@@ -93,7 +94,12 @@
   "build": {
     "appId": "com.adnify.app",
     "productName": "Adnify",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "adnaan-worker",
+      "repo": "adnify",
+      "releaseType": "release"
+    },
     "directories": {
       "output": "release"
     },

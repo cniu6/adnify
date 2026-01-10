@@ -225,12 +225,14 @@ function createWindow(isEmpty = false): BrowserWindow {
 
 async function initializeModules(firstWin: BrowserWindow) {
   // 并行加载所有模块
-  const [ipc, lsp, security, windowIpc, lspInstaller] = await Promise.all([
+  const [ipc, lsp, security, windowIpc, lspInstaller, updaterIpc, updaterService] = await Promise.all([
     import('./ipc'),
     import('./lspManager'),
     import('./security'),
     import('./ipc/window'),
     import('./lsp/installer'),
+    import('./ipc/updater'),
+    import('./services/updater'),
   ])
 
   ipcModule = ipc
@@ -245,6 +247,10 @@ async function initializeModules(firstWin: BrowserWindow) {
 
   // 注册窗口控制
   windowIpc.registerWindowHandlers(createWindow)
+  
+  // 注册更新服务
+  updaterIpc.registerUpdaterHandlers()
+  updaterService.updateService.initialize(firstWin)
 
   // 配置安全模块
   const securityConfig = mainStore.get('securitySettings', {
