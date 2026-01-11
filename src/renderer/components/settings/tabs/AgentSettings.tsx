@@ -94,7 +94,7 @@ export function AgentSettings({
                                         value: t.id,
                                         label: `${t.name} ${t.isDefault ? '(Default)' : ''}`
                                     }))}
-                                    className="w-full bg-black/20 border-border text-xs"
+                                    className="w-full bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
 
@@ -103,7 +103,7 @@ export function AgentSettings({
                                     <span className="text-xs font-medium text-text-primary">
                                         {templates.find(t => t.id === promptTemplateId)?.name}
                                     </span>
-                                    <span className="text-[10px] text-text-muted px-1.5 py-0.5 bg-black/20 rounded border border-border">
+                                    <span className="text-[10px] text-text-muted px-1.5 py-0.5 bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg rounded border border-border">
                                         P{templates.find(t => t.id === promptTemplateId)?.priority}
                                     </span>
                                     {templates.find(t => t.id === promptTemplateId)?.tags?.map(tag => (
@@ -142,7 +142,7 @@ export function AgentSettings({
                                 '在此输入全局系统指令，例如："总是使用中文回答"、"代码风格偏好..."',
                                 'Enter global system instructions here...'
                             )}
-                            className="w-full h-32 p-3 bg-black/20 rounded-lg border border-border focus:border-accent/50 focus:ring-1 focus:ring-accent/20 outline-none transition-all resize-none text-xs font-mono custom-scrollbar text-text-primary placeholder-text-muted/50"
+                            className="w-full h-32 p-3 bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg rounded-lg border border-border focus:border-accent/50 focus:ring-1 focus:ring-accent/20 outline-none transition-all resize-none text-xs font-mono custom-scrollbar text-text-primary placeholder-text-muted/50"
                         />
                     </section>
                 </div>
@@ -164,7 +164,7 @@ export function AgentSettings({
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxToolLoops: parseInt(e.target.value) || 20 })}
                                     min={5}
                                     max={100}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -175,7 +175,7 @@ export function AgentSettings({
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxHistoryMessages: parseInt(e.target.value) || 60 })}
                                     min={10}
                                     max={200}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                         </div>
@@ -196,7 +196,7 @@ export function AgentSettings({
                                     value={agentConfig.maxToolResultChars}
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxToolResultChars: parseInt(e.target.value) || 10000 })}
                                     step={5000}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -206,7 +206,7 @@ export function AgentSettings({
                                     value={agentConfig.maxContextTokens ?? 128000}
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxContextTokens: parseInt(e.target.value) || 128000 })}
                                     step={10000}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -216,7 +216,7 @@ export function AgentSettings({
                                     value={agentConfig.maxFileContentChars ?? 15000}
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxFileContentChars: parseInt(e.target.value) || 15000 })}
                                     step={5000}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -227,7 +227,7 @@ export function AgentSettings({
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxContextFiles: parseInt(e.target.value) || 6 })}
                                     min={1}
                                     max={20}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -238,7 +238,7 @@ export function AgentSettings({
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxSemanticResults: parseInt(e.target.value) || 5 })}
                                     min={1}
                                     max={20}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -248,7 +248,7 @@ export function AgentSettings({
                                     value={agentConfig.maxTerminalChars ?? 3000}
                                     onChange={(e) => setAgentConfig({ ...agentConfig, maxTerminalChars: parseInt(e.target.value) || 3000 })}
                                     step={1000}
-                                    className="bg-black/20 border-border text-xs"
+                                    className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                 />
                             </div>
                         </div>
@@ -276,7 +276,7 @@ export function AgentSettings({
                                             onChange={(e) => setAgentConfig({ ...agentConfig, maxRetries: parseInt(e.target.value) || 3 })}
                                             min={0}
                                             max={10}
-                                            className="bg-black/20 border-border text-xs"
+                                            className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
@@ -286,7 +286,7 @@ export function AgentSettings({
                                             value={agentConfig.retryDelayMs ?? 1000}
                                             onChange={(e) => setAgentConfig({ ...agentConfig, retryDelayMs: parseInt(e.target.value) || 1000 })}
                                             step={500}
-                                            className="bg-black/20 border-border text-xs"
+                                            className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
@@ -296,7 +296,7 @@ export function AgentSettings({
                                             value={agentConfig.toolTimeoutMs ?? 60000}
                                             onChange={(e) => setAgentConfig({ ...agentConfig, toolTimeoutMs: parseInt(e.target.value) || 60000 })}
                                             step={5000}
-                                            className="bg-black/20 border-border text-xs"
+                                            className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                         />
                                     </div>
                                 </div>
@@ -313,7 +313,7 @@ export function AgentSettings({
                                                 onChange={(e) => setAgentConfig({ ...agentConfig, keepRecentTurns: parseInt(e.target.value) || 5 })}
                                                 min={2}
                                                 max={20}
-                                                className="bg-black/20 border-border text-xs"
+                                                className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -324,7 +324,7 @@ export function AgentSettings({
                                                 onChange={(e) => setAgentConfig({ ...agentConfig, deepCompressionTurns: parseInt(e.target.value) || 2 })}
                                                 min={1}
                                                 max={5}
-                                                className="bg-black/20 border-border text-xs"
+                                                className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -335,7 +335,7 @@ export function AgentSettings({
                                                 onChange={(e) => setAgentConfig({ ...agentConfig, maxImportantOldTurns: parseInt(e.target.value) || 3 })}
                                                 min={0}
                                                 max={10}
-                                                className="bg-black/20 border-border text-xs"
+                                                className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                             />
                                         </div>
                                     </div>
@@ -371,7 +371,7 @@ export function AgentSettings({
                                                 })}
                                                 min={5}
                                                 max={50}
-                                                className="bg-black/20 border-border text-xs"
+                                                className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -388,7 +388,7 @@ export function AgentSettings({
                                                 })}
                                                 min={1}
                                                 max={10}
-                                                className="bg-black/20 border-border text-xs"
+                                                className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -405,7 +405,7 @@ export function AgentSettings({
                                                 })}
                                                 min={1}
                                                 max={10}
-                                                className="bg-black/20 border-border text-xs"
+                                                className="bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg border-border text-xs"
                                             />
                                         </div>
                                     </div>
@@ -422,7 +422,7 @@ export function AgentSettings({
                                     <textarea
                                         value={ignoredDirsInput}
                                         onChange={(e) => handleIgnoredDirsChange(e.target.value)}
-                                        className="w-full h-20 p-2 bg-black/20 rounded-lg border border-border focus:border-accent/50 outline-none text-xs font-mono resize-none text-text-secondary"
+                                        className="w-full h-20 p-2 bg-background/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all rounded-lg rounded-lg border border-border focus:border-accent/50 outline-none text-xs font-mono resize-none text-text-secondary"
                                     />
                                 </div>
                             </div>

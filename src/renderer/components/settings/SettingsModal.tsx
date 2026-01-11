@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Cpu, Settings2, Code, Keyboard, Database, Shield, Monitor, Globe, Plug, Braces, Brain, FileCode } from 'lucide-react'
+import { Cpu, Settings2, Code, Keyboard, Database, Shield, Monitor, Globe, Plug, Braces, Brain, FileCode, Check } from 'lucide-react'
 import { useStore } from '@store'
 import { PROVIDERS } from '@/shared/config/providers'
 import { getEditorConfig, saveEditorConfig, settingsService } from '@renderer/settings'
@@ -211,64 +211,61 @@ export default function SettingsModal() {
     ]
 
     return (
-        <Modal isOpen={true} onClose={() => setShowSettings(false)} title="" size="5xl" noPadding className="overflow-hidden bg-background">
+        <Modal isOpen={true} onClose={() => setShowSettings(false)} title="" size="5xl" noPadding className="overflow-hidden bg-background border border-border/50 shadow-2xl">
             <div className="flex h-[75vh] max-h-[800px]">
                 {/* Modern Sidebar */}
-                <div className="w-64 bg-white/5 backdrop-blur-md border-r border-border flex flex-col pt-6 pb-4">
+                <div className="w-64 bg-surface/5 backdrop-blur-xl border-r border-border flex flex-col pt-6 pb-4">
                     <div className="px-6 mb-6">
-                        <h2 className="text-lg font-semibold text-text-primary tracking-tight">
+                        <h2 className="text-lg font-semibold text-text-primary tracking-tight flex items-center gap-2">
+                            <Settings2 className="w-5 h-5 text-accent" />
                             {language === 'zh' ? '设置' : 'Settings'}
                         </h2>
                     </div>
                     
-                    <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto no-scrollbar">
+                    <nav className="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-300 relative group ${
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative group ${
                                     activeTab === tab.id
-                                    ? 'bg-accent/10 text-accent shadow-sm'
-                                    : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'
+                                    ? 'bg-accent/10 text-accent'
+                                    : 'text-text-secondary hover:bg-surface/50 hover:text-text-primary'
                                     }`}
                             >
                                 {/* Active Vertical Indicator */}
                                 {activeTab === tab.id && (
-                                    <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-accent rounded-r-full shadow-[0_0_10px_rgba(var(--accent),0.8)]" />
+                                    <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-accent rounded-r-full shadow-[0_0_8px_rgba(var(--accent),0.6)]" />
                                 )}
 
-                                <span className={`transition-colors duration-300 ${activeTab === tab.id ? 'text-accent scale-110' : 'text-text-muted group-hover:text-text-primary'}`}>
+                                <span className={`transition-colors duration-200 ${activeTab === tab.id ? 'text-accent' : 'text-text-muted group-hover:text-text-primary'}`}>
                                     {tab.icon}
                                 </span>
-                                <span className="uppercase tracking-widest">{tab.label}</span>
-                                
-                                {activeTab === tab.id && (
-                                    <div className="ml-auto w-1 h-1 rounded-full bg-accent animate-pulse" />
-                                )}
+                                <span>{tab.label}</span>
                             </button>
                         ))}
                     </nav>
 
                     {/* Language & Footer */}
-                    <div className="mt-auto px-4 pt-4 border-t border-border space-y-4">
-                        <div className="flex items-center gap-2 px-2 text-text-muted">
-                            <Globe className="w-4 h-4" />
+                    <div className="mt-auto px-4 pt-4 border-t border-border/50 space-y-3">
+                        <div className="flex items-center gap-2 px-1 text-text-muted">
+                            <Globe className="w-3.5 h-3.5" />
                             <span className="text-xs font-medium uppercase tracking-wider">{language === 'zh' ? '语言' : 'Language'}</span>
                         </div>
                         <Select
                             value={localLanguage}
                             onChange={(value) => setLocalLanguage(value as any)}
                             options={LANGUAGES.map(l => ({ value: l.id, label: l.name }))}
-                            className="w-full text-sm bg-surface/50 border-border"
+                            className="w-full text-xs bg-surface border-border/50 hover:border-accent/50 transition-colors"
                         />
                     </div>
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col min-w-0 bg-background/50">
-                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar scroll-smooth">
+                <div className="flex-1 flex flex-col min-w-0 bg-background relative">
+                    <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar scroll-smooth pb-24">
                         {/* Tab Title */}
-                        <div className="mb-6">
+                        <div className="mb-8 pb-4 border-b border-border/50">
                             <h3 className="text-2xl font-bold text-text-primary">
                                 {tabs.find(t => t.id === activeTab)?.label}
                             </h3>
@@ -277,57 +274,64 @@ export default function SettingsModal() {
                             </p>
                         </div>
 
-                        {activeTab === 'provider' && (
-                            <ProviderSettings
-                                localConfig={localConfig}
-                                setLocalConfig={setLocalConfig}
-                                localProviderConfigs={localProviderConfigs}
-                                setLocalProviderConfigs={setLocalProviderConfigs}
-                                showApiKey={showApiKey}
-                                setShowApiKey={setShowApiKey}
-                                selectedProvider={selectedProvider}
-                                providers={providers}
-                                language={language}
-                            />
-                        )}
-                        {activeTab === 'editor' && (
-                            <EditorSettings settings={editorSettings} setSettings={setEditorSettings} language={language} />
-                        )}
-                        {activeTab === 'snippets' && <SnippetSettings language={language} />}
-                        {activeTab === 'agent' && (
-                            <AgentSettings
-                                autoApprove={localAutoApprove}
-                                setAutoApprove={setLocalAutoApprove}
-                                aiInstructions={localAiInstructions}
-                                setAiInstructions={setLocalAiInstructions}
-                                promptTemplateId={localPromptTemplateId}
-                                setPromptTemplateId={setLocalPromptTemplateId}
-                                agentConfig={localAgentConfig}
-                                setAgentConfig={setLocalAgentConfig}
-                                language={language}
-                            />
-                        )}
-                        {activeTab === 'rules' && <RulesMemorySettings language={language} />}
-                        {activeTab === 'keybindings' && <KeybindingPanel />}
-                        {activeTab === 'mcp' && <McpSettings language={language} />}
-                        {activeTab === 'lsp' && <LspSettings language={language} />}
-                        {activeTab === 'indexing' && <IndexSettings language={language} />}
-                        {activeTab === 'security' && <SecuritySettings language={language} />}
-                        {activeTab === 'system' && <SystemSettings language={language} />}
+                        <div className="animate-fade-in">
+                            {activeTab === 'provider' && (
+                                <ProviderSettings
+                                    localConfig={localConfig}
+                                    setLocalConfig={setLocalConfig}
+                                    localProviderConfigs={localProviderConfigs}
+                                    setLocalProviderConfigs={setLocalProviderConfigs}
+                                    showApiKey={showApiKey}
+                                    setShowApiKey={setShowApiKey}
+                                    selectedProvider={selectedProvider}
+                                    providers={providers}
+                                    language={language}
+                                />
+                            )}
+                            {activeTab === 'editor' && (
+                                <EditorSettings settings={editorSettings} setSettings={setEditorSettings} language={language} />
+                            )}
+                            {activeTab === 'snippets' && <SnippetSettings language={language} />}
+                            {activeTab === 'agent' && (
+                                <AgentSettings
+                                    autoApprove={localAutoApprove}
+                                    setAutoApprove={setLocalAutoApprove}
+                                    aiInstructions={localAiInstructions}
+                                    setAiInstructions={setLocalAiInstructions}
+                                    promptTemplateId={localPromptTemplateId}
+                                    setPromptTemplateId={setLocalPromptTemplateId}
+                                    agentConfig={localAgentConfig}
+                                    setAgentConfig={setLocalAgentConfig}
+                                    language={language}
+                                />
+                            )}
+                            {activeTab === 'rules' && <RulesMemorySettings language={language} />}
+                            {activeTab === 'keybindings' && <KeybindingPanel />}
+                            {activeTab === 'mcp' && <McpSettings language={language} />}
+                            {activeTab === 'lsp' && <LspSettings language={language} />}
+                            {activeTab === 'indexing' && <IndexSettings language={language} />}
+                            {activeTab === 'security' && <SecuritySettings language={language} />}
+                            {activeTab === 'system' && <SystemSettings language={language} />}
+                        </div>
                     </div>
 
                     {/* Floating Footer */}
-                    <div className="px-8 py-5 border-t border-border bg-background/80 backdrop-blur-xl flex items-center justify-end gap-3 z-10">
-                        <Button variant="ghost" onClick={() => setShowSettings(false)} className="hover:bg-white/5">
+                    <div className="absolute bottom-0 left-0 right-0 px-8 py-4 border-t border-border/50 bg-background/80 backdrop-blur-xl flex items-center justify-end gap-3 z-10">
+                        <Button variant="ghost" onClick={() => setShowSettings(false)} className="hover:bg-surface text-text-secondary">
                             {language === 'zh' ? '取消' : 'Cancel'}
                         </Button>
                         <Button 
                             variant={saved ? 'success' : 'primary'} 
                             onClick={handleSave}
-                            className={`min-w-[100px] shadow-lg ${saved ? 'bg-green-500 hover:bg-green-600' : 'bg-accent hover:bg-accent-hover shadow-accent/20'}`}
+                            className={`min-w-[120px] shadow-lg transition-all duration-300 ${
+                                saved 
+                                ? 'bg-status-success hover:bg-status-success/90 text-white' 
+                                : 'bg-accent hover:bg-accent-hover text-white shadow-accent/20'
+                            }`}
                         >
                             {saved ? (
-                                <span className="flex items-center gap-2">
+                                <span className="flex items-center gap-2 justify-center">
+                                    <Check className="w-4 h-4" />
                                     {language === 'zh' ? '已保存' : 'Saved'}
                                 </span>
                             ) : (language === 'zh' ? '保存更改' : 'Save Changes')}

@@ -3,8 +3,8 @@
  * 显示上下文压缩的摘要和统计信息
  */
 
-import { Layers, Trash2, FileText, Hash, ArrowRight, Zap } from 'lucide-react'
-import { useAgentStore, selectCompressionStats, selectContextSummary, contextManager, COMPRESSION_LEVELS } from '@/renderer/agent'
+import { Layers, RefreshCw, Hash, Zap, FileText, ArrowRight, AlertTriangle } from 'lucide-react'
+import { useAgentStore, selectCompressionStats, selectContextSummary, contextManager } from '@/renderer/agent'
 import { Button } from '../ui'
 import { useCallback, useMemo } from 'react'
 import type { CompressionLevel } from '@/renderer/agent/context/types'
@@ -13,20 +13,12 @@ interface CompactionStatsContentProps {
   language?: 'zh' | 'en'
 }
 
-const LEVEL_COLORS: Record<CompressionLevel, string> = {
-  0: 'text-text-muted',
-  1: 'text-blue-400',
-  2: 'text-green-400',
-  3: 'text-orange-400',
-  4: 'text-red-400',
-}
-
-const LEVEL_BG_COLORS: Record<CompressionLevel, string> = {
-  0: 'bg-white/5',
-  1: 'bg-blue-500/10 border-blue-500/30',
-  2: 'bg-green-500/10 border-green-500/30',
-  3: 'bg-orange-500/10 border-orange-500/30',
-  4: 'bg-red-500/10 border-red-500/30',
+const LEVEL_STYLES: Record<CompressionLevel, { color: string; bg: string }> = {
+  0: { color: 'text-text-muted', bg: 'bg-text-muted/10' },
+  1: { color: 'text-blue-400', bg: 'bg-blue-400/10' },
+  2: { color: 'text-green-400', bg: 'bg-green-400/10' },
+  3: { color: 'text-orange-400', bg: 'bg-orange-400/10' },
+  4: { color: 'text-red-400', bg: 'bg-red-400/10' },
 }
 
 export default function CompactionStatsContent({
@@ -40,201 +32,255 @@ export default function CompactionStatsContent({
   const handoffRequired = useAgentStore(state => state.handoffRequired)
 
   const currentLevel = compressionStats?.level ?? 0
-  const levelConfig = COMPRESSION_LEVELS[currentLevel]
+  const style = LEVEL_STYLES[currentLevel]
+
+  const LEVEL_DESCRIPTIONS: Record<CompressionLevel, { title: string; desc: string }> = {
+    0: { 
+      title: language === 'zh' ? '完整上下文' : 'Full Context', 
+      desc: language === 'zh' ? '保留所有历史消息' : 'All history kept' 
+    },
+    1: { 
+      title: language === 'zh' ? '智能截断' : 'Smart Truncation', 
+      desc: language === 'zh' ? '截断冗长的工具输出' : 'Truncate long tool outputs' 
+    },
+    2: { 
+      title: language === 'zh' ? '滑动窗口' : 'Sliding Window', 
+      desc: language === 'zh' ? '保留最近对话 + 摘要' : 'Recent turns + summary' 
+    },
+    3: { 
+      title: language === 'zh' ? '深度压缩' : 'Deep Compression', 
+      desc: language === 'zh' ? '仅保留核心逻辑' : 'Core logic only' 
+    },
+    4: { 
+      title: language === 'zh' ? '会话交接' : 'Session Handoff', 
+      desc: language === 'zh' ? '创建新会话以继续' : 'New session required' 
+    },
+  }
 
   const handleClear = useCallback(() => {
     contextManager.clear()
     setCompressionStats(null)
-    // 同时重置 handoff 状态
     setHandoffRequired(false)
     setHandoffDocument(null)
   }, [setCompressionStats, setHandoffRequired, setHandoffDocument])
 
-  // 优先使用 store 中的 contextSummary（从 handoff 过来的），否则使用 contextManager 的摘要
   const contextSummary = useAgentStore(selectContextSummary)
   const summary = useMemo(() => contextSummary || contextManager.getSummary(), [compressionStats, contextSummary])
 
   return (
-    <div className="p-4 space-y-4">
-      {/* 压缩级别指示器 */}
-      <div className={`p-4 rounded-xl border ${LEVEL_BG_COLORS[currentLevel]}`}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${currentLevel > 0 ? LEVEL_BG_COLORS[currentLevel] : 'bg-white/5'}`}>
-              <Layers className={`w-4 h-4 ${LEVEL_COLORS[currentLevel]}`} />
+    <div className="flex flex-col h-full bg-background/50 backdrop-blur-xl select-none">
+      {/* 顶部：等级状态 */}
+      <div className="p-5 border-b border-border/40">
+        <div className="flex items-start justify-between">
+          <div className="flex gap-4">
+            {/* 动态图标 */}
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-500 ${style.bg} ${style.color}`}>
+              <Layers className="w-6 h-6" />
             </div>
-            <div>
-              <span className={`text-sm font-medium ${LEVEL_COLORS[currentLevel]}`}>
-                Level {currentLevel}
-              </span>
-              <span className="text-xs text-text-muted ml-2">
-                {levelConfig.description}
-              </span>
+            
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-black tracking-tight text-text-primary">
+                  L{currentLevel}
+                </span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${style.bg} ${style.color}`}>
+                  {LEVEL_DESCRIPTIONS[currentLevel].title}
+                </span>
+              </div>
+              <p className="text-xs text-text-muted font-medium">
+                {LEVEL_DESCRIPTIONS[currentLevel].desc}
+              </p>
             </div>
           </div>
-          
-          {/* 操作按钮 */}
+
           {compressionStats && compressionStats.level > 0 && (
             <Button
               variant="ghost"
               size="icon"
               onClick={handleClear}
-              className="h-7 w-7 hover:bg-red-500/10 hover:text-red-400"
-              title={language === 'zh' ? '重置' : 'Reset'}
+              className="h-8 w-8 text-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+              title={language === 'zh' ? '重置上下文' : 'Reset Context'}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <RefreshCw className="w-4 h-4" />
             </Button>
           )}
         </div>
 
-        {/* 压缩级别进度条 */}
-        <div className="flex items-center gap-1 mb-3">
+        {/* 进度条 */}
+        <div className="mt-5 flex gap-1 h-1.5 w-full">
           {[0, 1, 2, 3, 4].map((level) => (
             <div
               key={level}
-              className={`flex-1 h-1.5 rounded-full transition-all ${
+              className={`flex-1 rounded-full transition-all duration-500 ${
                 level <= currentLevel 
-                  ? level === 4 ? 'bg-red-400' : level === 3 ? 'bg-orange-400' : level === 2 ? 'bg-green-400' : level === 1 ? 'bg-blue-400' : 'bg-white/20'
-                  : 'bg-white/10'
+                  ? level === 4 ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.4)]' 
+                  : level === 3 ? 'bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.4)]' 
+                  : level === 2 ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]' 
+                  : level === 1 ? 'bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.4)]' 
+                  : 'bg-white/20'
+                  : 'bg-white/5'
               }`}
             />
           ))}
         </div>
+      </div>
 
-        {/* 统计信息 */}
-        {compressionStats && (
-          <div className="grid grid-cols-3 gap-2">
-            <div className="p-2 rounded-lg bg-black/20">
-              <div className="flex items-center gap-1 text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                <Hash className="w-3 h-3" />
-                {language === 'zh' ? '原始' : 'Original'}
-              </div>
-              <div className="text-sm font-mono text-text-primary">
-                {compressionStats.originalTokens >= 1000 
-                  ? `${(compressionStats.originalTokens / 1000).toFixed(1)}k` 
-                  : compressionStats.originalTokens}
-              </div>
-            </div>
-            <div className="p-2 rounded-lg bg-black/20">
-              <div className="flex items-center gap-1 text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                <Zap className="w-3 h-3" />
-                {language === 'zh' ? '压缩后' : 'Final'}
-              </div>
-              <div className="text-sm font-mono text-text-primary">
-                {compressionStats.finalTokens >= 1000 
-                  ? `${(compressionStats.finalTokens / 1000).toFixed(1)}k` 
-                  : compressionStats.finalTokens}
-              </div>
-            </div>
-            <div className="p-2 rounded-lg bg-black/20">
-              <div className="flex items-center gap-1 text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                <FileText className="w-3 h-3" />
-                {language === 'zh' ? '节省' : 'Saved'}
-              </div>
-              <div className={`text-sm font-mono ${compressionStats.savedPercent > 0 ? 'text-green-400' : 'text-text-primary'}`}>
-                {compressionStats.savedPercent}%
-              </div>
-            </div>
+      {/* 内容区域 */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+        
+        {/* 统计数据 */}
+        {compressionStats ? (
+          <div className="grid grid-cols-3 gap-4">
+            <StatItem 
+              label={language === 'zh' ? '原始 Token' : 'Original'}
+              value={formatToken(compressionStats.originalTokens)}
+              icon={Hash}
+            />
+            <StatItem 
+              label={language === 'zh' ? '当前 Token' : 'Current'}
+              value={formatToken(compressionStats.finalTokens)}
+              icon={Zap}
+              highlight
+            />
+            <StatItem 
+              label={language === 'zh' ? '已节省' : 'Saved'}
+              value={`${compressionStats.savedPercent}%`}
+              icon={FileText}
+              color="text-green-400"
+            />
+          </div>
+        ) : (
+          <div className="text-center py-4 text-text-muted text-xs opacity-60">
+            {language === 'zh' ? '暂无统计数据' : 'No stats available'}
           </div>
         )}
 
-        {/* 轮次信息 */}
+        {/* 轮次详情 */}
         {compressionStats && (compressionStats.keptTurns > 0 || compressionStats.compactedTurns > 0) && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-text-muted">
-            <span>{language === 'zh' ? '保留' : 'Kept'}: {compressionStats.keptTurns} {language === 'zh' ? '轮' : 'turns'}</span>
+          <div className="flex items-center gap-6 px-1">
+            <TurnInfo 
+              label={language === 'zh' ? '保留轮次' : 'Kept Turns'}
+              value={compressionStats.keptTurns}
+              color="bg-blue-400"
+            />
             {compressionStats.compactedTurns > 0 && (
               <>
-                <ArrowRight className="w-3 h-3" />
-                <span>{language === 'zh' ? '压缩' : 'Compacted'}: {compressionStats.compactedTurns} {language === 'zh' ? '轮' : 'turns'}</span>
+                <ArrowRight className="w-3 h-3 text-text-muted/30" />
+                <TurnInfo 
+                  label={language === 'zh' ? '压缩轮次' : 'Compacted'}
+                  value={compressionStats.compactedTurns}
+                  color="bg-orange-400"
+                />
               </>
             )}
           </div>
         )}
+
+        {/* Handoff 警告 */}
+        {handoffDocument && handoffRequired && (
+          <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 flex gap-3 animate-pulse">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+            <div>
+              <h4 className="text-xs font-bold text-red-400 mb-1">
+                {language === 'zh' ? '需要创建新会话' : 'New Session Required'}
+              </h4>
+              <p className="text-[10px] text-red-400/70">
+                {language === 'zh' 
+                  ? '当前上下文已达到极限。系统将自动创建新会话并迁移关键信息。' 
+                  : 'Context limit reached. System will auto-create a new session and migrate key info.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 摘要信息 */}
+        {summary && (
+          <div className="space-y-3">
+            <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">
+              {language === 'zh' ? '当前任务' : 'Current Task'}
+            </h4>
+            
+            <div className="p-4 rounded-xl bg-surface/30 border border-border/40 space-y-4">
+              <div>
+                <div className="text-[10px] text-accent font-bold uppercase tracking-wider mb-1.5 opacity-80">
+                  {language === 'zh' ? '目标' : 'Objective'}
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed font-medium">
+                  {summary.objective}
+                </p>
+              </div>
+
+              {summary.completedSteps.length > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-1.5 opacity-60">
+                    {language === 'zh' ? '最近进展' : 'Recent Progress'}
+                  </div>
+                  <ul className="space-y-1.5">
+                    {summary.completedSteps.slice(-2).map((step, i) => (
+                      <li key={i} className="flex gap-2 text-xs text-text-secondary/80">
+                        <span className="w-1 h-1 rounded-full bg-green-400/40 mt-1.5 shrink-0" />
+                        <span className="line-clamp-1">{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Handoff 提示 - L4 过渡由 StatusBar 自动处理 */}
-      {handoffDocument && handoffRequired && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-            <span className="text-sm font-medium text-red-400">
-              {language === 'zh' ? '上下文已满，需要创建新会话' : 'Context full, new session required'}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* 摘要内容 */}
-      {summary ? (
-        <div className="space-y-2">
-          <h4 className="text-xs font-medium text-text-secondary uppercase tracking-wider">
-            {language === 'zh' ? '任务摘要' : 'Task Summary'}
-          </h4>
-          <div className="max-h-40 overflow-y-auto custom-scrollbar p-3 rounded-xl bg-black/20 border border-border-subtle space-y-2">
-            <div>
-              <span className="text-[10px] text-text-muted uppercase">
-                {language === 'zh' ? '目标' : 'Objective'}:
-              </span>
-              <p className="text-xs text-text-secondary">{summary.objective}</p>
-            </div>
-            {summary.completedSteps.length > 0 && (
-              <div>
-                <span className="text-[10px] text-text-muted uppercase">
-                  {language === 'zh' ? '已完成' : 'Completed'}:
+      {/* Footer Legend */}
+      <div className="p-4 border-t border-border/40 bg-background/30 backdrop-blur-md">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          {([1, 2, 3, 4] as CompressionLevel[]).map((level) => {
+            const style = LEVEL_STYLES[level]
+            const desc = LEVEL_DESCRIPTIONS[level].desc
+            return (
+              <div key={level} className="flex items-center gap-2 group">
+                <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded ${style.bg} ${style.color} group-hover:ring-1 ring-inset ring-current/20 transition-all`}>
+                  L{level}
                 </span>
-                <ul className="text-xs text-text-secondary list-disc list-inside">
-                  {summary.completedSteps.slice(-3).map((step, i) => (
-                    <li key={i} className="truncate">{step}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {summary.fileChanges.length > 0 && (
-              <div>
-                <span className="text-[10px] text-text-muted uppercase">
-                  {language === 'zh' ? '文件变更' : 'File Changes'}:
+                <span className="text-[10px] text-text-secondary truncate group-hover:text-text-primary transition-colors" title={desc}>
+                  {desc}
                 </span>
-                <ul className="text-xs text-text-secondary">
-                  {summary.fileChanges.slice(-3).map((f, i) => (
-                    <li key={i} className="truncate">
-                      <span className={`${f.action === 'create' ? 'text-green-400' : f.action === 'delete' ? 'text-red-400' : 'text-yellow-400'}`}>
-                        [{f.action}]
-                      </span> {f.path}
-                    </li>
-                  ))}
-                </ul>
               </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-4 text-text-muted text-xs">
-          {language === 'zh' 
-            ? '对话尚未压缩。当上下文超过阈值时会自动压缩。'
-            : 'Conversation not yet compacted. Will auto-compact when context exceeds threshold.'
-          }
-        </div>
-      )}
-
-      {/* 压缩级别说明 */}
-      <div className="text-[10px] text-text-muted space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="w-12 text-blue-400">L1</span>
-          <span>{language === 'zh' ? '智能截断工具输出' : 'Smart truncation of tool outputs'}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-12 text-green-400">L2</span>
-          <span>{language === 'zh' ? '滑动窗口 + 摘要' : 'Sliding window + summary'}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-12 text-orange-400">L3</span>
-          <span>{language === 'zh' ? '深度压缩' : 'Deep compression'}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-12 text-red-400">L4</span>
-          <span>{language === 'zh' ? '会话交接' : 'Session handoff'}</span>
+            )
+          })}
         </div>
       </div>
     </div>
   )
+}
+
+// 子组件：统计项
+function StatItem({ label, value, icon: Icon, highlight, color }: any) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5 text-[10px] text-text-muted font-bold uppercase tracking-wider opacity-70">
+        <Icon className="w-3 h-3" />
+        {label}
+      </div>
+      <div className={`text-lg font-mono font-bold tracking-tight ${color || (highlight ? 'text-text-primary' : 'text-text-secondary')}`}>
+        {value}
+      </div>
+    </div>
+  )
+}
+
+// 子组件：轮次信息
+function TurnInfo({ label, value, color }: any) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
+      <div className="flex flex-col">
+        <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider">{label}</span>
+        <span className="text-xs font-mono font-bold text-text-secondary">{value}</span>
+      </div>
+    </div>
+  )
+}
+
+function formatToken(num: number) {
+  return num >= 1000 ? `${(num / 1000).toFixed(1)}k` : num
 }

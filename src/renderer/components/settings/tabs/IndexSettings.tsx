@@ -194,6 +194,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                                         value={embeddingConfig.baseUrl}
                                         onChange={(e) => setEmbeddingConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
                                         placeholder="https://your-service.com/v1/embeddings"
+                                        className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
                                     />
                                     <p className="text-xs text-text-muted mt-1">
                                         {language === 'zh' ? '兼容 OpenAI embeddings API 格式' : 'OpenAI embeddings API compatible endpoint'}
@@ -209,6 +210,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                                             value={embeddingConfig.model}
                                             onChange={(e) => setEmbeddingConfig(prev => ({ ...prev, model: e.target.value }))}
                                             placeholder="text-embedding-3-small"
+                                            className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
                                         />
                                     </div>
                                     <div>
@@ -221,6 +223,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                                             onChange={(e) => setEmbeddingConfig(prev => ({ ...prev, dimensions: parseInt(e.target.value) || 768 }))}
                                             min={128}
                                             max={4096}
+                                            className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -233,7 +236,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                                     API Key {embeddingConfig.provider !== 'custom' && <span className="text-text-muted text-xs">({language === 'zh' ? '必填' : 'required'})</span>}
                                 </label>
                                 <div className="relative">
-                                    <Input type={showApiKey ? 'text' : 'password'} value={embeddingConfig.apiKey} onChange={(e) => setEmbeddingConfig(prev => ({ ...prev, apiKey: e.target.value }))} placeholder={language === 'zh' ? '输入 API Key' : 'Enter API Key'} />
+                                    <Input type={showApiKey ? 'text' : 'password'} value={embeddingConfig.apiKey} onChange={(e) => setEmbeddingConfig(prev => ({ ...prev, apiKey: e.target.value }))} placeholder={language === 'zh' ? '输入 API Key' : 'Enter API Key'} className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all" />
                                     <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
                                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
@@ -268,7 +271,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                                                 onChange={(e) => setIndexOptions({ ...indexOptions, chunkSize: parseInt(e.target.value) || 80 })}
                                                 min={20}
                                                 max={200}
-                                                className="text-xs"
+                                                className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -279,7 +282,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                                                 onChange={(e) => setIndexOptions({ ...indexOptions, chunkOverlap: parseInt(e.target.value) || 10 })}
                                                 min={0}
                                                 max={50}
-                                                className="text-xs"
+                                                className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
                                             />
                                         </div>
                                     </div>
@@ -291,7 +294,7 @@ export function IndexSettings({ language }: IndexSettingsProps) {
                                             onChange={(e) => setIndexOptions({ ...indexOptions, maxFileSize: (parseInt(e.target.value) || 1024) * 1024 })}
                                             min={100}
                                             max={10240}
-                                            className="text-xs"
+                                            className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
                                         />
                                     </div>
                                 </div>

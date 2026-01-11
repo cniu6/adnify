@@ -203,7 +203,7 @@ export function LspSettings({ language }: LspSettingsProps) {
           {/* 当前路径 */}
           <div className="space-y-1">
             <label className="text-xs text-text-muted uppercase tracking-wider">{tt('currentPath')}</label>
-            <div className="flex items-center gap-2 p-2 bg-black/20 rounded text-sm text-text-secondary font-mono">
+            <div className="flex items-center gap-2 p-2 bg-background/50 border border-border/50 rounded text-sm text-text-secondary font-mono">
               <FolderOpen className="w-4 h-4 text-accent flex-shrink-0" />
               <span className="truncate">{binDir}</span>
             </div>
@@ -217,7 +217,7 @@ export function LspSettings({ language }: LspSettingsProps) {
                 value={customBinDir}
                 onChange={(e) => setCustomBinDir(e.target.value)}
                 placeholder={defaultBinDir}
-                className="flex-1 font-mono text-sm"
+                className="flex-1 font-mono text-sm bg-background/50 border-border/50 rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
               />
               <Button variant="secondary" size="sm" onClick={handleBrowse}>
                 <FolderOpen className="w-4 h-4" />

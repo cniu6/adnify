@@ -192,7 +192,7 @@ export function SystemSettings({ language }: SystemSettingsProps) {
                             </Button>
                         </div>
 
-                        <div className="flex items-center gap-3 p-4 bg-black/30 rounded-xl border border-border shadow-inner">
+                        <div className="flex items-center gap-3 p-4 bg-background/50 rounded-xl border border-border shadow-inner">
                             <div className="p-1.5 bg-white/5 rounded-lg">
                                 <HardDrive className="w-4 h-4 text-text-muted" />
                             </div>
@@ -301,7 +301,7 @@ export function SystemSettings({ language }: SystemSettingsProps) {
                         {language === 'zh' ? '关于' : 'About'}
                     </h4>
                 </div>
-                <div className="p-10 bg-black/20 backdrop-blur-xl rounded-3xl border border-border text-center shadow-inner relative overflow-hidden">
+                <div className="p-10 bg-background/50 backdrop-blur-xl rounded-3xl border border-border text-center shadow-inner relative overflow-hidden">
                     <div className="absolute inset-0 bg-accent/5 blur-3xl pointer-events-none" />
                     <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-accent/20 shadow-xl shadow-accent/10 relative z-10">
                         <Monitor className="w-8 h-8 text-accent" />

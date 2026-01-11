@@ -23,6 +23,7 @@ import DiffViewer from '../editor/DiffViewer'
 import { t } from '@renderer/i18n'
 import { composerService, FileChange } from '@renderer/agent/services/composerService'
 import { getEditorConfig } from '@renderer/settings'
+import { Modal } from '@components/ui'
 
 interface FileEdit {
   path: string
@@ -253,14 +254,15 @@ export default function ComposerPanel({ onClose, initialChanges }: ComposerPanel
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4">
-      <div className="w-full max-w-5xl max-h-[90vh] bg-background/60 backdrop-blur-3xl border border-border-subtle rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-scale-in relative">
-        {/* Background Decoration */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-accent/10 rounded-full blur-[100px]" />
-          <div className="absolute bottom-[-5%] left-[-5%] w-80 h-80 bg-purple-500/5 rounded-full blur-[80px]" />
-        </div>
-
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title=""
+      size="5xl"
+      noPadding
+      showCloseButton={false}
+    >
+      <div className="flex flex-col h-auto max-h-[80vh]">
         {/* Header */}
         <div className="relative flex items-center justify-between px-8 py-6 border-b border-border-subtle bg-surface/10">
           <div className="flex items-center gap-4">
@@ -372,14 +374,14 @@ export default function ComposerPanel({ onClose, initialChanges }: ComposerPanel
               </div>
 
               {/* Instruction Input Area */}
-              <div className="px-8 pb-8 flex-1 flex flex-col">
-                <div className="flex-1 relative flex flex-col rounded-3xl border border-border-subtle bg-surface/10 focus-within:border-accent/40 focus-within:bg-surface/20 transition-all duration-500 shadow-inner overflow-hidden group/input">
+              <div className="px-8 pb-8">
+                <div className="relative flex flex-col rounded-2xl border border-border-subtle bg-surface/5 focus-within:border-accent/40 transition-all duration-300 overflow-hidden">
                   <textarea
                     ref={inputRef}
                     value={instruction}
                     onChange={(e) => setInstruction(e.target.value)}
                     placeholder={t('describeChanges', language)}
-                    className="flex-1 w-full bg-transparent border-none px-6 py-5 text-base text-text-primary placeholder-text-muted/40 focus:ring-0 resize-none leading-relaxed font-medium"
+                    className="w-full h-32 bg-transparent border-none px-5 py-4 text-sm text-text-primary placeholder-text-muted/40 focus:ring-0 focus:outline-none resize-none leading-relaxed"
                     style={{ fontSize: `${fontSize}px` }}
                     disabled={isGenerating}
                     onKeyDown={(e) => {
@@ -391,7 +393,7 @@ export default function ComposerPanel({ onClose, initialChanges }: ComposerPanel
                   />
 
                   {/* Input Toolbar */}
-                  <div className="px-6 py-4 border-t border-border-subtle bg-surface/10 flex items-center justify-between">
+                  <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/20 border border-border-subtle">
                         <div className={`w-1.5 h-1.5 rounded-full ${selectedFiles.length > 0 ? 'bg-accent animate-pulse' : 'bg-text-muted opacity-30'}`} />
@@ -609,7 +611,7 @@ export default function ComposerPanel({ onClose, initialChanges }: ComposerPanel
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 

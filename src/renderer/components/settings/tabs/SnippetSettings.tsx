@@ -201,7 +201,7 @@ export function SnippetSettings({ language }: SnippetSettingsProps) {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={language === 'zh' ? '搜索片段...' : 'Search snippets...'}
-              className="pl-9 h-9"
+              className="pl-9 h-9 bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
             />
           </div>
           <Select
@@ -255,6 +255,7 @@ export function SnippetSettings({ language }: SnippetSettingsProps) {
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="React Function Component"
+                className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
               />
             </div>
             <div>
@@ -265,6 +266,7 @@ export function SnippetSettings({ language }: SnippetSettingsProps) {
                 value={formData.prefix}
                 onChange={e => setFormData(prev => ({ ...prev, prefix: e.target.value }))}
                 placeholder="rfc"
+                className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
               />
             </div>
           </div>
@@ -277,6 +279,7 @@ export function SnippetSettings({ language }: SnippetSettingsProps) {
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder={language === 'zh' ? '片段描述...' : 'Snippet description...'}
+              className="bg-background/50 border-border/50 text-xs rounded-lg focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
             />
           </div>
 
@@ -291,7 +294,7 @@ export function SnippetSettings({ language }: SnippetSettingsProps) {
               value={formData.body}
               onChange={e => setFormData(prev => ({ ...prev, body: e.target.value }))}
               placeholder={`const \${1:name} = () => {\n  \${0}\n}`}
-              className="w-full h-40 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-accent/50"
+              className="w-full h-40 px-3 py-2 bg-background/50 border border-border/50 rounded-lg text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-accent/50 transition-all"
             />
           </div>
 
@@ -404,7 +407,7 @@ export function SnippetSettings({ language }: SnippetSettingsProps) {
                         ))
                       )}
                     </div>
-                    <pre className="p-3 bg-black/30 rounded-lg text-xs font-mono text-text-secondary overflow-x-auto">
+                    <pre className="p-3 bg-black/20 rounded-lg text-xs font-mono text-text-secondary overflow-x-auto">
                       {snippet.body}
                     </pre>
                   </div>

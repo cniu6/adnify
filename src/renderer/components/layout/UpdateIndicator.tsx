@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Download, RefreshCw, CheckCircle, AlertCircle, Loader2, ExternalLink, X } from 'lucide-react'
+import { Download, RefreshCw, CheckCircle, AlertCircle, Loader2, ExternalLink, X, ArrowUpCircle, Sparkles, Zap } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { updaterService, UpdateStatus } from '@services/updaterService'
 import { useStore } from '@store'
@@ -18,92 +18,78 @@ export default function UpdateIndicator() {
   useEffect(() => {
     updaterService.initialize()
     const unsubscribe = updaterService.subscribe(setStatus)
-    
-    // 立即获取当前状态
     updaterService.getStatus().then(setStatus)
-    
-    return () => {
-      unsubscribe()
-    }
+    return () => unsubscribe()
   }, [])
 
-  // 点击外部关闭
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
         setShowPopover(false)
       }
     }
-    if (showPopover) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
+    if (showPopover) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showPopover])
 
-  const handleCheck = async () => {
-    await updaterService.checkForUpdates()
-  }
-
+  const handleCheck = async () => await updaterService.checkForUpdates()
+  
   const handleDownload = async () => {
-    if (status?.isPortable) {
-      updaterService.openDownloadPage()
-    } else {
-      await updaterService.downloadUpdate()
-    }
+    if (status?.isPortable) updaterService.openDownloadPage()
+    else await updaterService.downloadUpdate()
   }
 
-  const handleInstall = () => {
-    updaterService.installAndRestart()
-  }
+  const handleInstall = () => updaterService.installAndRestart()
 
-  // 始终显示，让用户可以手动检查更新
   const hasUpdate = status?.status === 'available' || status?.status === 'downloaded'
   const isChecking = status?.status === 'checking'
   const isDownloading = status?.status === 'downloading'
   const isError = status?.status === 'error'
 
   const t = {
-    checking: language === 'zh' ? '检查中...' : 'Checking...',
-    available: language === 'zh' ? '有新版本' : 'Update Available',
-    downloaded: language === 'zh' ? '准备安装' : 'Ready to Install',
-    downloading: language === 'zh' ? '下载中' : 'Downloading',
-    notAvailable: language === 'zh' ? '已是最新' : 'Up to date',
-    error: language === 'zh' ? '检查失败' : 'Check failed',
-    download: language === 'zh' ? '下载更新' : 'Download',
-    install: language === 'zh' ? '安装并重启' : 'Install & Restart',
-    openPage: language === 'zh' ? '打开下载页' : 'Open Download Page',
-    checkNow: language === 'zh' ? '检查更新' : 'Check Now',
-    newVersion: language === 'zh' ? '新版本' : 'New Version',
-    currentVersion: language === 'zh' ? '当前版本' : 'Current',
-    portableHint: language === 'zh' ? '便携版需手动下载' : 'Portable version requires manual download',
+    title: language === 'zh' ? '系统更新' : 'System Update',
+    checking: language === 'zh' ? '正在检查新版本...' : 'Checking for updates...',
+    available: language === 'zh' ? '发现新版本' : 'New Version Available',
+    downloaded: language === 'zh' ? '更新已就绪' : 'Update Ready',
+    downloading: language === 'zh' ? '正在下载更新' : 'Downloading Update',
+    notAvailable: language === 'zh' ? '已是最新版本' : 'You are up to date',
+    error: language === 'zh' ? '检查失败' : 'Update Failed',
+    download: language === 'zh' ? '立即更新' : 'Update Now',
+    install: language === 'zh' ? '重启生效' : 'Restart to Apply',
+    openPage: language === 'zh' ? '前往下载' : 'Go to Download',
+    checkNow: language === 'zh' ? '检查更新' : 'Check for Updates',
+    version: language === 'zh' ? '版本' : 'Version',
+    portableHint: language === 'zh' ? '便携版需手动下载安装' : 'Manual download required for portable version',
   }
 
   return (
-    <div className="relative" ref={popoverRef}>
-      {/* 触发按钮 */}
+    <div className="relative z-50" ref={popoverRef}>
+      {/* Trigger Button */}
       <button
         onClick={() => setShowPopover(!showPopover)}
-        className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+        className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 group ${
           hasUpdate 
-            ? 'text-accent hover:bg-accent/10' 
-            : isError 
-              ? 'text-red-400 hover:bg-red-400/10'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+            ? 'bg-accent/10 text-accent ring-1 ring-accent/20 hover:bg-accent/20 hover:shadow-[0_0_15px_-3px_rgba(var(--accent),0.3)]' 
+            : isError
+              ? 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20 hover:bg-red-500/20'
+              : showPopover
+                ? 'bg-surface text-text-primary'
+                : 'text-text-muted hover:text-text-primary hover:bg-white/5'
         }`}
         title={hasUpdate ? t.available : t.checkNow}
       >
         {isChecking || isDownloading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : hasUpdate ? (
-          <>
-            <Download className="w-4 h-4" />
-            {/* 小红点 */}
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full animate-pulse" />
-          </>
+          <ArrowUpCircle className="w-4 h-4" />
         ) : isError ? (
           <AlertCircle className="w-4 h-4" />
         ) : (
-          <RefreshCw className="w-4 h-4" />
+          <Sparkles className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+        )}
+        
+        {hasUpdate && (
+          <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-accent rounded-full border-2 border-background animate-pulse" />
         )}
       </button>
 
@@ -111,154 +97,129 @@ export default function UpdateIndicator() {
       <AnimatePresence>
         {showPopover && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-72 bg-surface border border-border rounded-xl shadow-2xl overflow-hidden z-[100]"
+            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className="absolute right-0 top-full mt-3 w-80 rounded-2xl bg-background/80 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/50">
-              <span className="text-sm font-semibold text-text-primary">
-                {language === 'zh' ? '软件更新' : 'Software Update'}
-              </span>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+              <h3 className="text-sm font-bold text-text-primary tracking-tight flex items-center gap-2">
+                <Zap className="w-4 h-4 text-accent" />
+                {t.title}
+              </h3>
               <button
                 onClick={() => setShowPopover(false)}
-                className="text-text-muted hover:text-text-primary transition-colors"
+                className="p-1 rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-4 space-y-4">
-              {/* 状态显示 */}
-              {status?.status === 'available' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-accent">
-                    <Download className="w-5 h-5" />
-                    <span className="font-medium">{t.available}</span>
+            <div className="p-5 space-y-5">
+              
+              {/* Status Hero */}
+              <div className="flex flex-col items-center text-center space-y-3 py-2">
+                <div className={`p-4 rounded-full mb-1 ${
+                  hasUpdate ? 'bg-accent/10 text-accent shadow-[0_0_20px_-5px_rgba(var(--accent),0.3)]' :
+                  isChecking || isDownloading ? 'bg-blue-500/10 text-blue-400' :
+                  isError ? 'bg-red-500/10 text-red-400' :
+                  'bg-green-500/10 text-green-400'
+                }`}>
+                  {isChecking || isDownloading ? <Loader2 className="w-8 h-8 animate-spin" /> :
+                   hasUpdate ? <ArrowUpCircle className="w-8 h-8" /> :
+                   isError ? <AlertCircle className="w-8 h-8" /> :
+                   <CheckCircle className="w-8 h-8" />}
+                </div>
+                
+                <div>
+                  <h4 className="text-base font-bold text-text-primary mb-1">
+                    {status?.status === 'available' ? t.available :
+                     status?.status === 'downloaded' ? t.downloaded :
+                     status?.status === 'downloading' ? t.downloading :
+                     status?.status === 'checking' ? t.checking :
+                     status?.status === 'error' ? t.error :
+                     t.notAvailable}
+                  </h4>
+                  
+                  {/* Version Info */}
+                  <div className="flex items-center justify-center gap-2 text-xs">
+                     {status?.version && hasUpdate ? (
+                       <>
+                        <span className="text-text-muted line-through opacity-50">v{updaterService.currentVersion}</span>
+                        <span className="text-text-muted">→</span>
+                        <span className="font-mono font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded">v{status.version}</span>
+                       </>
+                     ) : (
+                       <span className="text-text-muted font-mono">v{updaterService.currentVersion}</span>
+                     )}
                   </div>
-                  <div className="text-sm text-text-secondary">
-                    <span className="text-text-muted">{t.newVersion}: </span>
-                    <span className="font-mono font-bold text-accent">v{status.version}</span>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              {isDownloading && status?.progress !== undefined && (
+                <div className="space-y-1.5">
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-accent shadow-[0_0_10px_rgba(var(--accent),0.5)]"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${status.progress}%` }}
+                      transition={{ ease: "linear" }}
+                    />
                   </div>
-                  {status.isPortable && (
-                    <p className="text-xs text-text-muted bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-                      {t.portableHint}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {status?.status === 'downloaded' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-green-400">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="font-medium">{t.downloaded}</span>
+                  <div className="flex justify-between text-[10px] font-medium text-text-muted uppercase">
+                    <span>{t.downloading}</span>
+                    <span>{status.progress.toFixed(0)}%</span>
                   </div>
-                  <p className="text-sm text-text-secondary">
-                    v{status.version} {language === 'zh' ? '已下载完成' : 'is ready'}
-                  </p>
                 </div>
               )}
 
-              {status?.status === 'downloading' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-accent">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="font-medium">{t.downloading}</span>
-                  </div>
-                  {status.progress !== undefined && (
-                    <div className="space-y-1">
-                      <div className="h-2 bg-border rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-accent"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${status.progress}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-text-muted text-right">{status.progress}%</p>
-                    </div>
-                  )}
+              {/* Portable Hint */}
+              {hasUpdate && status?.isPortable && (
+                <div className="px-3 py-2.5 rounded-lg bg-yellow-500/5 border border-yellow-500/10 text-xs text-yellow-500/90 text-center leading-relaxed">
+                  {t.portableHint}
                 </div>
               )}
 
-              {status?.status === 'not-available' && (
-                <div className="flex items-center gap-2 text-green-400">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">{t.notAvailable}</span>
+              {/* Error Message */}
+              {isError && status?.error && (
+                <div className="px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/10 text-xs text-red-400 text-center leading-relaxed">
+                  {status.error}
                 </div>
               )}
 
-              {status?.status === 'error' && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-red-400">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">{t.error}</span>
-                  </div>
-                  {status.error && (
-                    <p className="text-xs text-text-muted bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                      {status.error}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {status?.status === 'checking' && (
-                <div className="flex items-center gap-2 text-text-muted">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>{t.checking}</span>
-                </div>
-              )}
-
-              {/* 无状态时显示提示 */}
-              {(!status || status.status === 'idle') && (
-                <div className="flex items-center gap-2 text-text-muted">
-                  <RefreshCw className="w-5 h-5" />
-                  <span>{language === 'zh' ? '点击检查更新' : 'Click to check for updates'}</span>
-                </div>
-              )}
-
-              {/* 操作按钮 */}
-              <div className="flex gap-2 pt-2">
-                {status?.status === 'available' && (
-                  <button
-                    onClick={handleDownload}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    {status.isPortable ? (
-                      <>
-                        <ExternalLink className="w-4 h-4" />
-                        {t.openPage}
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4" />
-                        {t.download}
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {status?.status === 'downloaded' && (
-                  <button
-                    onClick={handleInstall}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    {t.install}
-                  </button>
-                )}
-
-                {(!status || status.status === 'not-available' || status.status === 'error' || status.status === 'idle') && (
-                  <button
-                    onClick={handleCheck}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-surface hover:bg-white/10 border border-border rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    {t.checkNow}
-                  </button>
+              {/* Actions */}
+              <div className="pt-2">
+                {hasUpdate ? (
+                  status?.status === 'downloaded' ? (
+                    <button
+                      onClick={handleInstall}
+                      className="w-full py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold shadow-lg shadow-green-500/20 transition-all active:scale-[0.98]"
+                    >
+                      {t.install}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleDownload}
+                      className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      {status?.isPortable ? <ExternalLink className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                      {status?.isPortable ? t.openPage : t.download}
+                    </button>
+                  )
+                ) : (
+                  (!isChecking && !isDownloading) && (
+                    <button
+                      onClick={handleCheck}
+                      className="w-full py-2.5 rounded-xl bg-surface hover:bg-white/10 border border-white/5 text-text-secondary hover:text-text-primary text-sm font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      {t.checkNow}
+                    </button>
+                  )
                 )}
               </div>
             </div>

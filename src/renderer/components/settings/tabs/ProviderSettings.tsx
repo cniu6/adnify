@@ -401,7 +401,7 @@ export function ProviderSettings({
                       customModels.forEach((m) => modelsSet.add(m))
                       return Array.from(modelsSet).map((m) => ({ value: m, label: m }))
                     })()}
-                    className="w-full bg-black/20 border-border"
+                    className="w-full bg-background/50 border-border"
                   />
                 </div>
 
@@ -413,7 +413,7 @@ export function ProviderSettings({
                       onChange={(e) => setNewModelName(e.target.value)}
                       placeholder={language === 'zh' ? '输入新模型名称...' : 'Enter new model name...'}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddModel()}
-                      className="flex-1 h-9 text-xs bg-black/20 border-border"
+                      className="flex-1 h-9 text-xs bg-background/50 border-border"
                     />
                     <Button variant="secondary" size="sm" onClick={handleAddModel} disabled={!newModelName.trim()} className="h-9 px-3">
                       <Plus className="w-4 h-4" />
@@ -455,7 +455,7 @@ export function ProviderSettings({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs text-text-secondary">{language === 'zh' ? '最大 Token' : 'Max Tokens'}</label>
-                  <span className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded text-accent">
+                  <span className="text-xs font-mono bg-background/50 px-1.5 py-0.5 rounded text-accent">
                     {localConfig.parameters?.maxTokens || 8192}
                   </span>
                 </div>
@@ -479,7 +479,7 @@ export function ProviderSettings({
                   <label className="text-xs text-text-secondary">
                     {language === 'zh' ? '随机性 (Temperature)' : 'Temperature'}
                   </label>
-                  <span className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded text-accent">
+                  <span className="text-xs font-mono bg-background/50 px-1.5 py-0.5 rounded text-accent">
                     {(localConfig.parameters?.temperature || 0.7).toFixed(1)}
                   </span>
                 </div>
@@ -505,7 +505,7 @@ export function ProviderSettings({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs text-text-secondary">Top P</label>
-                  <span className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded text-accent">
+                  <span className="text-xs font-mono bg-background/50 px-1.5 py-0.5 rounded text-accent">
                     {(localConfig.parameters?.topP || 1).toFixed(2)}
                   </span>
                 </div>
@@ -546,7 +546,7 @@ export function ProviderSettings({
                   value={localConfig.apiKey}
                   onChange={(e) => setLocalConfig({ ...localConfig, apiKey: e.target.value })}
                   placeholder={PROVIDERS[localConfig.provider]?.auth.placeholder || 'sk-...'}
-                  className="bg-black/20 border-border font-mono text-xs"
+                  className="bg-background/50 border-border font-mono text-xs"
                   rightIcon={
                     <button onClick={() => setShowApiKey(!showApiKey)} className="text-text-muted hover:text-text-primary">
                       {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -564,7 +564,7 @@ export function ProviderSettings({
                   value={localConfig.baseUrl || ''}
                   onChange={(e) => setLocalConfig({ ...localConfig, baseUrl: e.target.value || undefined })}
                   placeholder="https://api.example.com/v1"
-                  className="bg-black/20 border-border text-xs font-mono"
+                  className="bg-background/50 border-border text-xs font-mono"
                 />
               </div>
 
@@ -579,7 +579,7 @@ export function ProviderSettings({
                   onChange={(e) => setLocalConfig({ ...localConfig, timeout: (parseInt(e.target.value) || 120) * 1000 })}
                   min={10}
                   max={600}
-                  className="bg-black/20 border-border text-xs"
+                  className="bg-background/50 border-border text-xs"
                 />
               </div>
             </div>
