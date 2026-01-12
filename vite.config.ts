@@ -7,6 +7,7 @@ import path from 'path'
 const EXTERNAL_DEPS = [
   'electron',
   'electron-store',
+  'electron-updater',
   '@anthropic-ai/sdk',
   'openai',
   '@google/generative-ai',
