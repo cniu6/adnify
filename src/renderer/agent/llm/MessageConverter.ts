@@ -19,6 +19,7 @@ export interface OpenAIMessage {
     }
   }>
   tool_call_id?: string
+  name?: string
 }
 
 /**
@@ -84,6 +85,7 @@ export function buildOpenAIMessages(
               role: 'tool',
               content: toolResult.content,
               tool_call_id: tc.id,
+              name: toolResult.name,
             })
           }
         }

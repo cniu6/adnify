@@ -10,7 +10,7 @@ const EXTERNAL_DEPS = [
   'electron-updater',
   '@anthropic-ai/sdk',
   'openai',
-  '@google/generative-ai',
+  '@google/genai',
   'node-pty',
   '@parcel/watcher',
   '@parcel/watcher-win32-x64',

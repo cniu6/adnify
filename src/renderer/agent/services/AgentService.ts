@@ -340,15 +340,26 @@ class AgentServiceClass {
 
       const result = await this.callLLMWithRetry(config, llmMessages, chatMode)
 
-      if (this.abortController?.signal.aborted) break
+      if (this.abortController?.signal.aborted) {
+        logger.agent.info('[Agent] Aborted by user')
+        break
+      }
 
       if (result.error) {
+        logger.agent.error('[Agent] LLM error:', result.error)
         store.appendToAssistant(this.currentAssistantId!, `\n\n❌ Error: ${result.error}`)
         break
       }
 
       // 注意：消息内容的更新已在 handleLLMDone 中处理（包括 XML 工具调用清理）
       // 这里不再重复更新，避免内容不一致
+
+      logger.agent.info('[Agent] LLM result', {
+        hasContent: !!result.content,
+        contentLength: result.content?.length || 0,
+        toolCallsCount: result.toolCalls?.length || 0,
+        toolCallNames: result.toolCalls?.map(tc => tc.name) || [],
+      })
 
       if (!result.toolCalls || result.toolCalls.length === 0) {
         // 只有在 plan 模式下才提醒更新 plan
@@ -448,6 +459,7 @@ class AgentServiceClass {
         llmMessages.push({
           role: 'tool' as const,
           tool_call_id: toolCall.id,
+          name: toolCall.name,
           content: toolResult.content,
         })
 

@@ -17,7 +17,8 @@ import { logger } from '@shared/utils/Logger'
 // SDK imports
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
-import { GoogleGenerativeAI, Content, SchemaType, type Tool as GeminiTool } from '@google/generative-ai'
+import { GoogleGenAI, Type as SchemaType } from '@google/genai'
+import type { Content, Part, FunctionDeclaration, Tool as GeminiTool } from '@google/genai'
 
 /**
  * 统一 Provider
@@ -32,7 +33,7 @@ export class UnifiedProvider extends BaseProvider {
   // SDK 客户端（按需创建）
   private openaiClient?: OpenAI
   private anthropicClient?: Anthropic
-  private geminiClient?: GoogleGenerativeAI
+  private geminiClient?: GoogleGenAI
 
   constructor(config: LLMConfig) {
     const providerDef = getBuiltinProvider(config.provider)
@@ -475,9 +476,15 @@ export class UnifiedProvider extends BaseProvider {
   // Gemini 原生 SDK 处理
   // ============================================
 
-  private getGeminiClient(): GoogleGenerativeAI {
+  private getGeminiClient(): GoogleGenAI {
     if (!this.geminiClient) {
-      this.geminiClient = new GoogleGenerativeAI(this.config.apiKey)
+      const options: { apiKey: string; httpOptions?: { baseUrl: string } } = {
+        apiKey: this.config.apiKey,
+      }
+      if (this.config.baseUrl) {
+        options.httpOptions = { baseUrl: this.config.baseUrl }
+      }
+      this.geminiClient = new GoogleGenAI(options)
     }
     return this.geminiClient
   }
@@ -495,102 +502,91 @@ export class UnifiedProvider extends BaseProvider {
 
       const client = this.getGeminiClient()
 
-      // 构建请求选项
-      const requestOptions = this.config.baseUrl ? { baseUrl: this.config.baseUrl } : undefined
-
       // 转换工具为 Gemini 格式
       const geminiTools = this.convertToolsToGemini(tools)
 
-      // 构建模型配置
-      const modelConfig = {
-        model,
-        systemInstruction: systemPrompt,
-        tools: geminiTools,
-      }
+      // 转换消息为 Gemini 格式
+      const contents = this.convertMessagesToGeminiContents(messages)
 
-      const genModel = client.getGenerativeModel(modelConfig, requestOptions)
-
-      // 转换消息历史
-      const { history, lastUserMessage } = this.convertMessagesToGemini(messages)
-
-      const chat = genModel.startChat({ history })
+      // 调试日志
+      this.log('info', 'Gemini request', {
+        contentsLength: contents.length,
+        contentsRoles: contents.map(c => c.role),
+        hasTools: !!geminiTools,
+      })
 
       let fullContent = ''
       const toolCalls: LLMToolCall[] = []
 
       if (stream) {
-        const result = await chat.sendMessageStream(lastUserMessage)
+        const response = await client.models.generateContentStream({
+          model,
+          contents,
+          config: {
+            systemInstruction: systemPrompt,
+            tools: geminiTools,
+          },
+        })
 
-        for await (const chunk of result.stream) {
+        for await (const chunk of response) {
           if (signal?.aborted) {
             this.log('info', 'Stream aborted by user')
             onError(new LLMErrorClass('Request aborted', LLMErrorCode.ABORTED, undefined, false))
             return
           }
 
-          const text = chunk.text()
+          // 处理文本
+          const text = chunk.text
           if (text) {
             fullContent += text
             onStream({ type: 'text', content: text })
           }
 
           // 处理工具调用
-          const candidate = chunk.candidates?.[0]
-          if (candidate?.content?.parts) {
-            for (const part of candidate.content.parts) {
-              if ('functionCall' in part && part.functionCall) {
-                const toolCall: LLMToolCall = {
-                  id: `gemini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                  name: part.functionCall.name,
-                  arguments: part.functionCall.args as Record<string, unknown>,
-                }
-                toolCalls.push(toolCall)
-                onToolCall(toolCall)
+          const functionCallsInChunk = chunk.functionCalls
+          if (functionCallsInChunk) {
+            for (const fc of functionCallsInChunk) {
+              const toolCall: LLMToolCall = {
+                id: fc.id || `gemini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                name: fc.name || '',
+                arguments: fc.args || {},
               }
+              toolCalls.push(toolCall)
+              onToolCall(toolCall)
             }
           }
         }
 
-        // 获取 usage
-        let usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined
-        try {
-          const response = await result.response
-          if (response.usageMetadata) {
-            usage = {
-              promptTokens: response.usageMetadata.promptTokenCount || 0,
-              completionTokens: response.usageMetadata.candidatesTokenCount || 0,
-              totalTokens: response.usageMetadata.totalTokenCount || 0,
-            }
-          }
-        } catch { /* ignore */ }
-
         onComplete({
           content: fullContent,
           toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-          usage,
         })
       } else {
-        const result = await chat.sendMessage(lastUserMessage)
-        const response = result.response
+        const response = await client.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: systemPrompt,
+            tools: geminiTools,
+          },
+        })
 
-        fullContent = response.text()
+        fullContent = response.text || ''
         if (fullContent) {
           onStream({ type: 'text', content: fullContent })
         }
 
         // 处理工具调用
-        const candidate = response.candidates?.[0]
-        if (candidate?.content?.parts) {
-          for (const part of candidate.content.parts) {
-            if ('functionCall' in part && part.functionCall) {
-              const toolCall: LLMToolCall = {
-                id: `gemini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                name: part.functionCall.name,
-                arguments: part.functionCall.args as Record<string, unknown>,
-              }
-              toolCalls.push(toolCall)
-              onToolCall(toolCall)
+        const functionCallsInResponse = response.functionCalls
+        if (functionCallsInResponse) {
+          for (const fc of functionCallsInResponse) {
+            const toolCall: LLMToolCall = {
+              id: fc.id || `gemini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              name: fc.name || '',
+              arguments: fc.args || {},
             }
+            toolCalls.push(toolCall)
+            onToolCall(toolCall)
           }
         }
 
@@ -610,6 +606,7 @@ export class UnifiedProvider extends BaseProvider {
         })
       }
     } catch (error) {
+      this.log('error', 'Raw error:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
       const llmError = this.parseError(error)
       if (llmError.code !== LLMErrorCode.ABORTED) {
         this.log('error', 'Chat failed', { code: llmError.code, message: llmError.message })
@@ -621,7 +618,7 @@ export class UnifiedProvider extends BaseProvider {
   private convertToolsToGemini(tools?: import('../types').ToolDefinition[]): GeminiTool[] | undefined {
     if (!tools?.length) return undefined
 
-    const functionDeclarations = tools.map((tool) => ({
+    const functionDeclarations: FunctionDeclaration[] = tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
       parameters: {
@@ -642,7 +639,7 @@ export class UnifiedProvider extends BaseProvider {
       },
     }))
 
-    return [{ functionDeclarations }] as unknown as GeminiTool[]
+    return [{ functionDeclarations }]
   }
 
   private mapTypeToGeminiSchemaType(type: string): SchemaType {
@@ -657,11 +654,11 @@ export class UnifiedProvider extends BaseProvider {
     }
   }
 
-  private convertMessagesToGemini(messages: import('../types').LLMMessage[]): { history: Content[]; lastUserMessage: string } {
-    const history: Content[] = []
-    let lastUserMessage = ''
+  private convertMessagesToGeminiContents(messages: import('../types').LLMMessage[]): Content[] {
+    const contents: Content[] = []
 
     const contentToString = (content: import('../types').LLMMessage['content']): string => {
+      if (!content) return ''
       if (typeof content === 'string') return content
       return content.map((part) => (part.type === 'text' ? part.text : '[image]')).join('')
     }
@@ -675,21 +672,28 @@ export class UnifiedProvider extends BaseProvider {
       }
     }
 
-    // 收集连续的工具结果，用于合并到同一个 function 消息
-    let pendingToolResults: Array<{ name: string; result: string }> = []
+    // 收集连续的工具结果
+    let pendingToolResults: Array<{ id: string; name: string; result: string }> = []
 
     const flushToolResults = () => {
       if (pendingToolResults.length > 0) {
-        // Gemini 支持在一个 function 消息中包含多个 functionResponse
-        history.push({
-          role: 'function',
-          parts: pendingToolResults.map(tr => ({
+        const parts: Part[] = pendingToolResults.map(tr => {
+          let responseObj: Record<string, unknown>
+          try {
+            const parsed = JSON.parse(tr.result)
+            responseObj = typeof parsed === 'object' && parsed !== null ? parsed : { result: tr.result }
+          } catch {
+            responseObj = { result: tr.result }
+          }
+          return {
             functionResponse: {
+              id: tr.id,
               name: tr.name,
-              response: { result: tr.result },
+              response: responseObj,
             },
-          })),
+          }
         })
+        contents.push({ role: 'user', parts })
         pendingToolResults = []
       }
     }
@@ -698,114 +702,83 @@ export class UnifiedProvider extends BaseProvider {
       const msg = messages[i]
       
       if (msg.role === 'user') {
-        flushToolResults() // 先处理待处理的工具结果
-        
-        const isLastUser = messages.slice(i + 1).every((m) => m.role !== 'user')
-        if (isLastUser) {
-          lastUserMessage = contentToString(msg.content)
-        } else {
-          history.push({
-            role: 'user',
-            parts: [{ text: contentToString(msg.content) }],
-          })
-        }
+        flushToolResults()
+        contents.push({
+          role: 'user',
+          parts: [{ text: contentToString(msg.content) }],
+        })
       } else if (msg.role === 'assistant') {
-        flushToolResults() // 先处理待处理的工具结果
+        flushToolResults()
         
-        // 检查是否有工具调用（通过 toolCalls 字段或 toolName）
-        const toolCalls = (msg as any).toolCalls as Array<{ name: string; arguments: Record<string, unknown> }> | undefined
+        const toolCalls = msg.tool_calls
         
         if (toolCalls && toolCalls.length > 0) {
-          // 多个工具调用：合并到同一个 model 消息
-          const parts: any[] = []
+          const parts: Part[] = []
           
-          // 如果有文本内容，先添加
           const textContent = contentToString(msg.content)
           if (textContent && textContent.trim()) {
             parts.push({ text: textContent })
           }
           
-          // 添加所有工具调用
           for (const tc of toolCalls) {
             parts.push({
               functionCall: {
-                name: tc.name,
-                args: tc.arguments,
+                id: tc.id,
+                name: tc.function.name,
+                args: JSON.parse(tc.function.arguments || '{}'),
               },
             })
           }
           
-          history.push({ role: 'model', parts })
-        } else if (msg.toolName) {
-          // 单个工具调用（旧格式兼容）
-          try {
-            const args = JSON.parse(contentToString(msg.content))
-            history.push({
-              role: 'model',
-              parts: [
-                {
-                  functionCall: {
-                    name: msg.toolName,
-                    args,
-                  },
-                },
-              ],
-            })
-          } catch {
-            // JSON 解析失败，作为普通文本处理
-            history.push({
-              role: 'model',
-              parts: [{ text: contentToString(msg.content) }],
-            })
-          }
+          contents.push({ role: 'model', parts })
         } else {
-          // 普通文本消息
           const text = contentToString(msg.content)
           if (text && text.trim()) {
-            history.push({
+            contents.push({
               role: 'model',
               parts: [{ text }],
             })
           }
         }
       } else if (msg.role === 'tool') {
-        // 收集工具结果，稍后合并
-        pendingToolResults.push({
-          name: msg.toolName || '',
-          result: contentToString(msg.content),
-        })
+        const toolCallId = msg.tool_call_id || ''
+        const toolName = msg.name || ''
+        if (toolName && toolCallId) {
+          pendingToolResults.push({
+            id: toolCallId,
+            name: toolName,
+            result: contentToString(msg.content),
+          })
+        }
       }
     }
 
-    // 处理剩余的工具结果
     flushToolResults()
 
-    // 确保历史以用户消息开始（Gemini 要求）
-    if (history.length > 0 && history[0].role !== 'user') {
-      history.unshift({
+    // 确保历史以用户消息开始
+    if (contents.length > 0 && contents[0].role !== 'user') {
+      contents.unshift({
         role: 'user',
         parts: [{ text: 'Continue the conversation.' }],
       })
     }
 
-    // 确保 user 和 model 消息交替出现（Gemini 要求）
-    // 合并连续的同角色消息
-    const mergedHistory: Content[] = []
-    for (const msg of history) {
-      const lastMsg = mergedHistory[mergedHistory.length - 1]
-      if (lastMsg && lastMsg.role === msg.role && msg.role !== 'function') {
-        // 合并同角色消息
-        lastMsg.parts = [...lastMsg.parts, ...msg.parts]
+    // 合并连续的同角色消息（但不合并包含 functionResponse 的消息）
+    const mergedContents: Content[] = []
+    for (const content of contents) {
+      const lastContent = mergedContents[mergedContents.length - 1]
+      const currentHasFunctionResponse = (content.parts || []).some(p => 'functionResponse' in p)
+      const lastHasFunctionResponse = lastContent && (lastContent.parts || []).some(p => 'functionResponse' in p)
+      
+      // 不合并包含 functionResponse 的消息
+      if (lastContent && lastContent.role === content.role && !currentHasFunctionResponse && !lastHasFunctionResponse) {
+        lastContent.parts = [...(lastContent.parts || []), ...(content.parts || [])]
       } else {
-        mergedHistory.push(msg)
+        mergedContents.push(content)
       }
     }
 
-    if (!lastUserMessage) {
-      lastUserMessage = 'Continue.'
-    }
-
-    return { history: mergedHistory, lastUserMessage }
+    return mergedContents
   }
 
   // ============================================

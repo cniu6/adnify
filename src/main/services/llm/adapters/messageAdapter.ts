@@ -76,12 +76,11 @@ export class MessageAdapter {
       } else if (msg.role === 'assistant') {
         result.push(this.convertAssistantMessage(msg))
       } else if (msg.role === 'tool') {
-        const toolCallId = msg.tool_call_id || msg.toolCallId
-        if (toolCallId) {
+        if (msg.tool_call_id) {
           result.push({
             role: 'tool',
             content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
-            tool_call_id: toolCallId,
+            tool_call_id: msg.tool_call_id,
           })
         }
       }
@@ -189,13 +188,12 @@ export class MessageAdapter {
           result.push({ role: 'assistant', content: contentBlocks })
         }
       } else if (msg.role === 'tool') {
-        const toolCallId = msg.tool_call_id || msg.toolCallId
-        if (toolCallId) {
+        if (msg.tool_call_id) {
           result.push({
             role: 'user',
             content: [{
               type: 'tool_result',
-              tool_use_id: toolCallId,
+              tool_use_id: msg.tool_call_id,
               content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
             }],
           })
@@ -317,13 +315,6 @@ export class MessageAdapter {
       }
     }
 
-    // 兼容旧格式
-    if (msg.toolName && msg.toolCallId) {
-      let input: Record<string, unknown> = {}
-      try { input = JSON.parse(typeof msg.content === 'string' ? msg.content : '{}') } catch { /* ignore */ }
-      blocks.push({ type: 'tool_use', id: msg.toolCallId, name: msg.toolName, input })
-    }
-
     return blocks
   }
 
@@ -334,14 +325,14 @@ export class MessageAdapter {
     idField: string,
     wrapper?: string
   ): Record<string, unknown> {
-    const toolCallId = msg.tool_call_id || msg.toolCallId
+    const toolCallId = msg.tool_call_id
     const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
 
     if (wrapper) {
       return { role, content: [{ type: wrapper, [idField]: toolCallId, content }] }
     }
     if (role === 'function') {
-      return { role: 'function', name: msg.toolName || toolCallId, content }
+      return { role: 'function', name: msg.name || toolCallId, content }
     }
     return { role, content, [idField]: toolCallId }
   }

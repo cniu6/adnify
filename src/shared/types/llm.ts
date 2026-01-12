@@ -35,13 +35,9 @@ export interface LLMMessage {
     content: MessageContent
     /** OpenAI 格式的工具调用 */
     tool_calls?: LLMToolCallMessage[]
-    /** 工具结果对应的调用 ID (OpenAI 格式) */
+    /** 工具结果对应的调用 ID */
     tool_call_id?: string
-    /** 工具结果对应的调用 ID (别名，兼容) */
-    toolCallId?: string
     /** 工具名称（tool role 时使用） */
-    toolName?: string
-    /** 工具名称（别名） */
     name?: string
 }
 

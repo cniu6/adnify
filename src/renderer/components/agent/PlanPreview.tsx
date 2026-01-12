@@ -83,7 +83,8 @@ function StatusBadge({ status }: { status: PlanFileData['status'] }) {
 export function PlanPreview({ content, fontSize = 14 }: PlanPreviewProps) {
     const { sendMessage } = useAgent()
     const { language } = useStore()
-    const isStreaming = useAgentStore(state => state.streamState.isStreaming)
+    const streamPhase = useAgentStore(state => state.streamState.phase)
+    const isStreaming = streamPhase !== 'idle'
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
     const [isExecutingAll, setIsExecutingAll] = useState(false)
     const shouldContinueRef = useRef(false)

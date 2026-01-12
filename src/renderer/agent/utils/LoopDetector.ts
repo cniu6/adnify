@@ -225,6 +225,17 @@ export class LoopDetector {
       }
     }
 
+    // 检测同一工具的过度调用（即使参数不同）
+    const sameToolCalls = this.history.filter(h => h.name === record.name)
+    const maxSameToolCalls = isReadOp ? 20 : 10  // 读操作允许更多，写操作限制更严
+    if (sameToolCalls.length >= maxSameToolCalls) {
+      return {
+        isLoop: true,
+        reason: `Tool "${record.name}" has been called ${sameToolCalls.length + 1} times. This may indicate a loop.`,
+        suggestion: 'Consider using a different approach or tool to accomplish the task.',
+      }
+    }
+
     return { isLoop: false }
   }
 
