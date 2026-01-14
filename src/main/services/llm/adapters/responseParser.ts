@@ -14,6 +14,7 @@ import { getByPath } from '@shared/utils/jsonUtils'
 export class ResponseParser {
   private config: ResponseConfig
   private toolCallBuffers: Map<number, { id: string; name: string; argsBuffer: string }> = new Map()
+  private isThinking: boolean = false
 
   constructor(config: ResponseConfig) {
     this.config = config
@@ -79,7 +80,7 @@ export class ResponseParser {
     // 尝试从 contentField 路径直接获取内容（支持 DashScope 等非标准格式）
     const content = getByPath(chunk, this.config.contentField)
     if (content && typeof content === 'string') {
-      results.push({ type: 'text', content })
+      this.processContent(content, results)
     }
 
     // 提取推理内容
@@ -99,7 +100,7 @@ export class ResponseParser {
       if (!content) {
         const choiceContent = getByPath(choice, this.config.contentField)
         if (choiceContent && typeof choiceContent === 'string') {
-          results.push({ type: 'text', content: choiceContent })
+          this.processContent(choiceContent, results)
         }
       }
 
@@ -123,6 +124,45 @@ export class ResponseParser {
     }
 
     return results
+  }
+
+  /**
+   * 处理文本内容，支持提取 <think> 标签中的推理内容
+   */
+  private processContent(content: string, results: ParsedStreamChunk[]): void {
+    let remaining = content;
+
+    while (remaining.length > 0) {
+      if (!this.isThinking) {
+        const thinkStart = remaining.indexOf('<think>');
+        if (thinkStart !== -1) {
+          // 发送标签前的内容为文本
+          const textBefore = remaining.slice(0, thinkStart);
+          if (textBefore) results.push({ type: 'text', content: textBefore });
+
+          this.isThinking = true;
+          remaining = remaining.slice(thinkStart + 7);
+        } else {
+          // 没有开始标签，全部作为文本
+          results.push({ type: 'text', content: remaining });
+          remaining = '';
+        }
+      } else {
+        const thinkEnd = remaining.indexOf('</think>');
+        if (thinkEnd !== -1) {
+          // 发送标签内的内容为推理
+          const reasoning = remaining.slice(0, thinkEnd);
+          if (reasoning) results.push({ type: 'reasoning', content: reasoning });
+
+          this.isThinking = false;
+          remaining = remaining.slice(thinkEnd + 8);
+        } else {
+          // 没有结束标签，全部作为推理
+          results.push({ type: 'reasoning', content: remaining });
+          remaining = '';
+        }
+      }
+    }
   }
 
   /**
@@ -232,6 +272,7 @@ export class ResponseParser {
    */
   reset(): void {
     this.toolCallBuffers.clear()
+    this.isThinking = false
   }
 }
 
