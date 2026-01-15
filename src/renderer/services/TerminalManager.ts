@@ -15,6 +15,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { getEditorConfig } from '@renderer/settings'
+import { logger } from '@utils/Logger'
 
 // ===== 类型定义 =====
 
@@ -82,7 +83,7 @@ class TerminalManagerClass {
   }
 
   private setupIpcListeners() {
-    this.ipcCleanup = api.terminal.onData(({ id, data }: { id: string; data: string }) => {
+    const onData = api.terminal.onData(({ id, data }: { id: string; data: string }) => {
       const xterm = this.xtermInstances.get(id)
       if (xterm?.terminal) {
         xterm.terminal.write(data)
@@ -91,6 +92,33 @@ class TerminalManagerClass {
       // 缓存输出
       this.appendToBuffer(id, data)
     })
+
+    const onExit = api.terminal.onExit(({ id, exitCode, signal }: { id: string; exitCode: number; signal?: number }) => {
+      logger.system.info(`[TerminalManager] Terminal ${id} exited with code ${exitCode}, signal ${signal}`)
+      
+      const xterm = this.xtermInstances.get(id)
+      if (xterm?.terminal) {
+        xterm.terminal.write(`\r\n\x1b[33m[Process exited with code ${exitCode}]\x1b[0m\r\n`)
+      }
+      
+      // 清理 PTY 状态
+      this.ptyReady.delete(id)
+    })
+
+    const onError = api.terminal.onError?.(({ id, error }: { id: string; error: string }) => {
+      logger.system.error(`[TerminalManager] Terminal ${id} error:`, error)
+      
+      const xterm = this.xtermInstances.get(id)
+      if (xterm?.terminal) {
+        xterm.terminal.write(`\r\n\x1b[31m[Terminal Error: ${error}]\x1b[0m\r\n`)
+      }
+    })
+
+    this.ipcCleanup = () => {
+      onData()
+      onExit()
+      onError?.()
+    }
   }
 
   /**

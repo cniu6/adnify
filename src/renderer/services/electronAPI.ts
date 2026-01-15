@@ -90,6 +90,8 @@ function createGroupedAPI() {
       kill: (id?: string) => raw.killTerminal(id),
       getShells: () => raw.getAvailableShells(),
       onData: (callback: Parameters<typeof raw.onTerminalData>[0]) => raw.onTerminalData(callback),
+      onExit: (callback: Parameters<typeof raw.onTerminalExit>[0]) => raw.onTerminalExit(callback),
+      onError: (callback: Parameters<typeof raw.onTerminalError>[0]) => raw.onTerminalError(callback),
     },
 
     // Shell 执行

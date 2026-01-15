@@ -452,15 +452,56 @@ export function registerSecureTerminalHandlers(
 
     try {
       const isWindows = process.platform === 'win32'
-      const shellPath = shell || (isWindows ? 'powershell.exe' : process.env.SHELL || '/bin/bash')
-      const shellArgs: string[] = []
+      const isMac = process.platform === 'darwin'
+      
+      // macOS 特殊处理：使用登录 shell
+      let shellPath: string
+      let shellArgs: string[] = []
+      
+      if (shell) {
+        shellPath = shell
+      } else if (isWindows) {
+        shellPath = 'powershell.exe'
+      } else if (isMac) {
+        // macOS: 检测可用的 shell
+        const fs = require('fs')
+        const possibleShells = [
+          process.env.SHELL,
+          '/bin/zsh',
+          '/bin/bash',
+          '/usr/bin/zsh',
+          '/usr/bin/bash',
+        ].filter(Boolean) as string[]
+        
+        shellPath = possibleShells.find(s => {
+          try {
+            return fs.existsSync(s)
+          } catch {
+            return false
+          }
+        }) || '/bin/bash'
+        
+        logger.security.info(`[Terminal] Using shell: ${shellPath}`)
+        
+        // 使用 login shell 确保环境变量正确加载
+        shellArgs = ['-l']
+      } else {
+        // Linux
+        shellPath = process.env.SHELL || '/bin/bash'
+      }
+
+      logger.security.info(`[Terminal] Spawning PTY: ${shellPath} ${shellArgs.join(' ')} in ${targetCwd}`)
 
       const ptyProcess = pty.spawn(shellPath, shellArgs, {
         name: 'xterm-256color',
         cols: 80,
         rows: 24,
         cwd: targetCwd,
-        env: process.env,
+        env: {
+          ...process.env,
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor',
+        },
       })
 
       terminals.set(id, ptyProcess)
@@ -475,12 +516,17 @@ export function registerSecureTerminalHandlers(
       // Add error handler to prevent unhandled exceptions
       ptyProcess.on('error', (err: any) => {
         logger.security.error(`[Terminal] PTY Error (id: ${id}):`, err)
+        // 通知渲染进程终端出错
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('terminal:error', { id, error: err.message })
+        }
       })
 
-      ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
+      ptyProcess.onExit(({ exitCode, signal }: { exitCode: number; signal?: number }) => {
+        logger.security.info(`[Terminal] Terminal ${id} exited with code ${exitCode}, signal ${signal}`)
         terminals.delete(id)
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('terminal:exit', { id, exitCode })
+          mainWindow.webContents.send('terminal:exit', { id, exitCode, signal })
         }
       })
 

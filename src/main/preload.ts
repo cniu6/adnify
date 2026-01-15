@@ -194,6 +194,8 @@ export interface ElectronAPI {
   killTerminal: (id?: string) => void
   getAvailableShells: () => Promise<{ label: string; path: string }[]>
   onTerminalData: (callback: (event: { id: string; data: string }) => void) => () => void
+  onTerminalExit: (callback: (event: { id: string; exitCode: number; signal?: number }) => void) => () => void
+  onTerminalError: (callback: (event: { id: string; error: string }) => void) => () => void
 
   // Secure Shell Execution
   executeSecureCommand: (request: {
@@ -444,6 +446,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: IpcRendererEvent, event: { id: string; data: string }) => callback(event)
     ipcRenderer.on('terminal:data', handler)
     return () => ipcRenderer.removeListener('terminal:data', handler)
+  },
+  onTerminalExit: (callback: (event: { id: string; exitCode: number; signal?: number }) => void) => {
+    const handler = (_: IpcRendererEvent, event: { id: string; exitCode: number; signal?: number }) => callback(event)
+    ipcRenderer.on('terminal:exit', handler)
+    return () => ipcRenderer.removeListener('terminal:exit', handler)
+  },
+  onTerminalError: (callback: (event: { id: string; error: string }) => void) => {
+    const handler = (_: IpcRendererEvent, event: { id: string; error: string }) => callback(event)
+    ipcRenderer.on('terminal:error', handler)
+    return () => ipcRenderer.removeListener('terminal:error', handler)
   },
 
   executeSecureCommand: (request: { command: string; args?: string[]; cwd?: string; timeout?: number; requireConfirm?: boolean }) =>
