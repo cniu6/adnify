@@ -15,25 +15,13 @@
 
 ---
 
-## [1.5.13] - 2026-01-15
-
-### 新增
-- 🔍 网络搜索引擎重构：使用 Google PSE + DuckDuckGo 替代 Serper/Tavily/Bing
-- ⚙️ 设置界面新增网络搜索配置：支持配置 Google API Key 和搜索引擎 ID
-- 🌐 read_url 工具集成 Jina Reader：支持 JS 渲染页面，优化 LLM 输出
-
-### 优化
-- 📝 优化 web_search 工具描述：引导 AI 使用单次综合搜索而非多次分散搜索
-- ⏱️ read_url 超时时间调整：默认 60 秒，最小 30 秒
-- 🔄 read_url 智能回退：Jina Reader 失败时自动回退到直接抓取
-- 🔀 支持 HTTP 重定向处理
-
----
-
 ## [1.5.12] - 2026-01-15
 
 ### 新增
 - 🔄 检查点回滚增强：回滚时恢复附件图片和上下文引用到输入框
+- 🔍 网络搜索引擎重构：使用 Google PSE + DuckDuckGo 替代 Serper/Tavily/Bing
+- ⚙️ 设置界面新增网络搜索配置：支持配置 Google API Key 和搜索引擎 ID
+- 🌐 read_url 工具集成 Jina Reader：支持 JS 渲染页面，优化 LLM 输出
 
 ### 修复
 - 🐛 修复 AI 表格渲染问题，使用 remark-gfm 支持 GFM 表格 (fixes #14)(by @kerwin)
@@ -41,6 +29,10 @@
 ### 优化
 - ⬆️ 升级 Electron 到 39.x，修复安全漏洞
 - 🔧 升级 diff 和 hono 依赖，修复安全漏洞
+- 📝 优化 web_search 工具描述：引导 AI 使用单次综合搜索而非多次分散搜索
+- ⏱️ read_url 超时时间调整：默认 60 秒，最小 30 秒
+- 🔄 read_url 智能回退：Jina Reader 失败时自动回退到直接抓取
+- 🔀 支持 HTTP 重定向处理
 
 ### 重构
 - 🧠 上下文压缩逻辑整合到 CompressionManager
