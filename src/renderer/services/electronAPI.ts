@@ -135,6 +135,7 @@ function createGroupedAPI() {
     http: {
       readUrl: (url: string, timeout?: number) => raw.httpReadUrl(url, timeout),
       webSearch: (query: string, maxResults?: number) => raw.httpWebSearch(query, maxResults),
+      setGoogleSearch: (apiKey: string, cx: string) => raw.httpSetGoogleSearch(apiKey, cx),
     },
 
     // 资源

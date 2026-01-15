@@ -302,6 +302,7 @@ export interface ElectronAPI {
     results?: { title: string; url: string; snippet: string }[]
     error?: string
   }>
+  httpSetGoogleSearch: (apiKey: string, cx: string) => Promise<{ success: boolean }>
 
   // MCP (Model Context Protocol)
   mcpInitialize: (workspaceRoots: string[]) => Promise<{ success: boolean; error?: string }>
@@ -541,6 +542,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // HTTP API
   httpReadUrl: (url: string, timeout?: number) => ipcRenderer.invoke('http:readUrl', url, timeout),
   httpWebSearch: (query: string, maxResults?: number) => ipcRenderer.invoke('http:webSearch', query, maxResults),
+  httpSetGoogleSearch: (apiKey: string, cx: string) => ipcRenderer.invoke('http:setGoogleSearch', apiKey, cx),
 
   // MCP API
   mcpInitialize: (workspaceRoots: string[]) => ipcRenderer.invoke('mcp:initialize', workspaceRoots),

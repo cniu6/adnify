@@ -346,6 +346,7 @@ export interface ElectronAPI {
   httpWebSearch: (query: string, maxResults?: number) => Promise<{
     success: boolean; results?: Array<{ title: string; url: string; snippet: string }>; error?: string
   }>
+  httpSetGoogleSearch: (apiKey: string, cx: string) => Promise<{ success: boolean }>
 
   // MCP
   mcpInitialize: (workspaceRoots: string[]) => Promise<{ success: boolean; error?: string }>

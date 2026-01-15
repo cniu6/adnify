@@ -75,7 +75,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
   }
 
   const handleComplete = async () => {
-    const { settingsService, defaultAgentConfig, defaultAutoApprove, defaultEditorConfig, defaultSecuritySettings } = await import('@renderer/settings')
+    const { settingsService, defaultAgentConfig, defaultAutoApprove, defaultEditorConfig, defaultSecuritySettings, defaultWebSearchConfig } = await import('@renderer/settings')
 
     setLanguage(selectedLanguage)
     setLLMConfig(providerConfig)
@@ -94,6 +94,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       onboardingCompleted: true,
       editorConfig: defaultEditorConfig,
       securitySettings: defaultSecuritySettings,
+      webSearchConfig: defaultWebSearchConfig,
     })
 
     setIsExiting(true)

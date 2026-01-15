@@ -26,6 +26,7 @@ import type {
   SecuritySettings,
   AppSettings,
   RuntimeSettings,
+  WebSearchConfig,
 } from '@shared/config/types'
 import {
   defaultLLMConfig,
@@ -35,6 +36,7 @@ import {
   defaultEditorConfig,
   defaultSecuritySettings,
   defaultProviderConfigs,
+  defaultWebSearchConfig,
 } from './defaults'
 import {
   TERMINAL_DEFAULTS,
@@ -68,6 +70,7 @@ interface SavedAppSettings {
   providerConfigs?: Record<string, ProviderConfig>
   aiInstructions?: string
   onboardingCompleted?: boolean
+  webSearchConfig?: WebSearchConfig
 }
 
 // ============================================
@@ -290,6 +293,7 @@ class SettingsService {
         providerConfigs: cleanedProviderConfigs,
         aiInstructions: settings.aiInstructions,
         onboardingCompleted: settings.onboardingCompleted,
+        webSearchConfig: settings.webSearchConfig,
       }
 
       // 更新缓存
@@ -348,6 +352,7 @@ class SettingsService {
       onboardingCompleted: false,
       editorConfig: defaultEditorConfig,
       securitySettings: defaultSecuritySettings,
+      webSearchConfig: defaultWebSearchConfig,
     }
   }
 
@@ -383,6 +388,7 @@ class SettingsService {
       onboardingCompleted: saved.onboardingCompleted ?? false,
       editorConfig: saved.editorConfig ? deepMerge(defaultEditorConfig, saved.editorConfig) : defaultEditorConfig,
       securitySettings: saved.securitySettings ? deepMerge(defaultSecuritySettings, saved.securitySettings) : defaultSecuritySettings,
+      webSearchConfig: saved.webSearchConfig ? { ...defaultWebSearchConfig, ...saved.webSearchConfig } : defaultWebSearchConfig,
     }
   }
 
@@ -487,6 +493,7 @@ class SettingsService {
         onboardingCompleted: settings.onboardingCompleted,
         editorConfig: settings.editorConfig,
         securitySettings: settings.securitySettings,
+        webSearchConfig: settings.webSearchConfig,
       }
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(toSave))
     } catch {

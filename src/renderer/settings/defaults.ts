@@ -140,3 +140,14 @@ export function generateDefaultProviderConfigs(): Record<string, ProviderConfig>
 }
 
 export const defaultProviderConfigs = generateDefaultProviderConfigs()
+
+// ============================================
+// 网络搜索默认配置
+// ============================================
+
+import type { WebSearchConfig } from '@shared/config/types'
+
+export const defaultWebSearchConfig: WebSearchConfig = {
+  googleApiKey: '',
+  googleCx: '',
+}

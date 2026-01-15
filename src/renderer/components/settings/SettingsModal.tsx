@@ -29,7 +29,7 @@ export default function SettingsModal() {
         llmConfig, setLLMConfig, setShowSettings, language, setLanguage,
         autoApprove, setAutoApprove, providerConfigs, setProviderConfig,
         promptTemplateId, setPromptTemplateId, agentConfig, setAgentConfig,
-        aiInstructions, setAiInstructions
+        aiInstructions, setAiInstructions, webSearchConfig, setWebSearchConfig
     } = useStore()
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('provider')
@@ -41,7 +41,8 @@ export default function SettingsModal() {
     const [localAgentConfig, setLocalAgentConfig] = useState(agentConfig)
     const [localProviderConfigs, setLocalProviderConfigs] = useState(providerConfigs)
     const [localAiInstructions, setLocalAiInstructions] = useState(aiInstructions)
-    const [saved, setSaved] = useState(false)
+    const [localWebSearchConfig, setLocalWebSearchConfig] = useState(webSearchConfig)
+    const [saved, setSaved] = useState(false);
 
     const editorConfig = getEditorConfig()
     const [editorSettings, setEditorSettings] = useState<EditorSettingsState>({
@@ -87,6 +88,7 @@ export default function SettingsModal() {
     useEffect(() => { setLocalAutoApprove(autoApprove) }, [autoApprove])
     useEffect(() => { setLocalAgentConfig(agentConfig) }, [agentConfig])
     useEffect(() => { setLocalAiInstructions(aiInstructions) }, [aiInstructions])
+    useEffect(() => { setLocalWebSearchConfig(webSearchConfig) }, [webSearchConfig])
 
     const handleSave = async () => {
         // 更新 Store 状态
@@ -96,6 +98,7 @@ export default function SettingsModal() {
         setPromptTemplateId(localPromptTemplateId)
         setAgentConfig(localAgentConfig)
         setAiInstructions(localAiInstructions)
+        setWebSearchConfig(localWebSearchConfig)
 
         // 合并当前 provider 的配置到 localProviderConfigs
         const currentProviderLocalConfig = localProviderConfigs[localConfig.provider] || {}
@@ -138,6 +141,7 @@ export default function SettingsModal() {
             onboardingCompleted: true,
             editorConfig: currentEditorConfig,
             securitySettings: currentSecuritySettings,
+            webSearchConfig: localWebSearchConfig,
         })
 
         // 编辑器配置独立保存到 editorConfig（localStorage + 文件）
@@ -184,6 +188,11 @@ export default function SettingsModal() {
             }
         }
         saveEditorConfig(newEditorConfig)
+
+        // 应用网络搜索配置到主进程
+        if (localWebSearchConfig.googleApiKey && localWebSearchConfig.googleCx) {
+            window.electronAPI?.httpSetGoogleSearch?.(localWebSearchConfig.googleApiKey, localWebSearchConfig.googleCx)
+        }
 
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
@@ -302,6 +311,8 @@ export default function SettingsModal() {
                                     setPromptTemplateId={setLocalPromptTemplateId}
                                     agentConfig={localAgentConfig}
                                     setAgentConfig={setLocalAgentConfig}
+                                    webSearchConfig={localWebSearchConfig}
+                                    setWebSearchConfig={setLocalWebSearchConfig}
                                     language={language}
                                 />
                             )}

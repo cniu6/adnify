@@ -524,7 +524,9 @@ export const toolExecutors: Record<string, (args: Record<string, unknown>, ctx: 
     },
 
     async read_url(args) {
-        const result = await api.http.readUrl(args.url as string, (args.timeout as number) || 30)
+        // timeout 参数单位是秒，转换为毫秒，最小 30 秒，默认 60 秒
+        const timeoutSec = Math.max((args.timeout as number) || 60, 30)
+        const result = await api.http.readUrl(args.url as string, timeoutSec * 1000)
         if (!result.success || !result.content) return { success: false, result: '', error: result.error || 'Failed to read URL' }
         return { success: true, result: `Title: ${result.title}\n\n${result.content}` }
     },

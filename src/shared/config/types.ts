@@ -189,6 +189,15 @@ export interface SecuritySettings {
 }
 
 // ============================================
+// 网络搜索配置
+// ============================================
+
+export interface WebSearchConfig {
+  googleApiKey?: string
+  googleCx?: string  // Google Programmable Search Engine ID
+}
+
+// ============================================
 // 完整应用设置（保存到 app-settings）
 // ============================================
 
@@ -201,6 +210,7 @@ export interface AppSettings {
   providerConfigs: Record<string, ProviderConfig>
   aiInstructions: string
   onboardingCompleted: boolean
+  webSearchConfig?: WebSearchConfig
 }
 
 // ============================================
@@ -211,4 +221,5 @@ export interface RuntimeSettings extends Omit<AppSettings, 'llmConfig'> {
   llmConfig: LLMConfig  // 运行时包含完整 LLMConfig
   editorConfig: EditorConfig
   securitySettings: SecuritySettings
+  webSearchConfig: WebSearchConfig
 }

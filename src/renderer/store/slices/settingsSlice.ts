@@ -19,6 +19,7 @@ import type {
   EditorConfig,
   ProviderConfig,
   SecuritySettings,
+  WebSearchConfig,
 } from '@shared/config/types'
 import type { ApiProtocol } from '@shared/config/providers'
 import {
@@ -27,6 +28,7 @@ import {
   defaultAutoApprove,
   defaultEditorConfig,
   defaultSecuritySettings,
+  defaultWebSearchConfig,
 } from '@renderer/settings'
 import { SECURITY_DEFAULTS } from '@shared/constants'
 
@@ -51,6 +53,7 @@ export interface SettingsSlice {
   promptTemplateId: string
   providerConfigs: Record<string, ProviderModelConfig>
   securitySettings: SecuritySettings
+  webSearchConfig: WebSearchConfig
   agentConfig: AgentConfig
   editorConfig: EditorConfig
   onboardingCompleted: boolean
@@ -67,6 +70,7 @@ export interface SettingsSlice {
   addCustomModel: (providerId: string, model: string) => void
   removeCustomModel: (providerId: string, model: string) => void
   setSecuritySettings: (settings: Partial<SecuritySettings>) => void
+  setWebSearchConfig: (config: Partial<WebSearchConfig>) => void
   setAgentConfig: (config: Partial<AgentConfig>) => void
   setEditorConfig: (config: Partial<EditorConfig>) => void
   setOnboardingCompleted: (completed: boolean) => void
@@ -105,6 +109,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice, [], [], SettingsSl
     ...defaultSecuritySettings,
     allowedShellCommands: [...SECURITY_DEFAULTS.SHELL_COMMANDS],
   },
+  webSearchConfig: defaultWebSearchConfig,
   agentConfig: defaultAgentConfig,
   editorConfig: defaultEditorConfig,
   onboardingCompleted: true,
@@ -176,6 +181,9 @@ export const createSettingsSlice: StateCreator<SettingsSlice, [], [], SettingsSl
   setSecuritySettings: (settings) =>
     set((state) => ({ securitySettings: { ...state.securitySettings, ...settings } })),
 
+  setWebSearchConfig: (config) =>
+    set((state) => ({ webSearchConfig: { ...state.webSearchConfig, ...config } })),
+
   setAgentConfig: (config) =>
     set((state) => ({ agentConfig: { ...state.agentConfig, ...config } })),
 
@@ -220,6 +228,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice, [], [], SettingsSl
         aiInstructions: settings.aiInstructions || '',
         editorConfig: getEditorConfig(),
         securitySettings: settings.securitySettings,
+        webSearchConfig: settings.webSearchConfig || defaultWebSearchConfig,
       })
     } catch (e) {
       logger.settings.error('[SettingsSlice] Failed to load settings:', e)

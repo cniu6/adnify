@@ -69,6 +69,14 @@ async function loadUserSettings(isEmptyWindow: boolean): Promise<string | null> 
     api.settings.get('currentTheme'),
   ])
 
+  // 应用网络搜索配置到主进程
+  const { webSearchConfig } = useStore.getState()
+  if (webSearchConfig?.googleApiKey && webSearchConfig?.googleCx) {
+    api.http.setGoogleSearch(webSearchConfig.googleApiKey, webSearchConfig.googleCx).catch((e) => {
+      logger.system.warn('[Init] Failed to set Google Search config:', e)
+    })
+  }
+
   startupMetrics.end('load-settings')
   return savedTheme as string | null
 }
