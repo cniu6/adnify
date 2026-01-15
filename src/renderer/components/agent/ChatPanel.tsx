@@ -693,7 +693,7 @@ export default function ChatPanel() {
     // 找到对应的用户消息内容
     const userMessage = messages.find(m => m.id === messageId)
     const userContent = userMessage && isUserMessage(userMessage) 
-      ? (typeof userMessage.content === 'string' ? userMessage.content : '')
+      ? (typeof userMessage.content === 'string' ? userMessage.content : getMessageText(userMessage.content))
       : ''
 
     const { globalConfirm } = await import('../common/ConfirmDialog')
@@ -709,14 +709,46 @@ export default function ChatPanel() {
     if (result.success) {
       toast.success(`Restored ${result.restoredFiles.length} file(s)`)
       setActiveDiff(null)
-      // 把用户消息填充到输入框，方便重新发送
+      
+      // 恢复用户消息文本到输入框
       if (userContent) {
         setInput(userContent)
+      }
+      
+      // 恢复图片到输入框
+      if (result.images && result.images.length > 0) {
+        const restoredImages: PendingImage[] = result.images.map(img => {
+          // 从 base64 创建 Blob 和预览 URL
+          const byteCharacters = atob(img.base64)
+          const byteNumbers = new Array(byteCharacters.length)
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i)
+          }
+          const byteArray = new Uint8Array(byteNumbers)
+          const blob = new Blob([byteArray], { type: img.mimeType })
+          const file = new File([blob], `restored-${img.id}.${img.mimeType.split('/')[1] || 'png'}`, { type: img.mimeType })
+          const previewUrl = URL.createObjectURL(blob)
+          
+          return {
+            id: img.id,
+            file,
+            previewUrl,
+            base64: img.base64,
+          }
+        })
+        setImages(restoredImages)
+      }
+      
+      // 恢复上下文引用
+      if (result.contextItems && result.contextItems.length > 0) {
+        for (const item of result.contextItems) {
+          addContextItem(item)
+        }
       }
     } else if (result.errors.length > 0) {
       toast.error(`Restore failed: ${result.errors[0]}`)
     }
-  }, [getCheckpointForMessage, restoreToCheckpoint, setActiveDiff, toast, language, messages])
+  }, [getCheckpointForMessage, restoreToCheckpoint, setActiveDiff, toast, language, messages, addContextItem])
 
   // 渲染消息
   const renderMessage = useCallback((msg: ChatMessageType) => {
