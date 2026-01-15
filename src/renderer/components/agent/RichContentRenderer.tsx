@@ -4,6 +4,7 @@
  */
 
 import { useState, useMemo, memo } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Image as ImageIcon, Code, FileText, Link as LinkIcon,
   Table, Copy, Check, ExternalLink, Maximize2, X
@@ -95,6 +96,40 @@ function ImageContent({ item }: { item: ToolRichContent }) {
 
   if (!imageSrc) return null
 
+  const modal = isExpanded ? createPortal(
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }} 
+        className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-lg p-8" 
+        onClick={() => setIsExpanded(false)}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }} 
+          animate={{ scale: 1, opacity: 1 }} 
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <img 
+            src={imageSrc} 
+            alt={item.title || 'Image'}
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
+          />
+        </motion.div>
+        <button 
+          onClick={() => setIsExpanded(false)}
+          className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-[100000]"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  ) : null
+
   return (
     <>
       <ContentCard 
@@ -103,28 +138,35 @@ function ImageContent({ item }: { item: ToolRichContent }) {
         noPadding
         actions={
           <>
-            <button onClick={() => { navigator.clipboard.writeText(imageSrc); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted transition-colors">
+            <button 
+              onClick={() => { 
+                navigator.clipboard.writeText(imageSrc); 
+                setCopied(true); 
+                setTimeout(() => setCopied(false), 2000); 
+              }} 
+              className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted transition-colors"
+            >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
-            <button onClick={() => setIsExpanded(true)} className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted transition-colors">
+            <button 
+              onClick={() => setIsExpanded(true)} 
+              className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted transition-colors"
+            >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </>
         }
       >
         <div className="flex justify-center bg-black/40 group relative">
-          <img src={imageSrc} className="max-w-full max-h-80 object-contain cursor-zoom-in" onClick={() => setIsExpanded(true)} />
+          <img 
+            src={imageSrc} 
+            alt={item.title || 'Image'}
+            className="max-w-full max-h-80 object-contain cursor-zoom-in" 
+            onClick={() => setIsExpanded(true)} 
+          />
         </div>
       </ContentCard>
-
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-8" onClick={() => setIsExpanded(false)}>
-            <motion.img initial={{ scale: 0.9 }} animate={{ scale: 1 }} src={imageSrc} className="max-w-full max-h-full rounded-xl shadow-2xl" />
-            <button className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"><X /></button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {modal}
     </>
   )
 }

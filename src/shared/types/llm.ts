@@ -229,8 +229,6 @@ export interface ToolRichContent {
     }
     /** 链接 URL（type 为 link 时使用） */
     url?: string
-    /** 附加属性 */
-    attributes?: Record<string, unknown>
 }
 
 export interface ToolExecutionContext {

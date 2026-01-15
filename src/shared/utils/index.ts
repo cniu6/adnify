@@ -25,7 +25,6 @@ export {
   validatePath,
   hasPathTraversal,
   isSensitivePath,
-  type PathValidationResult,
 } from './pathUtils'
 
 // JSON 工具函数

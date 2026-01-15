@@ -568,7 +568,7 @@ import { buildSystemPrompt, type PromptContext } from './PromptBuilder'
  * @param templateId 模板 ID
  * @param language 语言，'zh' 为中文，其他为英文
  */
-export function getPromptTemplatePreview(templateId: string, language?: string): string {
+export function getPromptTemplatePreview(templateId: string): string {
   const template = getPromptTemplateById(templateId)
   if (!template) return 'Template not found'
 

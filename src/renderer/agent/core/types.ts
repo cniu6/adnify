@@ -21,12 +21,9 @@ export interface ExecutionContext {
   abortSignal?: AbortSignal
 }
 
-// ===== 工具执行上下文 =====
+// ===== 工具执行上下文（重新导出 shared 定义） =====
 
-export interface ToolExecutionContext {
-  workspacePath: string | null
-  currentAssistantId: string | null
-}
+export type { ToolExecutionContext } from '@/shared/types'
 
 // ===== LLM 调用结果 =====
 
@@ -49,13 +46,14 @@ export interface LoopCheckResult {
 
 export type { CompressionStats, CompressionLevel } from '../context/CompressionManager'
 
-// ===== 工具执行结果 =====
+// ===== 工具执行结果（Agent 内部使用，包含 toolCall 信息） =====
 
-export interface ToolExecutionResult {
+export interface AgentToolExecutionResult {
   toolCall: ToolCall
   result: {
     content: string
     meta?: Record<string, unknown>
+    richContent?: import('@/shared/types').ToolRichContent[]
   }
 }
 

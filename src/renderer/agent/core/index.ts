@@ -15,5 +15,5 @@ export type {
   LLMCallResult,
   LoopCheckResult,
   CompressionStats,
-  ToolExecutionResult,
+  AgentToolExecutionResult,
 } from './types'

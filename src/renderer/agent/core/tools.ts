@@ -12,7 +12,7 @@
 import { api } from '@/renderer/services/electronAPI'
 import { logger } from '@utils/Logger'
 import { useAgentStore } from '../store/AgentStore'
-import { toolRegistry } from '../tools/registry'
+import { toolManager } from '../tools/providers'
 import { getToolApprovalType, isFileEditTool } from '@/shared/config/tools'
 import { pathStartsWith, joinPath } from '@shared/utils/pathUtils'
 import { useStore } from '@store'
@@ -20,7 +20,7 @@ import { EventBus } from './EventBus'
 import { truncateToolResult } from '@/renderer/utils/partialJson'
 import { getAgentConfig } from '../utils/AgentConfig'
 import type { ToolCall } from '@/shared/types'
-import type { ToolExecutionContext, ToolExecutionResult } from './types'
+import type { ToolExecutionContext, AgentToolExecutionResult } from './types'
 
 // ===== 审批服务 =====
 
@@ -144,7 +144,7 @@ function analyzeToolDependencies(toolCalls: ToolCall[]): Map<string, Set<string>
 async function executeSingle(
   toolCall: ToolCall,
   context: ToolExecutionContext
-): Promise<ToolExecutionResult> {
+): Promise<AgentToolExecutionResult> {
   const store = useAgentStore.getState()
   const mainStore = useStore.getState()
   const { currentAssistantId, workspacePath } = context
@@ -164,7 +164,7 @@ async function executeSingle(
   })
 
   try {
-    const result = await toolRegistry.execute(
+    const result = await toolManager.execute(
       toolCall.name,
       toolCall.arguments,
       { workspacePath: workspacePath ?? null, currentAssistantId: currentAssistantId ?? null }
@@ -194,6 +194,7 @@ async function executeSingle(
     })
 
     const meta = result.meta || {}
+    const richContent = result.richContent
     
     // 更新状态，并将 meta 数据合并到 arguments._meta
     if (currentAssistantId) {
@@ -205,16 +206,17 @@ async function executeSingle(
         status: result.success ? 'success' : 'error',
         result: content,
         arguments: updatedArguments,
+        richContent,
       })
       store.addToolResult(toolCall.id, toolCall.name, content, result.success ? 'success' : 'tool_error')
     }
     EventBus.emit({
       type: result.success ? 'tool:completed' : 'tool:error',
       id: toolCall.id,
-      ...(result.success ? { result: content, meta } : { error: content }),
+      ...(result.success ? { result: content, meta, richContent } : { error: content }),
     } as any)
 
-    return { toolCall, result: { content, meta } }
+    return { toolCall, result: { content, meta, richContent } }
   } catch (error) {
     const duration = Date.now() - startTime
     const errorMsg = error instanceof Error ? error.message : String(error)
@@ -251,9 +253,9 @@ export async function executeTools(
   toolCalls: ToolCall[],
   context: ToolExecutionContext,
   abortSignal?: AbortSignal
-): Promise<{ results: ToolExecutionResult[]; userRejected: boolean }> {
+): Promise<{ results: AgentToolExecutionResult[]; userRejected: boolean }> {
   const store = useAgentStore.getState()
-  const results: ToolExecutionResult[] = []
+  const results: AgentToolExecutionResult[] = []
   let userRejected = false
 
   if (toolCalls.length === 0) {

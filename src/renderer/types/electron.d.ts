@@ -260,6 +260,8 @@ export interface ElectronAPI {
   killTerminal: (id?: string) => void
   getAvailableShells: () => Promise<{ label: string; path: string }[]>
   onTerminalData: (callback: (event: { id: string; data: string }) => void) => () => void
+  onTerminalExit: (callback: (event: { id: string; exitCode: number; signal?: number }) => void) => () => void
+  onTerminalError: (callback: (event: { id: string; error: string }) => void) => () => void
 
   // Shell
   executeBackground: (params: { command: string; cwd?: string; timeout?: number; shell?: string }) => Promise<{
