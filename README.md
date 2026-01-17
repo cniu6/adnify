@@ -54,8 +54,10 @@ Adnify 不仅仅是一个编辑器，它是你的**智能编程伴侣**。它复
 - **玻璃拟态设计**: 全局采用毛玻璃风格，配合微妙的流光边框和动态阴影
 - **沉浸式布局**: 无框窗口、Chrome 风格标签页、面包屑导航
 
-![alt text](image.png)
+![alt text](images/theme1.png)
 ![alt text](images/theme2.png)
+![alt text](images/theme3.png)
+![alt text](images/theme4.png)
 
 ### 🤖 AI Agent 深度集成
 
