@@ -39,8 +39,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm cache clean --force
-          npm install --legacy-peer-deps
+          del package-lock.json
+          npm install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -93,8 +93,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm cache clean --force
-          npm install --legacy-peer-deps
+          rm -f package-lock.json
+          npm install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -146,8 +146,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm cache clean --force
-          npm install --legacy-peer-deps
+          rm -f package-lock.json
+          npm install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
