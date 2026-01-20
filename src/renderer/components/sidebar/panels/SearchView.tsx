@@ -345,6 +345,15 @@ export function SearchView() {
             >
               <FileText className="w-3.5 h-3.5" />
             </button>
+            {showReplace && (
+              <button
+                onClick={() => setReplaceInSelection(!replaceInSelection)}
+                title={language === 'zh' ? '仅在选中区域替换' : 'Replace in selection only'}
+                className={`p-1 rounded transition-colors ${replaceInSelection ? 'bg-accent/20 text-accent' : 'text-text-muted hover:bg-surface-active hover:text-text-primary'}`}
+              >
+                <span className="text-[10px] font-bold px-1 border border-current rounded-[2px]">Sel</span>
+              </button>
+            )}
             <button
               onClick={() => setShowDetails(!showDetails)}
               className={`p-1 rounded transition-colors ${showDetails ? 'bg-surface-active text-text-primary' : 'text-text-muted hover:bg-surface-active hover:text-text-primary'}`}

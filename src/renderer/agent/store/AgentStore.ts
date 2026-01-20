@@ -261,7 +261,7 @@ export const useAgentStore = create<AgentStore>()(
             }
 
             // 添加内部方法：刷新指定消息的文本缓冲区
-            const _flushTextBuffer = (messageId: string) => {
+            const _flushTextBuffer = (_messageId: string) => {
                 streamingBuffer.flushNow()
             }
 

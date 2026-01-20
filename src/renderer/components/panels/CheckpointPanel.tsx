@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, memo } from 'react'
-import { History, RotateCcw, ChevronDown, ChevronUp, FileText, MessageSquare, X, Loader2 } from 'lucide-react'
+import { History, RotateCcw, ChevronDown, ChevronUp, FileText, X, Loader2 } from 'lucide-react'
 import { useAgentStore } from '@/renderer/agent/store/AgentStore'
 import { MessageCheckpoint } from '@/renderer/agent/types'
 import { getFileName } from '@shared/utils/pathUtils'

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Download, RefreshCw, CheckCircle, AlertCircle, Loader2, ExternalLink, X, ArrowUpCircle, Sparkles, Zap } from 'lucide-react'
+import { Download, RefreshCw, CheckCircle, AlertCircle, Loader2, ExternalLink, X, ArrowUpCircle, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { updaterService, UpdateStatus } from '@services/updaterService'
 import { useStore } from '@store'
@@ -100,114 +100,109 @@ export default function UpdateIndicator() {
       <AnimatePresence>
         {showPopover && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.96 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="absolute right-0 top-full mt-3 w-80 rounded-2xl bg-background/80 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden"
+            exit={{ opacity: 0, y: 12, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+            className="absolute right-0 top-full mt-3 w-[320px] rounded-3xl bg-surface/80 backdrop-blur-3xl border border-border/50 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden origin-top-right"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-              <h3 className="text-sm font-bold text-text-primary tracking-tight flex items-center gap-2">
-                <Zap className="w-4 h-4 text-accent" />
-                {t.title}
-              </h3>
+            {/* Header - Minimal */}
+            <div className="flex items-center justify-between px-6 py-4 bg-white/5">
+              <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">{t.title}</span>
               <button
                 onClick={() => setShowPopover(false)}
-                className="p-1 rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
+                className="p-1.5 rounded-full hover:bg-white/10 text-text-muted transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-5 space-y-5">
+            <div className="p-6">
               
               {/* Status Hero */}
-              <div className="flex flex-col items-center text-center space-y-3 py-2">
-                <div className={`p-4 rounded-full mb-1 ${
-                  hasUpdate ? 'bg-accent/10 text-accent shadow-[0_0_20px_-5px_rgba(var(--accent),0.3)]' :
-                  isChecking || isDownloading ? 'bg-blue-500/10 text-blue-400' :
-                  isError ? 'bg-red-500/10 text-red-400' :
-                  'bg-green-500/10 text-green-400'
-                }`}>
-                  {isChecking || isDownloading ? <Loader2 className="w-8 h-8 animate-spin" /> :
-                   hasUpdate ? <ArrowUpCircle className="w-8 h-8" /> :
-                   isError ? <AlertCircle className="w-8 h-8" /> :
-                   <CheckCircle className="w-8 h-8" />}
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className={`relative mb-4 group/icon`}>
+                  <div className={`absolute inset-0 blur-2xl rounded-full opacity-40 transition-all duration-500 ${
+                    hasUpdate ? 'bg-accent group-hover/icon:opacity-60' :
+                    isError ? 'bg-red-500' : 'bg-emerald-500'
+                  }`} />
+                  <div className={`relative w-16 h-16 rounded-3xl flex items-center justify-center border border-white/10 shadow-xl ${
+                    hasUpdate ? 'bg-accent text-white' :
+                    isChecking || isDownloading ? 'bg-surface-active text-accent' :
+                    isError ? 'bg-red-500/20 text-red-400' :
+                    'bg-emerald-500/20 text-emerald-400'
+                  }`}>
+                    {isChecking || isDownloading ? <Loader2 className="w-8 h-8 animate-spin" /> :
+                     hasUpdate ? <ArrowUpCircle className="w-8 h-8" /> :
+                     isError ? <AlertCircle className="w-8 h-8" /> :
+                     <CheckCircle className="w-8 h-8" />}
+                  </div>
                 </div>
                 
-                <div>
-                  <h4 className="text-base font-bold text-text-primary mb-1">
-                    {status?.status === 'available' ? t.available :
-                     status?.status === 'downloaded' ? t.downloaded :
-                     status?.status === 'downloading' ? t.downloading :
-                     status?.status === 'checking' ? t.checking :
-                     status?.status === 'error' ? t.error :
-                     t.notAvailable}
-                  </h4>
-                  
-                  {/* Version Info */}
-                  <div className="flex items-center justify-center gap-2 text-xs">
-                     {status?.version && hasUpdate ? (
-                       <>
-                        <span className="text-text-muted line-through opacity-50">v{currentVersion}</span>
-                        <span className="text-text-muted">→</span>
-                        <span className="font-mono font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded">v{status.version}</span>
-                       </>
-                     ) : (
-                       <span className="text-text-muted font-mono">v{currentVersion}</span>
-                     )}
-                  </div>
+                <h4 className="text-lg font-bold text-text-primary tracking-tight">
+                  {status?.status === 'available' ? t.available :
+                   status?.status === 'downloaded' ? t.downloaded :
+                   status?.status === 'downloading' ? t.downloading :
+                   status?.status === 'checking' ? t.checking :
+                   status?.status === 'error' ? t.error :
+                   t.notAvailable}
+                </h4>
+                
+                {/* Version Flow */}
+                <div className="mt-2 flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] font-medium">
+                   {status?.version && hasUpdate ? (
+                     <>
+                      <span className="text-text-muted opacity-60">v{currentVersion}</span>
+                      <div className="w-1 h-1 rounded-full bg-text-muted opacity-30" />
+                      <span className="text-accent font-bold">v{status.version}</span>
+                     </>
+                   ) : (
+                     <span className="text-text-muted">Current: v{currentVersion}</span>
+                   )}
                 </div>
               </div>
 
-              {/* Progress Bar */}
+              {/* Download Progress */}
               {isDownloading && status?.progress !== undefined && (
-                <div className="space-y-1.5">
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                <div className="mb-6 space-y-2">
+                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                     <motion.div 
-                      className="h-full bg-accent shadow-[0_0_10px_rgba(var(--accent),0.5)]"
+                      className="h-full bg-accent shadow-[0_0_12px_rgba(var(--accent),0.8)]"
                       initial={{ width: 0 }}
                       animate={{ width: `${status.progress}%` }}
-                      transition={{ ease: "linear" }}
+                      transition={{ ease: "circOut" }}
                     />
                   </div>
-                  <div className="flex justify-between text-[10px] font-medium text-text-muted uppercase">
+                  <div className="flex justify-between text-[9px] font-bold text-text-muted uppercase tracking-widest opacity-60">
                     <span>{t.downloading}</span>
-                    <span>{status.progress.toFixed(0)}%</span>
+                    <span className="text-accent">{status.progress.toFixed(0)}%</span>
                   </div>
                 </div>
               )}
 
               {/* Portable Hint */}
               {hasUpdate && status?.isPortable && (
-                <div className="px-3 py-2.5 rounded-lg bg-yellow-500/5 border border-yellow-500/10 text-xs text-yellow-500/90 text-center leading-relaxed">
+                <div className="mb-6 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/80 leading-relaxed text-center">
                   {t.portableHint}
                 </div>
               )}
 
-              {/* Error Message */}
-              {isError && status?.error && (
-                <div className="px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/10 text-xs text-red-400 text-center leading-relaxed">
-                  {status.error}
-                </div>
-              )}
-
               {/* Actions */}
-              <div className="pt-2">
+              <div className="space-y-2">
                 {hasUpdate ? (
                   status?.status === 'downloaded' ? (
                     <button
                       onClick={handleInstall}
-                      className="w-full py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold shadow-lg shadow-green-500/20 transition-all active:scale-[0.98]"
+                      className="w-full h-11 rounded-2xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold shadow-[0_10px_20px_-5px_rgba(34,197,94,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
+                      <RefreshCw className="w-4 h-4" />
                       {t.install}
                     </button>
                   ) : (
                     <button
                       onClick={handleDownload}
-                      className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                      className="w-full h-11 rounded-2xl bg-accent hover:bg-accent-hover text-white text-sm font-bold shadow-[0_10px_20px_-5px_rgba(var(--accent)/0.4)] transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                       {status?.isPortable ? <ExternalLink className="w-4 h-4" /> : <Download className="w-4 h-4" />}
                       {status?.isPortable ? t.openPage : t.download}
@@ -217,7 +212,7 @@ export default function UpdateIndicator() {
                   (!isChecking && !isDownloading) && (
                     <button
                       onClick={handleCheck}
-                      className="w-full py-2.5 rounded-xl bg-surface hover:bg-white/10 border border-white/5 text-text-secondary hover:text-text-primary text-sm font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                      className="w-full h-11 rounded-2xl bg-surface-active hover:bg-white/10 border border-border/50 text-text-primary text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                       <RefreshCw className="w-4 h-4" />
                       {t.checkNow}

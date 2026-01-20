@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import {
   Search, FolderOpen, Settings, Terminal,
   MessageSquare, History, Trash2, RefreshCw, Save,
-  X, Zap, Keyboard, Sparkles, ArrowRight, Plus, FolderPlus
+  X, Zap, Keyboard, Sparkles, Plus, FolderPlus
 } from 'lucide-react'
 import { useStore, useModeStore } from '@/renderer/store'
 import { useAgentStore } from '@/renderer/agent'

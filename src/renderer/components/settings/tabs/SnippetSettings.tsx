@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Edit2, Trash2, Code, Download, Upload, Search, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Code, Download, Upload, Search } from 'lucide-react'
 import { Button, Input, Select } from '@components/ui'
 import { toast } from '@components/common/ToastProvider'
 import { snippetService, type CodeSnippet } from '@services/snippetService'
@@ -327,91 +327,83 @@ export function SnippetSettings({ language }: SnippetSettingsProps) {
         </div>
       )}
 
-      {/* Snippet List */}
-      <div className="space-y-2">
+      {/* Snippet List - Card Wall */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredSnippets.length === 0 ? (
-          <div className="text-center py-12 text-text-muted">
-            <Code className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">{language === 'zh' ? '没有找到片段' : 'No snippets found'}</p>
+          <div className="col-span-full text-center py-16 text-text-muted border border-dashed border-border/50 rounded-xl bg-surface/5">
+            <Code className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p className="text-sm font-medium opacity-60">{language === 'zh' ? '没有找到片段' : 'No snippets found'}</p>
           </div>
         ) : (
           filteredSnippets.map(snippet => {
             const isDefault = snippetService.isDefaultSnippet(snippet.id)
-            const isExpanded = expandedIds.has(snippet.id)
 
             return (
               <div
                 key={snippet.id}
-                className="bg-surface/20 backdrop-blur-md rounded-xl border border-border overflow-hidden"
+                onClick={() => !isDefault && handleEdit(snippet)}
+                className={`
+                  group relative flex flex-col h-48 bg-surface/30 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden transition-all duration-300
+                  ${!isDefault ? 'hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5 hover:-translate-y-1 cursor-pointer' : 'opacity-80'}
+                `}
               >
-                <div
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/5 transition-colors"
-                  onClick={() => toggleExpand(snippet.id)}
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="w-4 h-4 text-text-muted flex-shrink-0" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-text-muted flex-shrink-0" />
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-surface/30">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-bold text-text-primary truncate">{snippet.name}</span>
+                    <code className="px-1.5 py-0.5 text-[10px] bg-accent/10 text-accent rounded font-mono border border-accent/10">
+                      {snippet.prefix}
+                    </code>
+                  </div>
+                  {!isDefault && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(snippet.id)
+                      }}
+                      className="p-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   )}
-                  <Code className="w-4 h-4 text-accent flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-text-primary truncate">{snippet.name}</span>
-                      <code className="px-1.5 py-0.5 text-[10px] bg-accent/10 text-accent rounded">
-                        {snippet.prefix}
-                      </code>
-                      {isDefault && (
-                        <span className="px-1.5 py-0.5 text-[10px] bg-white/10 text-text-muted rounded">
-                          {language === 'zh' ? '内置' : 'Built-in'}
-                        </span>
-                      )}
-                    </div>
-                    {snippet.description && (
-                      <p className="text-xs text-text-muted truncate mt-0.5">{snippet.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                    {!isDefault && (
-                      <>
-                        <button
-                          onClick={() => handleEdit(snippet)}
-                          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-                          title={language === 'zh' ? '编辑' : 'Edit'}
-                        >
-                          <Edit2 className="w-3.5 h-3.5 text-text-muted" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(snippet.id)}
-                          className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title={language === 'zh' ? '删除' : 'Delete'}
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                        </button>
-                      </>
-                    )}
-                  </div>
                 </div>
 
-                {isExpanded && (
-                  <div className="px-4 pb-4 pt-2 border-t border-border/50">
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {snippet.languages.length === 0 ? (
-                        <span className="text-[10px] text-text-muted">
-                          {language === 'zh' ? '所有语言' : 'All languages'}
-                        </span>
-                      ) : (
-                        snippet.languages.map(lang => (
-                          <span key={lang} className="px-2 py-0.5 text-[10px] bg-white/5 text-text-muted rounded">
-                            {lang}
-                          </span>
-                        ))
-                      )}
+                {/* Code Preview */}
+                <div 
+                  className="flex-1 p-0 overflow-hidden bg-black/5 relative group-hover:bg-black/10 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleExpand(snippet.id)
+                  }}
+                >
+                  <pre className={`p-4 text-[11px] font-mono text-text-secondary leading-relaxed opacity-80 group-hover:opacity-100 transition-all ${
+                    expandedIds.has(snippet.id) ? 'max-h-none' : 'max-h-[120px]'
+                  }`}>
+                    {expandedIds.has(snippet.id) ? snippet.body : snippet.body.split('\n').slice(0, 8).join('\n')}
+                  </pre>
+                  {/* Fade out bottom or expand indicator */}
+                  {!expandedIds.has(snippet.id) && snippet.body.split('\n').length > 8 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-surface/30 to-transparent flex items-end justify-center pb-2">
+                      <span className="text-[10px] text-text-muted/60 font-medium">Click to expand...</span>
                     </div>
-                    <pre className="p-3 bg-black/20 rounded-lg text-xs font-mono text-text-secondary overflow-x-auto">
-                      {snippet.body}
-                    </pre>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* Footer Tags */}
+                <div className="px-4 py-2 bg-surface/20 border-t border-border/30 flex gap-1.5 overflow-hidden">
+                  {snippet.languages.length === 0 ? (
+                    <span className="text-[10px] text-text-muted/60 font-medium">All Languages</span>
+                  ) : (
+                    snippet.languages.slice(0, 3).map(lang => (
+                      <span key={lang} className="px-1.5 py-0.5 text-[9px] bg-white/5 text-text-muted rounded border border-white/5">
+                        {lang}
+                      </span>
+                    ))
+                  )}
+                  {snippet.languages.length > 3 && (
+                    <span className="text-[9px] text-text-muted/60 self-center">+{snippet.languages.length - 3}</span>
+                  )}
+                </div>
               </div>
             )
           })

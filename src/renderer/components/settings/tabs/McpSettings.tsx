@@ -23,7 +23,6 @@ import {
   Trash2,
   Settings,
   ChevronDown,
-  ChevronUp,
   Globe,
   Key,
   LogIn,
@@ -183,51 +182,60 @@ export default function McpSettings({ language, mcpConfig, setMcpConfig }: McpSe
     return (
       <div
         key={server.id}
-        className={`rounded-2xl border overflow-hidden transition-all duration-300 ${
+        className={`rounded-xl border transition-all duration-300 relative group overflow-hidden ${
           server.config.disabled
-            ? 'bg-surface/10 border-border opacity-60 grayscale'
-            : 'bg-surface/20 backdrop-blur-md border-border shadow-sm hover:shadow-md hover:bg-surface/30'
+            ? 'bg-surface/5 border-border/50 opacity-60 grayscale'
+            : 'bg-surface/10 backdrop-blur-md border-border hover:border-accent/30 hover:bg-surface/20 hover:shadow-lg hover:shadow-accent/5'
         }`}
       >
+        {/* Active Pulse Glow */}
+        {!server.config.disabled && server.status === 'connected' && (
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-[60px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
+        )}
+
         {/* Header */}
-        <div className="flex items-center justify-between p-5">
+        <div className="flex items-start justify-between p-5">
           <div
-            className="flex items-center gap-4 flex-1 cursor-pointer"
+            className="flex gap-4 flex-1 cursor-pointer"
             onClick={() => setExpandedServer(isExpanded ? null : server.id)}
           >
-            <div className={`p-2 rounded-xl ${server.config.disabled ? 'bg-white/5' : isRemote ? 'bg-blue-500/10' : 'bg-accent/10'}`}>
-              {isRemote ? (
-                <Globe className={`w-5 h-5 ${server.config.disabled ? 'text-text-muted' : 'text-blue-400'}`} />
-              ) : (
-                <Server className={`w-5 h-5 ${server.config.disabled ? 'text-text-muted' : 'text-accent'}`} />
+            <div className="relative">
+              <div className={`p-2.5 rounded-xl ${server.config.disabled ? 'bg-white/5' : isRemote ? 'bg-blue-500/10' : 'bg-accent/10'}`}>
+                {isRemote ? (
+                  <Globe className={`w-6 h-6 ${server.config.disabled ? 'text-text-muted' : 'text-blue-400'}`} />
+                ) : (
+                  <Server className={`w-6 h-6 ${server.config.disabled ? 'text-text-muted' : 'text-accent'}`} />
+                )}
+              </div>
+              {/* Status Dot */}
+              {!server.config.disabled && (
+                <div className="absolute -bottom-1 -right-1 p-0.5 bg-background rounded-full">
+                  <div className={`w-2.5 h-2.5 rounded-full border-2 border-background ${
+                    server.status === 'connected' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' :
+                    server.status === 'error' ? 'bg-red-500' :
+                    server.status === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                    'bg-text-muted'
+                  }`} />
+                </div>
               )}
             </div>
-            <div className="flex-1 min-w-0">
+            
+            <div className="flex-1 min-w-0 pt-0.5">
               <div className="flex items-center gap-2.5">
-                <h4 className="text-sm font-bold text-text-primary">{server.config.name}</h4>
+                <h4 className="text-base font-bold text-text-primary tracking-tight">{server.config.name}</h4>
                 {isRemote && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 uppercase tracking-tight">
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 uppercase tracking-tight">
                     Remote
                   </span>
                 )}
-                {server.config.disabled && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-white/5 text-text-muted rounded border border-white/10 uppercase tracking-tight">
-                    {language === 'zh' ? '已禁用' : 'Disabled'}
-                  </span>
-                )}
               </div>
-              <p className="text-xs text-text-secondary mt-0.5 truncate opacity-70 font-mono">
+              <div className="text-xs text-text-muted mt-1.5 font-mono truncate max-w-[300px] opacity-70 bg-black/20 px-2 py-0.5 rounded w-fit">
                 {isRemote 
                   ? (server.config as any).url 
-                  : `${(server.config as any).command} ${(server.config as any).args?.join(' ') || ''}`
+                  : `${(server.config as any).command} ...`
                 }
-              </p>
+              </div>
             </div>
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4 text-text-muted/50" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-text-muted/50" />
-            )}
           </div>
 
           {/* Status & Actions */}
