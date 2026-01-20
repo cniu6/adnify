@@ -158,7 +158,7 @@ const ToolCallCard = memo(function ToolCallCard({
         // 运行中显示骨架屏
         if (isRunning && !toolCall.result && Object.keys(args).filter(k => !k.startsWith('_')).length === 0) {
             return (
-                <div className="bg-black/20 rounded-md border border-border overflow-hidden">
+                <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
                     <div className="min-h-[100px] opacity-60">
                         <CodeSkeleton lines={3} />
                     </div>
@@ -170,8 +170,8 @@ const ToolCallCard = memo(function ToolCallCard({
         if (name === 'run_command') {
             const cmd = args.command as string
             return (
-                <div className="bg-black/40 rounded-md border border-border overflow-hidden font-mono text-xs">
-                    <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-border">
+                <div className="bg-surface-active/30 rounded-md border border-border overflow-hidden font-mono text-xs">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-surface/50 border-b border-border">
                         <span className="text-text-muted flex items-center gap-2">
                             <Terminal className="w-3 h-3" />
                             Terminal
@@ -190,7 +190,7 @@ const ToolCallCard = memo(function ToolCallCard({
                                     terminalManager.writeToTerminal(terminalId, cmd)
                                     terminalManager.focusTerminal(terminalId)
                                 }}
-                                className="text-[10px] px-1.5 py-0.5 bg-white/5 hover:bg-white/10 rounded text-text-muted hover:text-accent transition-colors"
+                                className="text-[10px] px-1.5 py-0.5 bg-accent/10 hover:bg-accent/20 rounded text-accent transition-colors"
                             >
                                 Open
                             </button>
@@ -199,10 +199,10 @@ const ToolCallCard = memo(function ToolCallCard({
                     <div className="p-3 text-text-secondary overflow-x-auto custom-scrollbar">
                         <div className="flex gap-2">
                             <span className="text-accent select-none">$</span>
-                            <span className="text-green-400">{cmd}</span>
+                            <span className="text-text-primary">{cmd}</span>
                         </div>
                         {toolCall.result && (
-                            <div className="mt-2 text-text-muted opacity-80 whitespace-pre-wrap break-all border-t border-border pt-2">
+                            <div className="mt-2 text-text-muted opacity-80 whitespace-pre-wrap break-all border-t border-border/50 pt-2">
                                 {toolCall.result.slice(0, 500)}
                                 {toolCall.result.length > 500 && <span className="opacity-50">... (truncated)</span>}
                             </div>
@@ -220,7 +220,7 @@ const ToolCallCard = memo(function ToolCallCard({
                 : name === 'uiux_search' ? 'UI/UX'
                 : 'Files'
             return (
-                <div className="bg-black/20 rounded-md border border-border overflow-hidden">
+                <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
                     <div className="px-3 py-2 border-b border-border flex items-center gap-2 text-xs text-text-muted">
                         <Search className="w-3 h-3" />
                         <span className="text-text-muted/60">{searchType}:</span>
@@ -240,7 +240,7 @@ const ToolCallCard = memo(function ToolCallCard({
             const path = args.path as string
             const displayName = getFileName(path) || path || '.'
             return (
-                <div className="bg-black/20 rounded-md border border-border overflow-hidden">
+                <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
                     <div className="px-3 py-2 border-b border-border flex items-center gap-2 text-xs text-text-muted">
                         <FileCode className="w-3 h-3" />
                         <span className="text-text-primary font-medium" title={path}>{displayName}</span>
@@ -267,8 +267,8 @@ const ToolCallCard = memo(function ToolCallCard({
 
             if (newContent || isStreaming) {
                 return (
-                    <div className="bg-black/20 rounded-md border border-border overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-border">
+                    <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-surface/30 border-b border-border">
                             <span className="text-text-muted flex items-center gap-2 text-xs">
                                 <FileCode className="w-3 h-3" />
                                 <span className="font-medium text-text-primary">{getFileName(filePath)}</span>
@@ -278,7 +278,7 @@ const ToolCallCard = memo(function ToolCallCard({
                                         Writing...
                                     </span>
                                 )}
-                                {isTruncated && !isStreaming && <span className="text-yellow-500 text-[10px]">(truncated)</span>}
+                                {isTruncated && !isStreaming && <span className="text-amber-500 text-[10px]">(truncated)</span>}
                             </span>
                         </div>
                         <div className="max-h-64 overflow-auto custom-scrollbar">
@@ -305,10 +305,10 @@ const ToolCallCard = memo(function ToolCallCard({
             const isFolder = path?.endsWith('/')
             const displayName = getFileName(path) || path
             return (
-                <div className={`bg-black/20 rounded-md border overflow-hidden ${isDelete ? 'border-red-500/20' : 'border-border'}`}>
+                <div className={`bg-surface/50 rounded-md border overflow-hidden ${isDelete ? 'border-status-error/30' : 'border-border'}`}>
                     <div className="px-3 py-2 flex items-center gap-2 text-xs">
-                        <FileCode className={`w-3 h-3 ${isDelete ? 'text-red-400' : 'text-emerald-400'}`} />
-                        <span className={`font-medium ${isDelete ? 'text-red-400' : 'text-emerald-400'}`}>
+                        <FileCode className={`w-3 h-3 ${isDelete ? 'text-status-error' : 'text-status-success'}`} />
+                        <span className={`font-medium ${isDelete ? 'text-status-error' : 'text-status-success'}`}>
                             {isDelete ? 'Delete' : 'Create'} {isFolder ? 'folder' : 'file'}:
                         </span>
                         <span className="text-text-primary font-mono truncate" title={path}>{displayName}</span>
@@ -327,7 +327,7 @@ const ToolCallCard = memo(function ToolCallCard({
             const filePath = name === 'read_file' ? args.path as string : ''
             const displayName = name === 'read_file' ? getFileName(filePath) : `${(args.paths as string[])?.length || 0} files`
             return (
-                <div className="bg-black/20 rounded-md border border-border overflow-hidden">
+                <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
                     <div className="px-3 py-2 border-b border-border flex items-center gap-2 text-xs text-text-muted">
                         <FileCode className="w-3 h-3" />
                         <span className="text-text-primary font-medium" title={filePath}>{displayName}</span>
@@ -348,7 +348,7 @@ const ToolCallCard = memo(function ToolCallCard({
             let hostname = ''
             try { hostname = new URL(url).hostname } catch { hostname = url }
             return (
-                <div className="bg-black/20 rounded-md border border-border overflow-hidden">
+                <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
                     <div className="px-3 py-2 border-b border-border flex items-center gap-2 text-xs text-text-muted">
                         <Search className="w-3 h-3" />
                         <span className="text-text-primary font-medium truncate">{hostname}</span>
@@ -368,7 +368,7 @@ const ToolCallCard = memo(function ToolCallCard({
             const path = args.path as string
             const line = args.line as number | undefined
             return (
-                <div className="bg-black/20 rounded-md border border-border overflow-hidden">
+                <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
                     <div className="px-3 py-2 border-b border-border flex items-center gap-2 text-xs text-text-muted">
                         <FileCode className="w-3 h-3" />
                         <span className="text-text-primary font-medium">{getFileName(path)}</span>
@@ -388,7 +388,7 @@ const ToolCallCard = memo(function ToolCallCard({
         return (
             <div className="space-y-2">
                 {hasArgs && (
-                    <div className="bg-black/20 rounded-md border border-border p-2">
+                    <div className="bg-surface/50 rounded-md border border-border p-2">
                         <JsonHighlight
                             data={Object.fromEntries(Object.entries(args).filter(([k]) => !k.startsWith('_')))}
                             maxHeight="max-h-32"
@@ -400,8 +400,8 @@ const ToolCallCard = memo(function ToolCallCard({
                     <RichContentRenderer content={toolCall.richContent} maxHeight="max-h-64" />
                 )}
                 {toolCall.result && (!toolCall.richContent || toolCall.richContent.length === 0) && (
-                    <div className="bg-black/20 rounded-md border border-border overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-border">
+                    <div className="bg-surface/50 rounded-md border border-border overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-surface/30 border-b border-border">
                             <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">Result</span>
                             <button
                                 onClick={e => {

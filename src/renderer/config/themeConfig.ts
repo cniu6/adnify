@@ -108,34 +108,36 @@ export const builtinThemes: Theme[] = [
     type: 'dark',
     monacoTheme: 'vs-dark',
     colors: {
-      background: '2 6 23',           // Slate 950
-      backgroundSecondary: '15 23 42', // Slate 900
-      backgroundTertiary: '30 41 59',  // Slate 800
+      // 经典深蓝灰 (Inspired by GitHub Dark Dimmed / Nord)
+      background: '22 27 34',         // 主背景：深沉的蓝灰
+      backgroundSecondary: '28 33 42', // 侧边栏：稍亮
+      backgroundTertiary: '37 43 54',  // 输入框：明显区分
       
-      surface: '15 23 42',
-      surfaceHover: '30 41 59',
-      surfaceActive: '51 65 85',
-      surfaceMuted: '71 85 105',
+      surface: '28 33 42',
+      surfaceHover: '45 51 65',
+      surfaceActive: '55 61 75',
+      surfaceMuted: '70 78 94',
 
-      textPrimary: '248 250 252',
-      textSecondary: '148 163 184',
-      textMuted: '100 116 139',
-      textInverted: '0 0 0',
+      textPrimary: '220 225 235',     // 柔和白，不刺眼
+      textSecondary: '140 150 170',   // 清晰的灰蓝
+      textMuted: '90 100 120',
+      textInverted: '22 27 34',
 
-      border: '30 41 59',
-      borderSubtle: '15 23 42',       // Fixed: should be dark, not white
-      borderActive: '71 85 105',
+      border: '45 51 65',             // 融合度高的边框
+      borderSubtle: '30 36 48',
+      borderActive: '80 90 110',
 
+      // 强调色：冰川蓝 (Ice Blue)
       accent: '56 189 248',          // Sky 400
       accentHover: '14 165 233',     // Sky 500
       accentActive: '2 132 199',     // Sky 600
-      accentForeground: '0 0 0',
+      accentForeground: '15 23 42',
       accentSubtle: '125 211 252',   // Sky 300
 
-      statusSuccess: '34 197 94',
-      statusWarning: '234 179 8',
-      statusError: '239 68 68',
-      statusInfo: '59 130 246',
+      statusSuccess: '46 160 90',     // 稳重的绿
+      statusWarning: '210 160 30',    // 柔和黄
+      statusError: '240 80 80',       // 柔和红
+      statusInfo: '60 160 240',       // 柔和蓝
     },
   },
   {
@@ -144,34 +146,36 @@ export const builtinThemes: Theme[] = [
     type: 'dark',
     monacoTheme: 'vs-dark',
     colors: {
-      background: '10 10 15',         // Dark Navy
-      backgroundSecondary: '20 20 35',
-      backgroundTertiary: '30 30 45',
-
-      surface: '20 20 35',
-      surfaceHover: '40 40 60',
-      surfaceActive: '60 60 80',
+      // 极致深黑 (High Contrast Neon)
+      background: '3 3 5',            // 几乎纯黑
+      backgroundSecondary: '10 10 15', // 极深蓝黑
+      backgroundTertiary: '20 20 30',
+      
+      surface: '10 10 15',
+      surfaceHover: '30 30 45',
+      surfaceActive: '50 50 70',
       surfaceMuted: '80 80 100',
 
-      textPrimary: '255 255 255',
-      textSecondary: '200 200 255',
-      textMuted: '150 150 200',
+      textPrimary: '255 255 255',     // 纯白高亮
+      textSecondary: '160 160 180',   // 冷灰
+      textMuted: '100 100 120',
       textInverted: '0 0 0',
 
-      border: '60 60 80',
-      borderSubtle: '30 30 45',       // Fixed: subtle border should be dark
-      borderActive: '100 100 120',    // Fixed: brighter for active state
+      border: '40 40 60',
+      borderSubtle: '20 20 30',
+      borderActive: '255 0 128',      // 激活时发光边框
 
-      accent: '255 0 128',            // Neon Pink
+      // 强调色：赛博粉 (Cyber Pink)
+      accent: '255 0 128',
       accentHover: '255 50 150',
       accentActive: '200 0 100',
       accentForeground: '255 255 255',
       accentSubtle: '255 100 200',
 
-      statusSuccess: '0 255 100',     // Neon Green
-      statusWarning: '255 200 0',     // Neon Yellow
+      statusSuccess: '0 255 150',     // Neon Green
+      statusWarning: '255 240 0',     // Neon Yellow
       statusError: '255 50 50',       // Neon Red
-      statusInfo: '0 200 255',        // Neon Blue
+      statusInfo: '0 240 255',        // Cyan
     },
   },
   {
@@ -180,34 +184,37 @@ export const builtinThemes: Theme[] = [
     type: 'light',
     monacoTheme: 'vs',
     colors: {
-      background: '255 255 255',
-      backgroundSecondary: '248 250 252',
-      backgroundTertiary: '241 245 249',
-
+      // 纯净白 (Clean & Crisp)
+      background: '255 255 255',      // 纯白背景
+      backgroundSecondary: '248 249 250', // 极淡的灰 (侧边栏)
+      backgroundTertiary: '241 243 245',  // 输入框背景
+      
       surface: '255 255 255',
-      surfaceHover: '241 245 249',
-      surfaceActive: '226 232 240',
-      surfaceMuted: '203 213 225',
+      surfaceHover: '241 243 245',    // Hover 显现
+      surfaceActive: '233 236 239',
+      surfaceMuted: '222 226 230',
 
-      textPrimary: '15 23 42',
-      textSecondary: '71 85 105',
-      textMuted: '148 163 184',
+      // 文字：高对比度，拒绝模糊
+      textPrimary: '33 37 41',        // 近似纯黑的深灰，锐利清晰
+      textSecondary: '73 80 87',      // 中灰，辅助信息
+      textMuted: '134 142 150',       // 浅灰，仅用于不重要信息
       textInverted: '255 255 255',
 
-      border: '226 232 240',
-      borderSubtle: '241 245 249',    // Fixed: should be light gray, not dark
-      borderActive: '203 213 225',
+      border: '222 226 230',          // 清晰的分割线
+      borderSubtle: '241 243 245',
+      borderActive: '173 181 189',
 
-      accent: '79 70 229',
-      accentHover: '67 56 202',
-      accentActive: '55 48 163',
+      // 强调色：国际奇连蓝 (Inter Klein Blue) - 专业感强
+      accent: '37 99 235',           // Blue 600
+      accentHover: '29 78 216',      // Blue 700
+      accentActive: '30 70 190',     // Blue 800
       accentForeground: '255 255 255',
-      accentSubtle: '129 140 248',
+      accentSubtle: '96 165 250',    // Blue 400
 
-      statusSuccess: '22 163 74',
-      statusWarning: '202 138 4',
-      statusError: '220 38 38',
-      statusInfo: '37 99 235',
+      statusSuccess: '22 163 74',     // Green 600
+      statusWarning: '217 119 6',     // Amber 600
+      statusError: '220 38 38',       // Red 600
+      statusInfo: '37 99 235',        // Blue 600
     },
   },
 ]

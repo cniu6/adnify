@@ -127,10 +127,10 @@ export default function AgentStatusBar({
       className="mb-3"
     >
       {/* 主容器 - 与输入框风格统一 */}
-      <div className="rounded-2xl border border-white/[0.06] bg-surface/30 backdrop-blur-xl overflow-hidden">
+      <div className="rounded-2xl border border-border bg-surface/30 backdrop-blur-xl overflow-hidden shadow-sm">
         {/* 流式状态 / 等待审批 */}
         {(isStreaming || isAwaitingApproval) && (
-          <div className={`flex items-center justify-between px-4 py-2 ${hasChanges ? 'border-b border-white/[0.04]' : ''}`}>
+          <div className={`flex items-center justify-between px-4 py-2 ${hasChanges ? 'border-b border-border/50' : ''}`}>
             <div className="flex items-center gap-2.5">
               {isStreaming ? (
                 <>
@@ -221,13 +221,13 @@ export default function AgentStatusBar({
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="border-t border-white/[0.04] max-h-[200px] overflow-y-auto custom-scrollbar">
+                  <div className="border-t border-border/50 max-h-[200px] overflow-y-auto custom-scrollbar">
                     {Array.from(groupedChanges.entries()).map(([dir, dirChanges]) => (
                       <div key={dir}>
                         {/* 目录头 */}
                         {groupedChanges.size > 1 && (
                           <div
-                            className="flex items-center gap-2 px-4 py-1.5 text-[10px] text-text-muted/50 hover:text-text-muted cursor-pointer hover:bg-white/[0.02] transition-colors"
+                            className="flex items-center gap-2 px-4 py-1.5 text-[10px] text-text-muted/50 hover:text-text-muted cursor-pointer hover:bg-surface-hover transition-colors"
                             onClick={() => toggleDir(dir)}
                           >
                             {expandedDirs.has(dir) || groupedChanges.size === 1 ? (

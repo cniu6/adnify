@@ -136,7 +136,7 @@ export default function ChatInput({
             ? 'bg-surface/60 border-accent/20 ring-1 ring-accent/10 shadow-[0_8px_32px_-8px_rgba(var(--accent)/0.15)]'
             : isFocused
               ? 'bg-background/80 border-accent/30 ring-1 ring-accent/10 shadow-[0_12px_40px_-12px_rgba(var(--accent)/0.2),0_0_0_1px_rgba(var(--accent)/0.05)] translate-y-[-2px]'
-              : 'bg-surface/40 border-white/10 hover:border-white/20 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.3)]'
+              : 'bg-surface/50 border-border hover:border-border-active shadow-[0_8px_24px_-8px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.1)]'
           }
         `}
       >

@@ -75,23 +75,22 @@ export default function ModeSelector({ mode, onModeChange, className = '' }: Mod
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold
+          flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold border
           transition-all duration-200
           ${isOpen
-            ? 'bg-surface/80 text-text-primary ring-1 ring-white/10'
-            : 'bg-black/20 text-text-muted hover:text-text-secondary hover:bg-black/30'
+            ? 'bg-surface text-text-primary border-accent/30 shadow-[0_0_0_2px_rgba(var(--accent)/0.1)]'
+            : 'bg-surface/50 border-border text-text-secondary hover:text-text-primary hover:bg-surface hover:border-border-active'
           }
-          border border-border
         `}
       >
         <Icon className={`w-3.5 h-3.5 ${currentMode.color}`} />
         <span>{currentMode.labelKey}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 text-text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* 下拉菜单 */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-48 bg-surface/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl shadow-black/40 z-50 py-1 animate-scale-in">
+        <div className="absolute bottom-full left-0 mb-2 w-48 bg-surface border border-border rounded-xl shadow-2xl z-50 py-1 animate-scale-in">
           {MODES.map((m) => {
             const ModeIcon = m.icon
             const isSelected = mode === m.id
@@ -107,7 +106,7 @@ export default function ModeSelector({ mode, onModeChange, className = '' }: Mod
                   transition-colors
                   ${isSelected
                     ? 'bg-accent/10'
-                    : 'hover:bg-white/5'
+                    : 'hover:bg-surface-hover'
                   }
                 `}
               >
@@ -116,7 +115,7 @@ export default function ModeSelector({ mode, onModeChange, className = '' }: Mod
                   <div className={`text-xs font-medium ${isSelected ? 'text-accent' : 'text-text-primary'}`}>
                     {m.labelKey}
                   </div>
-                  <div className="text-[10px] text-text-muted truncate">
+                  <div className="text-[10px] text-text-muted truncate opacity-80">
                     {language === 'zh' ? m.descZh : m.descEn}
                   </div>
                 </div>

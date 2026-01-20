@@ -107,7 +107,7 @@ export default function ContextStatsContent({
 
         {/* Token 详情 */}
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-2 rounded-lg bg-black/20">
+          <div className="p-2 rounded-lg bg-surface/50 border border-white/5">
             <div className="text-[9px] text-text-muted uppercase">
               {language === 'zh' ? '当前输入' : 'Input'}
             </div>
@@ -115,7 +115,7 @@ export default function ContextStatsContent({
               {formatK(inputTokens)}
             </div>
           </div>
-          <div className="p-2 rounded-lg bg-black/20">
+          <div className="p-2 rounded-lg bg-surface/50 border border-white/5">
             <div className="text-[9px] text-text-muted uppercase">
               {language === 'zh' ? '上下文限制' : 'Limit'}
             </div>
@@ -123,7 +123,7 @@ export default function ContextStatsContent({
               {formatK(contextLimit)}
             </div>
           </div>
-          <div className="p-2 rounded-lg bg-black/20">
+          <div className="p-2 rounded-lg bg-surface/50 border border-white/5">
             <div className="text-[9px] text-text-muted uppercase">
               {language === 'zh' ? '压缩等级' : 'Level'}
             </div>
@@ -147,7 +147,7 @@ export default function ContextStatsContent({
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center justify-between p-2 rounded-lg bg-black/20">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-surface/50 border border-white/5">
             <span className="text-[10px] text-text-muted">
               {language === 'zh' ? '累计输入' : 'Total In'}
             </span>
@@ -155,7 +155,7 @@ export default function ContextStatsContent({
               {formatNumber(totalUsage.promptTokens)}
             </span>
           </div>
-          <div className="flex items-center justify-between p-2 rounded-lg bg-black/20">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-surface/50 border border-white/5">
             <span className="text-[10px] text-text-muted">
               {language === 'zh' ? '累计输出' : 'Total Out'}
             </span>

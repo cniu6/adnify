@@ -122,25 +122,25 @@ export default function ModelSelector({ className = '' }: ModelSelectorProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium border border-border
+          flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium border
           transition-all duration-200
           ${isOpen
-            ? 'bg-surface/80 text-text-primary ring-1 ring-white/10'
-            : 'bg-black/20 text-text-muted hover:text-text-secondary hover:bg-black/30'
+            ? 'bg-surface text-text-primary border-accent/30 shadow-[0_0_0_2px_rgba(var(--accent)/0.1)]'
+            : 'bg-surface/50 border-border text-text-secondary hover:text-text-primary hover:bg-surface hover:border-border-active'
           }
         `}
       >
-        <span className="text-[10px]">{getIcon(llmConfig.provider)}</span>
+        <span className="text-[10px] grayscale opacity-80">{getIcon(llmConfig.provider)}</span>
         <span className="max-w-[120px] truncate">{llmConfig.model}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 text-text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-64 max-h-80 overflow-y-auto bg-surface/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl shadow-black/40 z-50 animate-scale-in">
+        <div className="absolute bottom-full left-0 mb-2 w-64 max-h-80 overflow-y-auto bg-surface border border-border rounded-xl shadow-2xl z-50 animate-scale-in">
           {groupedModels.map(group => (
             <div key={group.providerId}>
-              <div className="sticky top-0 px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider bg-surface/95 backdrop-blur-sm border-b border-border">
-                <span className="mr-1.5">{getIcon(group.providerId)}</span>
+              <div className="sticky top-0 px-3 py-2 text-[10px] font-bold text-text-muted/80 uppercase tracking-wider bg-surface/95 backdrop-blur-sm border-b border-border/50">
+                <span className="mr-1.5 grayscale">{getIcon(group.providerId)}</span>
                 {group.providerName}
               </div>
               <div className="py-1">
@@ -152,13 +152,13 @@ export default function ModelSelector({ className = '' }: ModelSelectorProps) {
                       onClick={() => handleSelectModel(group.providerId, model.id)}
                       className={`
                         w-full flex items-center justify-between px-3 py-2 text-left text-xs transition-colors
-                        ${isSelected ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'}
+                        ${isSelected ? 'bg-accent/10 text-accent font-medium' : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'}
                       `}
                     >
                       <span className="flex items-center gap-2 min-w-0">
                         <span className="truncate">{model.name}</span>
                         {model.isCustom && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 text-[9px] bg-purple-500/20 text-purple-400 rounded">
+                          <span className="flex-shrink-0 px-1.5 py-0.5 text-[9px] bg-purple-500/10 text-purple-500 rounded border border-purple-500/20">
                             Custom
                           </span>
                         )}

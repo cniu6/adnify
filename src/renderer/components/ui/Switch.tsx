@@ -13,11 +13,11 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
                     {/* Track */}
                     <div className="
                         w-11 h-6 rounded-full 
-                        bg-surface/30 border border-border backdrop-blur-sm
+                        bg-surface-active/50 border border-border backdrop-blur-sm
                         peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent/50 
                         peer-checked:bg-accent peer-checked:border-accent
                         transition-all duration-300 ease-in-out
-                        group-hover:border-white/20
+                        group-hover:border-accent/30
                     "></div>
                     
                     {/* Thumb with Glow */}

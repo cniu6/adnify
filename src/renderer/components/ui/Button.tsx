@@ -17,12 +17,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
         const variants = {
             primary: `
-                bg-accent text-white rounded-xl border border-white/10
+                bg-accent text-white rounded-xl border border-white/20
                 shadow-[0_2px_8px_-2px_rgba(var(--accent)/0.5),inset_0_1px_1px_rgba(255,255,255,0.15)]
                 hover:bg-accent-hover hover:shadow-[0_8px_16px_-4px_rgba(var(--accent)/0.4),inset_0_1px_1px_rgba(255,255,255,0.2)]
                 hover:-translate-y-[1px]
             `,
-            secondary: "bg-surface/30 backdrop-blur-md text-text-primary rounded-xl border border-white/5 hover:bg-surface/50 hover:border-white/10 hover:shadow-sm",
+            secondary: "bg-surface/50 backdrop-blur-md text-text-primary rounded-xl border border-border hover:bg-surface hover:border-border-active hover:shadow-sm",
             ghost: "bg-transparent text-text-secondary rounded-lg hover:bg-white/5 hover:text-text-primary",
             icon: "bg-transparent text-text-muted rounded-lg hover:bg-white/5 hover:text-text-primary p-0 aspect-square transition-colors",
             danger: "bg-status-error/10 text-status-error rounded-xl border border-status-error/20 hover:bg-status-error/20 hover:border-status-error/30 hover:shadow-[0_4px_12px_-4px_rgba(var(--status-error)/0.2)]",

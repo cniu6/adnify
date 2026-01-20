@@ -264,7 +264,7 @@ export default function FileChangeCard({
                     >
                         <div className="px-3 pb-3 pt-0">
                             <div>
-                                <div className="rounded-lg border border-border bg-black/20 overflow-hidden shadow-inner">
+                                <div className="rounded-lg border border-border bg-surface/50 overflow-hidden shadow-inner">
                                     <div className="max-h-64 overflow-auto custom-scrollbar relative min-h-[60px]">
                                         {showContent || isRunning || isStreaming ? (
                                             <InlineDiffPreview

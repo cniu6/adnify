@@ -136,32 +136,32 @@ export default function StatusBar() {
   const toolCallLogs = useStore(state => state.toolCallLogs)
 
   return (
-    <div className="h-7 bg-background border-t border-border flex items-center justify-between px-2 text-[10px] select-none text-text-muted z-50 font-medium">
+    <div className="h-8 bg-background-secondary/40 backdrop-blur-md flex items-center justify-between px-3 text-[10px] select-none text-text-muted z-50 font-medium border-t border-white/5">
       {/* Left Group */}
-      <div className="flex items-center gap-4 pl-1">
+      <div className="flex items-center gap-2">
         {isGitRepo && gitStatus && (
-          <button className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/5 text-text-muted hover:text-text-primary transition-all group">
-            <GitBranch className="w-3.5 h-3.5 text-accent opacity-80" />
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-full hover:bg-white/5 text-text-muted hover:text-text-primary transition-all group border border-transparent hover:border-white/5">
+            <GitBranch className="w-3 h-3 text-accent opacity-80" />
             <span className="font-bold tracking-tight">{gitStatus.branch}</span>
           </button>
         )}
 
         <button 
           onClick={handleDiagnosticsClick}
-          className="flex items-center gap-3 px-2 py-0.5 rounded hover:bg-white/5 transition-all text-text-muted hover:text-text-primary"
+          className="flex items-center gap-3 px-2.5 py-1 rounded-full hover:bg-white/5 transition-all text-text-muted hover:text-text-primary border border-transparent hover:border-white/5"
         >
-          <div className={`flex items-center gap-1 ${currentFileStats.errors > 0 ? 'text-red-400' : ''}`}>
-            <XCircle className="w-3.5 h-3.5" />
+          <div className={`flex items-center gap-1.5 ${currentFileStats.errors > 0 ? 'text-red-400' : ''}`}>
+            <XCircle className="w-3 h-3" />
             <span className="font-bold">{currentFileStats.errors}</span>
           </div>
-          <div className={`flex items-center gap-1 ${currentFileStats.warnings > 0 ? 'text-yellow-400' : ''}`}>
-            <AlertCircle className="w-3.5 h-3.5" />
+          <div className={`flex items-center gap-1.5 ${currentFileStats.warnings > 0 ? 'text-amber-400' : ''}`}>
+            <AlertCircle className="w-3 h-3" />
             <span className="font-bold">{currentFileStats.warnings}</span>
           </div>
         </button>
 
         {workerProgress && !workerProgress.isComplete && workerProgress.total > 0 && (
-          <div className="flex items-center gap-1.5 text-accent animate-fade-in px-2">
+          <div className="flex items-center gap-1.5 text-accent animate-fade-in px-2 bg-accent/5 rounded-full py-0.5 border border-accent/10">
             <Cpu className="w-3 h-3 animate-pulse" />
             <span>{Math.round((workerProgress.processed / workerProgress.total) * 100)}%</span>
           </div>
@@ -170,12 +170,12 @@ export default function StatusBar() {
         {workspacePath && (
           <button
             onClick={handleIndexClick}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/5 hover:text-text-primary transition-colors group"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-white/5 hover:text-text-primary transition-colors group"
           >
             {indexStatus?.isIndexing ? (
               <Loader2 className="w-3 h-3 animate-spin text-accent" />
             ) : indexStatus?.totalChunks ? (
-              <CheckCircle2 className="w-3 h-3 text-green-400/70 group-hover:text-green-400" />
+              <CheckCircle2 className="w-3 h-3 text-emerald-400/80 group-hover:text-emerald-400" />
             ) : (
               <Database className="w-3 h-3 opacity-50" />
             )}
@@ -185,11 +185,11 @@ export default function StatusBar() {
 
       <div className="flex-1" />
 
-      {/* Right Group - Logical Separation */}
-      <div className="flex items-center h-full">
+      {/* Right Group - Clean & Minimal */}
+      <div className="flex items-center gap-3 h-full">
         
         {/* Stats Group */}
-        <div className="flex items-center gap-4 px-3 border-r border-border/50 h-4">
+        <div className="flex items-center gap-2 h-full">
           {/* 上下文统计（合并 Token + 压缩） */}
           <BottomBarPopover
             icon={
@@ -210,7 +210,7 @@ export default function StatusBar() {
                       <Loader2 className="w-3 h-3" />
                     </motion.div>
                     <span className="text-[10px] font-medium">
-                      {language === 'zh' ? '切换中...' : 'Switching...'}
+                      {language === 'zh' ? 'Switching' : 'Switching'}
                     </span>
                   </motion.div>
                 ) : compressionPhase !== 'idle' && compressionPhase !== 'done' ? (
@@ -231,11 +231,6 @@ export default function StatusBar() {
                     >
                       <Layers className="w-3 h-3" />
                     </motion.div>
-                    <span className="text-[10px] font-medium">
-                      {compressionPhase === 'analyzing' && (language === 'zh' ? '分析中' : 'Analyzing')}
-                      {compressionPhase === 'compressing' && (language === 'zh' ? '压缩中' : 'Compressing')}
-                      {compressionPhase === 'summarizing' && (language === 'zh' ? '摘要中' : 'Summarizing')}
-                    </span>
                     <motion.div
                       className="flex gap-0.5"
                       initial={{ opacity: 0 }}
@@ -257,29 +252,21 @@ export default function StatusBar() {
                     key="normal"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex items-center gap-2 text-text-muted hover:text-text-primary"
+                    className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/5 transition-all cursor-pointer group"
                   >
                     {/* 上下文使用率 */}
-                    <div className={`flex items-center gap-1 ${
+                    <div className={`flex items-center gap-1.5 ${
                       compressionStats?.level === 4 ? 'text-red-400' :
                       compressionStats?.level === 3 ? 'text-orange-400' :
                       compressionStats?.level === 2 ? 'text-yellow-400' :
                       compressionStats?.level === 1 ? 'text-blue-400' : 
                       'text-emerald-400'
                     }`}>
-                      <Layers className="w-3 h-3" />
+                      <Layers className="w-3 h-3 group-hover:scale-110 transition-transform" />
                       <span className="text-[10px] font-bold font-mono">
                         {compressionStats ? `${Math.round(compressionStats.ratio * 100)}%` : '0%'}
                       </span>
                     </div>
-                    {/* Token 累计 */}
-                    {tokenStats.totalUsage.totalTokens > 0 && (
-                      <span className="text-[10px] font-mono text-text-muted">
-                        {tokenStats.totalUsage.totalTokens >= 1000 
-                          ? `${(tokenStats.totalUsage.totalTokens / 1000).toFixed(1)}k` 
-                          : tokenStats.totalUsage.totalTokens}
-                      </span>
-                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -294,15 +281,15 @@ export default function StatusBar() {
           </BottomBarPopover>
 
           {messageCount > 0 && (
-            <div className="flex items-center gap-1.5 px-1 cursor-default text-text-muted hover:text-text-primary transition-colors">
-              <MessageSquare className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full cursor-default text-text-muted hover:text-text-primary hover:bg-white/5 transition-all">
+              <MessageSquare className="w-3 h-3" />
               <span className="font-bold">{messageCount}</span>
             </div>
           )}
         </div>
 
         {/* Tools Group */}
-        <div className="flex items-center gap-2 px-3 border-r border-border/50 h-4">
+        <div className="flex items-center gap-1 h-full">
           <BottomBarPopover
             icon={<ScrollText className="w-3.5 h-3.5" />}
             badge={toolCallLogs.length || undefined}
@@ -315,32 +302,34 @@ export default function StatusBar() {
         </div>
 
         {/* Panel Toggles */}
-        <div className="flex items-center h-full px-1 border-r border-border/50">
+        <div className="flex items-center gap-1 h-full px-2">
           <button
             onClick={() => setTerminalVisible(!terminalVisible)}
-            className={`h-full px-2.5 transition-all ${terminalVisible ? 'text-accent bg-accent/5 shadow-[inset_0_-2px_0_rgba(var(--accent),0.8)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
+            className={`p-1.5 rounded-lg transition-all ${terminalVisible ? 'text-accent bg-accent/10' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
+            title="Toggle Terminal"
           >
             <Terminal className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setDebugVisible(!debugVisible)}
-            className={`h-full px-2.5 transition-all ${debugVisible ? 'text-accent bg-accent/5 shadow-[inset_0_-2px_0_rgba(var(--accent),0.8)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
+            className={`p-1.5 rounded-lg transition-all ${debugVisible ? 'text-accent bg-accent/10' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
+            title="Toggle Debug"
           >
             <Bug className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* Context Info */}
-        <div className="flex items-center gap-3 pl-3 pr-2">
+        <div className="flex items-center gap-4 pl-2">
           <LspStatusIndicator />
 
           {activeFilePath && (
-            <div className="text-[10px] font-black uppercase tracking-widest text-accent opacity-80 select-none">
+            <div className="text-[9px] font-black uppercase tracking-widest text-accent opacity-60 select-none">
               {activeFilePath.split('.').pop() || 'TXT'}
             </div>
           )}
 
-          <div className="flex items-center gap-2 cursor-pointer hover:bg-white/5 px-2 py-0.5 rounded transition-colors font-mono opacity-60 hover:opacity-100">
+          <div className="flex items-center gap-2 cursor-pointer hover:bg-white/5 px-2 py-0.5 rounded transition-colors font-mono opacity-50 hover:opacity-100 text-[9px]">
             <span>Ln {cursorPosition?.line || 1}, Col {cursorPosition?.column || 1}</span>
           </div>
         </div>

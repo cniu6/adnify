@@ -13,9 +13,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                     <input type="checkbox" className="peer sr-only" ref={ref} {...props} />
                     {/* Background & Border */}
                     <div className="
-                        w-5 h-5 rounded-lg border border-white/20 bg-surface/30 backdrop-blur-sm
+                        w-5 h-5 rounded-lg border border-border bg-surface/50 backdrop-blur-sm
                         transition-all duration-300 ease-out
-                        group-hover:border-accent/50 group-hover:bg-surface/50
+                        group-hover:border-accent/50 group-hover:bg-surface
                         peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50
                         peer-checked:bg-accent peer-checked:border-accent peer-checked:shadow-[0_0_10px_rgba(var(--accent)/0.4)]
                         peer-disabled:opacity-50 peer-disabled:cursor-not-allowed

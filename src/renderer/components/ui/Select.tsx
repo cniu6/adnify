@@ -100,15 +100,14 @@ export function Select({
                 type="button"
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
-                className={`
-                    w-full flex items-center justify-between px-3 h-9 text-sm 
-                    rounded-lg border shadow-sm transition-all duration-200
-                    bg-black/20 border-white/10
-                    hover:bg-black/30 hover:border-white/20
-                    focus:outline-none
-                    ${isOpen ? 'border-accent/50 ring-2 ring-accent/10 bg-black/40' : ''}
-                    ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
+        className={`
+          flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-xs border transition-all duration-200
+          ${isOpen 
+            ? 'border-accent/50 ring-2 ring-accent/10 bg-surface' 
+            : 'bg-surface/50 border-border hover:bg-surface hover:border-border-active'
+          }
+          ${className}
+        `}
             >
                 <div className="flex items-center gap-2 truncate">
                     {selectedOption?.icon && <span className="flex-shrink-0 w-4 h-4 text-text-muted">{selectedOption.icon}</span>}
