@@ -136,6 +136,9 @@ function mergeLLMConfig(
   const providerConfig = providerConfigs[providerId] ?? {}
   const builtinDef = getBuiltinProvider(providerId)
 
+  // 从 advanced 配置中提取 headers
+  const advancedHeaders = providerConfig.advanced?.request?.headers
+
   // 优先级：saved > providerConfig > builtinDef > defaults
   return {
     provider: providerId,
@@ -143,17 +146,29 @@ function mergeLLMConfig(
     apiKey: providerConfig.apiKey ?? defaults.apiKey,
     baseUrl: providerConfig.baseUrl ?? builtinDef?.baseUrl ?? defaults.baseUrl,
     timeout: providerConfig.timeout ?? builtinDef?.defaults.timeout ?? defaults.timeout,
-    enableThinking: saved.enableThinking ?? defaults.enableThinking,
+    
+    // 核心参数
     temperature: saved.temperature ?? defaults.temperature,
     maxTokens: saved.maxTokens ?? defaults.maxTokens,
     topP: saved.topP ?? defaults.topP,
-    frequencyPenalty: saved.frequencyPenalty,
-    presencePenalty: saved.presencePenalty,
-    stopSequences: saved.stopSequences,
     topK: saved.topK ?? defaults.topK,
+    frequencyPenalty: saved.frequencyPenalty ?? defaults.frequencyPenalty,
+    presencePenalty: saved.presencePenalty ?? defaults.presencePenalty,
+    stopSequences: saved.stopSequences ?? defaults.stopSequences,
     seed: saved.seed ?? defaults.seed,
-    logitBias: saved.logitBias,
-    advanced: providerConfig.advanced,
+    logitBias: saved.logitBias ?? defaults.logitBias,
+    
+    // AI SDK 高级参数
+    maxRetries: saved.maxRetries ?? defaults.maxRetries,
+    toolChoice: saved.toolChoice ?? defaults.toolChoice,
+    parallelToolCalls: saved.parallelToolCalls ?? defaults.parallelToolCalls,
+    headers: saved.headers ?? advancedHeaders ?? defaults.headers,  // 优先级：saved > advanced > defaults
+    
+    // 功能开关
+    enableThinking: saved.enableThinking ?? defaults.enableThinking,
+    
+    // 协议
+    protocol: providerConfig.protocol,
   }
 }
 
@@ -220,16 +235,26 @@ class SettingsService {
         llmConfig: {
           provider: settings.llmConfig.provider,
           model: settings.llmConfig.model,
-          enableThinking: settings.llmConfig.enableThinking,
+          
+          // 核心参数
           temperature: settings.llmConfig.temperature,
           maxTokens: settings.llmConfig.maxTokens,
           topP: settings.llmConfig.topP,
+          topK: settings.llmConfig.topK,
           frequencyPenalty: settings.llmConfig.frequencyPenalty,
           presencePenalty: settings.llmConfig.presencePenalty,
           stopSequences: settings.llmConfig.stopSequences,
-          topK: settings.llmConfig.topK,
           seed: settings.llmConfig.seed,
           logitBias: settings.llmConfig.logitBias,
+          
+          // AI SDK 高级参数
+          maxRetries: settings.llmConfig.maxRetries,
+          toolChoice: settings.llmConfig.toolChoice,
+          parallelToolCalls: settings.llmConfig.parallelToolCalls,
+          headers: settings.llmConfig.headers,
+          
+          // 功能开关
+          enableThinking: settings.llmConfig.enableThinking,
         },
         language: settings.language,
         autoApprove: settings.autoApprove,
@@ -345,16 +370,26 @@ class SettingsService {
         llmConfig: {
           provider: settings.llmConfig.provider,
           model: settings.llmConfig.model,
-          enableThinking: settings.llmConfig.enableThinking,
+          
+          // 核心参数
           temperature: settings.llmConfig.temperature,
           maxTokens: settings.llmConfig.maxTokens,
           topP: settings.llmConfig.topP,
+          topK: settings.llmConfig.topK,
           frequencyPenalty: settings.llmConfig.frequencyPenalty,
           presencePenalty: settings.llmConfig.presencePenalty,
           stopSequences: settings.llmConfig.stopSequences,
-          topK: settings.llmConfig.topK,
           seed: settings.llmConfig.seed,
           logitBias: settings.llmConfig.logitBias,
+          
+          // AI SDK 高级参数
+          maxRetries: settings.llmConfig.maxRetries,
+          toolChoice: settings.llmConfig.toolChoice,
+          parallelToolCalls: settings.llmConfig.parallelToolCalls,
+          headers: settings.llmConfig.headers,
+          
+          // 功能开关
+          enableThinking: settings.llmConfig.enableThinking,
         },
         language: settings.language,
         autoApprove: settings.autoApprove,

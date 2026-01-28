@@ -75,22 +75,26 @@ export class MessageConverter {
 
   /**
    * 转换 user 消息的多模态内容
+   * 改进：添加 mediaType 支持，更符合 AI SDK 规范
    */
   private convertUserContentParts(
     content: MessageContentPart[]
-  ): Array<{ type: 'text'; text: string } | { type: 'image'; image: string | URL }> {
-    const parts: Array<{ type: 'text'; text: string } | { type: 'image'; image: string | URL }> =
-      []
+  ): Array<{ type: 'text'; text: string } | { type: 'image'; image: string | URL; mediaType?: string }> {
+    const parts: Array<{ type: 'text'; text: string } | { type: 'image'; image: string | URL; mediaType?: string }> = []
 
     for (const item of content) {
       if (item.type === 'text' && 'text' in item) {
         parts.push({ type: 'text', text: item.text })
       } else if (item.type === 'image' && 'source' in item) {
-        const imageUrl = this.convertImageSource(
+        const result = this.convertImageSource(
           item.source as { type: string; url?: string; data?: string; media_type?: string }
         )
-        if (imageUrl) {
-          parts.push({ type: 'image', image: imageUrl })
+        if (result) {
+          parts.push({
+            type: 'image',
+            image: result.image,
+            ...(result.mediaType && { mediaType: result.mediaType }),
+          })
         }
       }
     }
@@ -100,18 +104,26 @@ export class MessageConverter {
 
   /**
    * 转换图片源
+   * 改进：返回 mediaType 以便 AI SDK 更好地处理
    */
   private convertImageSource(source: {
     type: string
     url?: string
     data?: string
     media_type?: string
-  }): string | URL | null {
+  }): { image: string | URL; mediaType?: string } | null {
     if (source.type === 'url' && source.url) {
-      return source.url
+      return {
+        image: source.url,
+        mediaType: source.media_type,
+      }
     }
-    if (source.type === 'base64' && source.data && source.media_type) {
-      return `data:${source.media_type};base64,${source.data}`
+    if (source.type === 'base64' && source.data) {
+      const mediaType = source.media_type || 'image/png' // 默认 PNG
+      return {
+        image: `data:${mediaType};base64,${source.data}`,
+        mediaType,
+      }
     }
     return null
   }

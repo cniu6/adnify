@@ -15,7 +15,7 @@
 export type AuthType = 'bearer' | 'api-key' | 'header' | 'query' | 'none'
 
 /** API 协议类型 */
-export type ApiProtocol = 'openai' | 'anthropic' | 'gemini' | 'custom'
+export type ApiProtocol = 'openai' | 'anthropic' | 'google' | 'custom'
 
 /** 认证配置 */
 export interface AuthConfig {
@@ -232,7 +232,7 @@ export const BUILTIN_PROVIDERS: Record<string, BuiltinProviderDef> = {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     models: ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.5-pro-preview-05-06'],
     defaultModel: 'gemini-2.0-flash-exp',
-    protocol: 'gemini', // 使用原生 Gemini SDK
+    protocol: 'google', // 使用 'google' 协议（AI SDK 标准）
     features: { streaming: true, tools: true, vision: true },
     defaults: { maxTokens: 8192, temperature: 0.7, topP: 1, timeout: 120000 },
     auth: { type: 'query', queryParam: 'key', placeholder: 'AIzaSy...', helpUrl: 'https://aistudio.google.com/apikey' },

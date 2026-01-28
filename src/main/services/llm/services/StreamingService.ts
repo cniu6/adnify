@@ -75,12 +75,14 @@ export class StreamingService {
       // 转换工具
       const coreTools = tools ? this.toolConverter.convert(tools) : undefined
 
-      // 流式生成 - AI SDK 6.0 自动处理所有 reasoning
-      const result = streamText({
+      // 构建 streamText 参数
+      const streamParams: Parameters<typeof streamText>[0] = {
         model,
         messages: coreMessages,
         tools: coreTools,
         activeTools,  // 动态限制可用工具
+        
+        // 核心参数
         maxOutputTokens: config.maxTokens,
         temperature: config.temperature,
         topP: config.topP,
@@ -89,7 +91,66 @@ export class StreamingService {
         presencePenalty: config.presencePenalty,
         stopSequences: config.stopSequences,
         seed: config.seed,
+        
+        // AI SDK 高级参数
+        maxRetries: config.maxRetries,
+        toolChoice: config.toolChoice,
+        headers: config.headers,
+        timeout: config.timeout,  // 超时配置
         abortSignal,
+      }
+
+      // OpenAI 特定参数
+      if (config.provider === 'openai') {
+        if (config.logitBias) {
+          // @ts-expect-error - OpenAI specific parameter
+          streamParams.logitBias = config.logitBias
+        }
+        if (config.parallelToolCalls !== undefined) {
+          streamParams.providerOptions = {
+            ...streamParams.providerOptions,
+            openai: {
+              ...streamParams.providerOptions?.openai,
+              parallelToolCalls: config.parallelToolCalls,
+            },
+          }
+        }
+      }
+
+      // 启用 thinking 模式（各厂商配置不同）
+      if (config.enableThinking) {
+        if (config.provider === 'gemini') {
+          // Google Gemini: thinkingConfig
+          streamParams.providerOptions = {
+            google: {
+              thinkingConfig: {
+                includeThoughts: true,
+              },
+            },
+          }
+        } else if (config.provider === 'anthropic') {
+          // Anthropic Claude: thinking.type = "enabled"
+          streamParams.providerOptions = {
+            anthropic: {
+              thinking: {
+                type: 'enabled',
+              },
+            },
+          }
+        } else if (config.provider === 'openai') {
+          // OpenAI: reasoningEffort + forceReasoning
+          streamParams.providerOptions = {
+            openai: {
+              reasoningEffort: 'medium',
+              forceReasoning: true,
+            },
+          }
+        }
+      }
+
+      // 流式生成 - AI SDK 6.0 自动处理所有 reasoning
+      const result = streamText({
+        ...streamParams,
         // 自动修复工具调用 JSON 格式错误
         experimental_repairToolCall: async ({ toolCall, error }) => {
           logger.llm.warn('[StreamingService] Tool call parse error, attempting repair:', {

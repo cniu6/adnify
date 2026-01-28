@@ -47,20 +47,6 @@ function createBuiltinModel(
         throw new Error(`Unknown builtin provider: ${providerId}`)
     }
 
-    // 如果用户自定义了 baseUrl 且不是默认值，使用 OpenAI Compatible 模式
-    // 这样可以兼容各种 OpenAI-compatible 的 API（如 NVIDIA、智谱等）
-    const isCustomBaseUrl = baseUrl && baseUrl !== providerDef.baseUrl
-    
-    if (isCustomBaseUrl) {
-        console.log(`[ModelFactory] Using OpenAI Compatible mode for custom baseUrl: ${baseUrl}`)
-        const provider = createOpenAICompatible({
-            name: `${providerId}-custom`,
-            apiKey,
-            baseURL: baseUrl,
-        })
-        return provider(model)
-    }
-
     switch (providerId) {
         case 'openai': {
             const openai = createOpenAI({
@@ -127,7 +113,7 @@ function createCustomModel(
             return anthropic(model)
         }
 
-        case 'gemini': {
+        case 'google': {
             const google = createGoogleGenerativeAI({
                 apiKey,
                 baseURL: baseUrl,

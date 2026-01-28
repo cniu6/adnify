@@ -74,7 +74,16 @@ const defaultLLMConfig: LLMConfig = {
   topP: LLM_DEFAULTS.topP,
   topK: LLM_DEFAULTS.topK,
   seed: LLM_DEFAULTS.seed,
-  logitBias: undefined,
+  frequencyPenalty: LLM_DEFAULTS.frequencyPenalty,
+  presencePenalty: LLM_DEFAULTS.presencePenalty,
+  stopSequences: LLM_DEFAULTS.stopSequences,
+  logitBias: LLM_DEFAULTS.logitBias,
+  // AI SDK 高级参数
+  maxRetries: LLM_DEFAULTS.maxRetries,
+  toolChoice: LLM_DEFAULTS.toolChoice,
+  parallelToolCalls: LLM_DEFAULTS.parallelToolCalls,
+  headers: LLM_DEFAULTS.headers,
+  // 功能开关
   enableThinking: false,
 }
 

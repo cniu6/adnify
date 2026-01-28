@@ -5,7 +5,7 @@
  * 其他文件应从此处导入类型，而非重复定义
  */
 
-import type { AdvancedConfig } from './providers'
+import type { AdvancedConfig, ApiProtocol } from './providers'
 import type { LLMConfig } from '@/shared/types/llm'
 
 // ============================================
@@ -16,7 +16,7 @@ import type { LLMConfig } from '@/shared/types/llm'
 export type { LLMConfig }
 
 // 导出 Provider 相关类型供其他模块使用
-export type { AdvancedConfig }
+export type { AdvancedConfig, ApiProtocol }
 
 // ============================================
 // Provider 配置（保存到文件的格式）
@@ -31,7 +31,7 @@ export interface ProviderConfig {
   advanced?: AdvancedConfig
   // 自定义 Provider 元数据
   displayName?: string
-  protocol?: string
+  protocol?: ApiProtocol
   createdAt?: number
   updatedAt?: number
 }

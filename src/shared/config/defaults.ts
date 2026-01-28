@@ -23,6 +23,13 @@ export const LLM_DEFAULTS = {
   defaultModel: 'gpt-4o',
   topK: 0,
   seed: undefined,
+  // AI SDK 高级参数默认值
+  maxRetries: 2,  // AI SDK 默认是 2 次重试
+  toolChoice: 'auto' as const,  // 默认自动选择工具
+  parallelToolCalls: true,  // OpenAI 默认允许并行工具调用
+  headers: undefined,  // 默认无自定义请求头
+  logitBias: undefined,  // 默认无 logit bias
+  stopSequences: undefined,  // 默认无停止序列
 } as const
 
 // ============================================

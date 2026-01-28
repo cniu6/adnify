@@ -7,7 +7,8 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { Plus, Trash, Eye, EyeOff, Check, AlertTriangle, X, Server, Sliders, Box } from 'lucide-react'
-import { PROVIDERS } from '@/shared/config/providers'
+import { PROVIDERS, type ApiProtocol } from '@/shared/config/providers'
+import { LLM_DEFAULTS } from '@/shared/config/defaults'
 import { toast } from '@components/common/ToastProvider'
 import { Button, Input, Select } from '@components/ui'
 import { ProviderSettingsProps } from '../types'
@@ -198,11 +199,23 @@ export function ProviderSettings({
   const [newModelName, setNewModelName] = useState('')
   const [isAddingCustom, setIsAddingCustom] = useState(false)
   const [logitBiasString, setLogitBiasString] = useState('')
+  
+  // Headers 状态
+  const [customHeaders, setCustomHeaders] = useState<Array<{ key: string; value: string }>>([])
 
   // Sync logitBiasString with localConfig
   useEffect(() => {
     setLogitBiasString(localConfig.logitBias ? JSON.stringify(localConfig.logitBias, null, 2) : '')
   }, [localConfig.logitBias])
+  
+  // Sync customHeaders with localConfig
+  useEffect(() => {
+    if (localConfig.headers) {
+      setCustomHeaders(Object.entries(localConfig.headers).map(([key, value]) => ({ key, value })))
+    } else {
+      setCustomHeaders([])
+    }
+  }, [localConfig.headers])
 
   // 从 localProviderConfigs 获取自定义厂商列表
   const customProviders = useMemo(() => {
@@ -326,7 +339,7 @@ export function ProviderSettings({
       displayName: config.displayName,
       baseUrl: config.baseUrl,
       apiKey: config.apiKey,
-      protocol: config.protocol as 'openai' | 'anthropic' | 'gemini' | 'custom',
+      protocol: config.protocol as ApiProtocol,
       model: config.model,
       customModels: config.model ? [config.model] : [],
       createdAt: Date.now(),
@@ -557,7 +570,7 @@ export function ProviderSettings({
                 <div className="flex items-center justify-between">
                   <label className="text-xs text-text-secondary">{language === 'zh' ? '最大 Token' : 'Max Tokens'}</label>
                   <span className="text-xs font-mono bg-background/50 px-1.5 py-0.5 rounded text-accent">
-                    {localConfig.maxTokens || 8192}
+                    {localConfig.maxTokens ?? LLM_DEFAULTS.maxTokens}
                   </span>
                 </div>
                 <input
@@ -565,7 +578,7 @@ export function ProviderSettings({
                   min={1024}
                   max={32768}
                   step={1024}
-                  value={localConfig.maxTokens || 8192}
+                  value={localConfig.maxTokens ?? LLM_DEFAULTS.maxTokens}
                   onChange={(e) => setLocalConfig({
                     ...localConfig,
                     maxTokens: parseInt(e.target.value)
@@ -581,7 +594,7 @@ export function ProviderSettings({
                     {language === 'zh' ? '随机性 (Temperature)' : 'Temperature'}
                   </label>
                   <span className="text-xs font-mono bg-background/50 px-1.5 py-0.5 rounded text-accent">
-                    {(localConfig.temperature || 0.7).toFixed(1)}
+                    {(localConfig.temperature ?? LLM_DEFAULTS.temperature).toFixed(1)}
                   </span>
                 </div>
                 <input
@@ -589,7 +602,7 @@ export function ProviderSettings({
                   min={0}
                   max={2}
                   step={0.1}
-                  value={localConfig.temperature || 0.7}
+                  value={localConfig.temperature ?? LLM_DEFAULTS.temperature}
                   onChange={(e) => setLocalConfig({
                     ...localConfig,
                     temperature: parseFloat(e.target.value)
@@ -614,7 +627,7 @@ export function ProviderSettings({
                     </p>
                   </div>
                   <span className="text-xs font-mono bg-background/50 px-1.5 py-0.5 rounded text-accent">
-                    {(localConfig.topP || 1).toFixed(2)}
+                    {(localConfig.topP ?? LLM_DEFAULTS.topP).toFixed(2)}
                   </span>
                 </div>
                 <input
@@ -622,7 +635,7 @@ export function ProviderSettings({
                   min={0}
                   max={1}
                   step={0.05}
-                  value={localConfig.topP || 1}
+                  value={localConfig.topP ?? LLM_DEFAULTS.topP}
                   onChange={(e) => setLocalConfig({
                     ...localConfig,
                     topP: parseFloat(e.target.value)
@@ -833,6 +846,125 @@ export function ProviderSettings({
                   placeholder='{"50256": -100}'
                   className="w-full h-20 bg-surface-active rounded-lg px-3 py-1.5 text-xs border border-border focus:border-accent focus:ring-1 focus:ring-accent/50 outline-none transition-all font-mono"
                 />
+              </div>
+
+              {/* Custom Headers */}
+              <div className="space-y-3 pt-3 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <label className="text-xs text-text-secondary">
+                      {language === 'zh' ? '自定义请求头' : 'Custom Headers'}
+                    </label>
+                    <p className="text-[10px] text-text-muted">
+                      {language === 'zh'
+                        ? '添加自定义 HTTP 请求头（如认证、追踪等）'
+                        : 'Add custom HTTP headers (auth, tracking, etc.)'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setCustomHeaders([...customHeaders, { key: '', value: '' }])
+                    }}
+                    className="text-xs text-accent hover:text-accent-hover flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {language === 'zh' ? '添加' : 'Add'}
+                  </button>
+                </div>
+
+                {customHeaders.length > 0 && (
+                  <div className="space-y-2">
+                    {customHeaders.map((header, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <select
+                          value={header.key}
+                          onChange={(e) => {
+                            const newHeaders = [...customHeaders]
+                            newHeaders[index].key = e.target.value
+                            setCustomHeaders(newHeaders)
+                            // 更新 localConfig
+                            const headersObj = newHeaders.reduce((acc, h) => {
+                              if (h.key && h.value) acc[h.key] = h.value
+                              return acc
+                            }, {} as Record<string, string>)
+                            setLocalConfig({
+                              ...localConfig,
+                              headers: Object.keys(headersObj).length > 0 ? headersObj : undefined
+                            })
+                          }}
+                          className="flex-1 bg-surface-active rounded-lg px-3 py-1.5 text-xs border border-border focus:border-accent focus:ring-1 focus:ring-accent/50 outline-none transition-all"
+                        >
+                          <option value="">{language === 'zh' ? '选择或自定义' : 'Select or custom'}</option>
+                          <option value="X-API-Key">X-API-Key</option>
+                          <option value="Authorization">Authorization</option>
+                          <option value="X-Request-ID">X-Request-ID</option>
+                          <option value="X-Organization">X-Organization</option>
+                          <option value="User-Agent">User-Agent</option>
+                          <option value="X-Custom-Header">{language === 'zh' ? '自定义...' : 'Custom...'}</option>
+                        </select>
+                        {header.key === 'X-Custom-Header' && (
+                          <input
+                            type="text"
+                            value={header.key === 'X-Custom-Header' ? '' : header.key}
+                            onChange={(e) => {
+                              const newHeaders = [...customHeaders]
+                              newHeaders[index].key = e.target.value
+                              setCustomHeaders(newHeaders)
+                            }}
+                            placeholder={language === 'zh' ? '请求头名称' : 'Header name'}
+                            className="flex-1 bg-surface-active rounded-lg px-3 py-1.5 text-xs border border-border focus:border-accent focus:ring-1 focus:ring-accent/50 outline-none transition-all font-mono"
+                          />
+                        )}
+                        <input
+                          type="text"
+                          value={header.value}
+                          onChange={(e) => {
+                            const newHeaders = [...customHeaders]
+                            newHeaders[index].value = e.target.value
+                            setCustomHeaders(newHeaders)
+                            // 更新 localConfig
+                            const headersObj = newHeaders.reduce((acc, h) => {
+                              if (h.key && h.value) acc[h.key] = h.value
+                              return acc
+                            }, {} as Record<string, string>)
+                            setLocalConfig({
+                              ...localConfig,
+                              headers: Object.keys(headersObj).length > 0 ? headersObj : undefined
+                            })
+                          }}
+                          placeholder={language === 'zh' ? '值' : 'Value'}
+                          className="flex-1 bg-surface-active rounded-lg px-3 py-1.5 text-xs border border-border focus:border-accent focus:ring-1 focus:ring-accent/50 outline-none transition-all font-mono"
+                        />
+                        <button
+                          onClick={() => {
+                            const newHeaders = customHeaders.filter((_, i) => i !== index)
+                            setCustomHeaders(newHeaders)
+                            // 更新 localConfig
+                            const headersObj = newHeaders.reduce((acc, h) => {
+                              if (h.key && h.value) acc[h.key] = h.value
+                              return acc
+                            }, {} as Record<string, string>)
+                            setLocalConfig({
+                              ...localConfig,
+                              headers: Object.keys(headersObj).length > 0 ? headersObj : undefined
+                            })
+                          }}
+                          className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {customHeaders.length === 0 && (
+                  <div className="text-[10px] text-text-muted bg-background/50 px-3 py-2 rounded-lg border border-border">
+                    {language === 'zh'
+                      ? '点击"添加"按钮添加自定义请求头'
+                      : 'Click "Add" to add custom headers'}
+                  </div>
+                )}
               </div>
             </section>
           </div>

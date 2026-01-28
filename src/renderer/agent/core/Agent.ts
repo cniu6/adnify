@@ -290,7 +290,7 @@ class AgentClass {
         .filter((p): p is ImageContent => p.type === 'image')
         .map(p => ({
           id: crypto.randomUUID(),
-          mimeType: p.source.media_type,
+          mimeType: (p.source.media_type || 'image/png') as string,
           base64: p.source.data,
         }))
     }

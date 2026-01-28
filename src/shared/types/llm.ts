@@ -16,8 +16,8 @@ export interface ImageContent {
     type: 'image'
     source: {
         type: 'base64' | 'url'
-        media_type: string
-        data: string
+        media_type?: string  // 改为可选，AI SDK 会自动推断
+        data: string  // base64 数据或 URL
     }
 }
 
@@ -66,7 +66,7 @@ export interface LLMConfig {
     baseUrl?: string
     timeout?: number
 
-    // LLM 参数
+    // LLM 核心参数
     maxTokens?: number
     temperature?: number
     topP?: number
@@ -77,15 +77,20 @@ export interface LLMConfig {
     seed?: number
     logitBias?: Record<string, number>
 
-    // Provider 高级配置
-    advanced?: import('@shared/config/providers').AdvancedConfig
+    // AI SDK 高级参数
+    /** 最大重试次数 */
+    maxRetries?: number
+    /** 工具选择策略 */
+    toolChoice?: 'auto' | 'none' | 'required' | { type: 'tool'; toolName: string }
+    /** 并行工具调用 */
+    parallelToolCalls?: boolean
+    /** 自定义请求头 */
+    headers?: Record<string, string>
 
     /** 协议类型 - 用于 AI SDK provider 选择 */
-    protocol?: 'openai' | 'anthropic' | 'google' | 'custom'
-    /** 启用深度思考（如 Claude extended thinking） */
+    protocol?: import('@shared/config/providers').ApiProtocol
+    /** 启用深度思考（如 Claude extended thinking, OpenAI o1） */
     enableThinking?: boolean
-    /** 启用视觉能力 */
-    enableVision?: boolean
 }
 
 export interface LLMParameters {
