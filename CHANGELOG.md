@@ -15,6 +15,119 @@
 
 ---
 
+## [1.6.9] - 2026-01-29 🚀 结构化输出与性能优化
+
+> "精准的 Token 计数，强大的结构化生成" —— AI 能力再升级
+
+### ✨ 新功能
+- 🧠 **结构化对象生成** - 支持 Schema 约束的 AI 输出
+  - 新增 `generateObject` IPC 处理器
+  - 支持 Zod Schema 和 JSON Schema 格式
+  - 自动 JSON Schema 到 Zod 转换
+  - 改进图片压缩，自动提取描述
+  - 更好的 Token 估算和消息准备
+- 📊 **精准 Token 计数** - 集成 js-tiktoken
+  - 新增 `countTokens` 和 `countContentTokens` 工具函数
+  - 替换近似估算逻辑为精确计数
+  - 改进中文字符、代码和结构化内容的 Token 估算
+  - 更新 CompressionManager 使用精确计数
+  - 添加完整的测试覆盖
+- 🏥 **健康检查系统** - 提供商连接验证
+  - 在主进程实现健康检查，避免 CORS 问题
+  - 支持多个提供商（OpenAI、Anthropic、DeepSeek、Groq、Mistral、Ollama、NVIDIA）
+  - 跟踪提供商状态、延迟和错误
+  - 可配置超时和 baseURL 支持
+  - 使用 AbortController 处理网络超时
+- 🐘 **PHP LSP 支持** - 新增 PHP 语言服务器
+  - 集成 Intelephense 语言服务器
+  - 支持 PHP 项目智能根目录检测（composer.json、phpunit.xml 等）
+  - 自动安装和配置
+  - 完整的代码补全、跳转和诊断支持
+
+### 🎨 UI/UX 优化
+- 💬 **消息流畅度提升** - 改进消息显示效果
+- 🎯 **Hooks 重构** - 拆分 `useCloseOnOutsideOrEscape`
+  - 分离为 `useClickOutside` 和 `useEscapeKey`
+  - 更好的关注点分离
+  - 改进点击外部检测逻辑
+  - 更易于独立测试
+
+### 🔧 技术改进
+- 🏗️ **LSP 平台工具提取** - 提取平台检测逻辑到共享工具函数
+  - 新增 `getExecutableName` 和 `getNpmCommand` 工具函数
+  - 集中管理平台特定命令解析
+  - 减少跨模块的平台逻辑重复
+  - 提升代码可维护性
+- 🎨 **Monaco 类型兼容性** - 改进 ESM 和 UMD 模块导入
+  - 更新 Monaco 类型引用支持两种导入路径
+  - 扩展编辑器、Diff 编辑器和 AI 补全的参数类型
+  - 提升不同 Monaco 打包策略的灵活性
+- 🛡️ **LLM 类型安全** - 改进类型约束
+  - 简化 `StructuredService` 泛型约束
+  - 改进 JSON Schema 到 Zod 转换器的类型安全
+  - 更好的类型兼容性和灵活性
+- 🧹 **代码清理** - 移除 LSP 安装器和管理器模块中的尾随空格
+
+---
+
+## [1.6.8] - 2026-01-29 🛡️ 错误处理标准化
+
+> "统一的错误处理，更好的调试体验" —— 全面重构错误处理
+
+### 🔧 技术改进
+- 🛡️ **错误处理标准化** - 使用 `toAppError` 工具统一错误处理
+  - 重构所有 IPC 处理器（debug、llm、lsp、mcp、resources）
+  - 更新 LSP 安装器和管理器模块
+  - 标准化安全模块错误处理（fileWatcher、secureFile、secureTerminal）
+  - 改进 StreamingService 错误类型转换
+  - 更新 MCP 客户端、配置加载器和管理器
+  - 统一终端、工作区和补全服务错误处理
+  - 重构共享错误处理工具，提升类型安全
+- 🌐 **错误消息本地化** - 改进错误消息国际化
+  - `LLMError.fromAISDKError()` 默认使用英文，前端负责本地化
+  - 流处理器支持基于错误代码的国际化
+  - MCP 服务集成语言偏好设置
+  - 分离错误映射（技术细节）和消息本地化（用户界面）
+- 📊 **错误上下文保留** - 改进整个错误处理管道的上下文保存
+  - 从 API 响应体提取详细错误信息
+  - 更好的调试支持
+
+---
+
+## [1.6.7] - 2026-01-28 🎨 设置界面增强
+
+> "自定义请求头，配置更灵活" —— 提供商配置升级
+
+### ✨ 新功能
+- 🔧 **自定义请求头支持** - 提供商配置支持自定义 HTTP 头
+  - 新增请求头管理界面
+  - 支持协议特定的默认请求头
+  - 切换提供商时保留请求头配置
+- 📜 **ScrollShadow 组件** - 更好的滚动内容处理
+  - 改进设置页面滚动体验
+  - 模型配置区域支持滚动
+
+### 🔧 技术改进
+- 🏗️ **提供商配置优化** - 改进配置管理逻辑
+  - 使用 `displayName` 替代 `name` 字段
+  - 重构请求头同步逻辑
+  - 改进设置持久化，包含请求头配置
+- 🧠 **LLM AI SDK 增强** - 改进媒体类型处理
+  - 图片内容转换支持 `mediaType`
+  - base64 图片默认使用 `image/png` 类型
+  - 移除自定义 baseURL OpenAI 兼容模式逻辑
+  - 重构 `streamText` 参数结构
+  - 添加提供商特定的思考模式配置（OpenAI、Anthropic、Google）
+  - 支持 OpenAI 特定参数（logitBias、parallelToolCalls、reasoningEffort）
+  - 添加超时和重试配置支持
+
+### 🐛 Bug 修复
+- 🔐 **CSP 安全策略** - 允许 blob URL 支持图片粘贴
+  - 更新 Content Security Policy `img-src` 指令
+  - 支持剪贴板图片操作
+
+---
+
 ## [1.6.6] - 2026-01-27 🚀 性能优化与体验提升
 
 > "快如闪电，稳如磐石" —— 全方位性能优化
