@@ -19,7 +19,10 @@ const rgbToHex = (rgbStr: string) => {
 /**
  * 定义 Monaco 主题
  */
-export function defineMonacoTheme(monacoInstance: typeof import('monaco-editor'), themeName: ThemeName) {
+export function defineMonacoTheme(
+  monacoInstance: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api'),
+  themeName: ThemeName
+) {
   const themeVars = themes[themeName] || themes['adnify-dark']
   if (!themeVars) return
 

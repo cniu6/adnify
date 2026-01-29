@@ -16,7 +16,7 @@ export function useEditorActions(
 ) {
   const registerActions = useCallback((
     editor: editor.IStandaloneCodeEditor,
-    monaco: typeof import('monaco-editor')
+    monaco: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api')
   ) => {
     // Ctrl+D: 选择下一个匹配
     editor.addAction({

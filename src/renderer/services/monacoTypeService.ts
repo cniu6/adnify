@@ -19,7 +19,7 @@ import {
 } from 'monaco-editor/esm/vs/language/typescript/monaco.contribution'
 
 // Monaco 实例引用
-let monacoInstance: typeof Monaco | null = null
+let monacoInstance: typeof Monaco | typeof import('monaco-editor/esm/vs/editor/editor.api') | null = null
 let isInitialized = false
 
 // 已添加的 extraLib 缓存（带 LRU 淘汰）
@@ -52,7 +52,9 @@ function evictOldestExtraLib(): void {
 /**
  * 初始化 Monaco TypeScript 服务
  */
-export function initMonacoTypeService(monaco: typeof Monaco) {
+export function initMonacoTypeService(
+  monaco: typeof Monaco | typeof import('monaco-editor/esm/vs/editor/editor.api')
+) {
   if (isInitialized) return
 
   monacoInstance = monaco

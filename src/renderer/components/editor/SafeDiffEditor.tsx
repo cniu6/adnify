@@ -12,7 +12,10 @@ interface SafeDiffEditorProps {
   modified: string | undefined
   language: string
   options?: editor.IDiffEditorConstructionOptions
-  onMount?: (editor: editor.IStandaloneDiffEditor, monaco: typeof import('monaco-editor')) => void
+  onMount?: (
+    editor: editor.IStandaloneDiffEditor,
+    monaco: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api')
+  ) => void
 }
 
 export function SafeDiffEditor({
@@ -47,7 +50,10 @@ export function SafeDiffEditor({
   }, [])
 
   const handleMount = useCallback(
-    (ed: editor.IStandaloneDiffEditor, monacoInstance: typeof import('monaco-editor')) => {
+    (
+      ed: editor.IStandaloneDiffEditor,
+      monacoInstance: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api')
+    ) => {
       if (!isMountedRef.current) return
       diffEditorRef.current = ed
       onMount?.(ed, monacoInstance)

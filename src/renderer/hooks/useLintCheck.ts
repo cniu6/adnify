@@ -14,7 +14,7 @@ export function useLintCheck() {
   const runLintCheck = useCallback(async (
     filePath: string,
     editorRef: editor.IStandaloneCodeEditor | null,
-    monacoRef: typeof import('monaco-editor') | null
+    monacoRef: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api') | null
   ) => {
     if (!filePath) return
 

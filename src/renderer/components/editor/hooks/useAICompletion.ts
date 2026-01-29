@@ -12,7 +12,9 @@ const AI_COMPLETION_LANGUAGES = LSP_SUPPORTED_LANGUAGES as string[]
 export function useAICompletion(activeFilePath: string | null) {
   const providerRef = useRef<import('monaco-editor').IDisposable | null>(null)
 
-  const registerProvider = useCallback((monaco: typeof import('monaco-editor')) => {
+  const registerProvider = useCallback((
+    monaco: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api')
+  ) => {
     // 清理旧的 provider
     providerRef.current?.dispose()
 

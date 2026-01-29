@@ -41,8 +41,10 @@ export function useLspIntegration() {
   }, [workspacePath, isLspReady, setIsLspReady])
 
   // 注册 LSP 提供者到 Monaco
-  const registerProviders = useCallback((monaco: typeof import('monaco-editor')) => {
-    registerLspProviders(monaco)
+  const registerProviders = useCallback((
+    monaco: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api')
+  ) => {
+    registerLspProviders(monaco as typeof import('monaco-editor'))
 
     // 注册定义提供者（仅 TypeScript/JavaScript）
     monaco.languages.registerDefinitionProvider(
@@ -94,7 +96,9 @@ export function useLspIntegration() {
   }, [])
 
   // 设置诊断监听
-  const setupDiagnostics = useCallback((monaco: typeof import('monaco-editor')) => {
+  const setupDiagnostics = useCallback((
+    monaco: typeof import('monaco-editor') | typeof import('monaco-editor/esm/vs/editor/editor.api')
+  ) => {
     // 监听 LSP 诊断
     const unsubscribeLsp = onDiagnostics((uri, diagnostics) => {
       const model = monaco.editor.getModels().find(m => m.uri.toString() === uri)
