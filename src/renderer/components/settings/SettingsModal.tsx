@@ -118,10 +118,9 @@ export default function SettingsModal() {
         set('mcpConfig', localMcpConfig)
         set('enableFileLogging', localEnableFileLogging)
 
-        // 批量更新所有 provider configs
-        for (const [providerId, config] of Object.entries(finalProviderConfigs)) {
-            setProvider(providerId, config)
-        }
+        // 同步 providerConfigs：先删除不存在于 localProviderConfigs 的，再更新/添加
+        // 使用 set 直接替换整个 providerConfigs，确保删除的配置也被移除
+        set('providerConfigs', finalProviderConfigs)
 
         // 编辑器配置统一保存 - 合并 editorSettings 和 advancedEditorConfig
         const finalEditorConfig = {
@@ -186,7 +185,7 @@ export default function SettingsModal() {
     }, [localConfig, localLanguage, localAutoApprove, localPromptTemplateId, localAgentConfig, localAiInstructions, localWebSearchConfig, localMcpConfig, localEnableFileLogging, localProviderConfigs, editorSettings, advancedEditorConfig, set, setProvider, save])
 
     // 使用 useMemo 缓存计算结果
-    const providers = useMemo(() => 
+    const providers = useMemo(() =>
         Object.entries(PROVIDERS).map(([id, p]) => ({
             id,
             name: p.displayName,
@@ -194,8 +193,8 @@ export default function SettingsModal() {
         })),
         [providerConfigs]
     )
-    
-    const selectedProvider = useMemo(() => 
+
+    const selectedProvider = useMemo(() =>
         providers.find(p => p.id === localConfig.provider),
         [providers, localConfig.provider]
     )
@@ -235,8 +234,8 @@ export default function SettingsModal() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${activeTab === tab.id
-                                        ? 'bg-accent text-white shadow-md shadow-accent/20'
-                                        : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+                                    ? 'bg-accent text-white shadow-md shadow-accent/20'
+                                    : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                                     }`}
                             >
                                 <span className={`transition-colors duration-200 ${activeTab === tab.id ? 'text-white' : 'text-text-muted group-hover:text-text-primary'}`}>
@@ -337,8 +336,8 @@ export default function SettingsModal() {
                                 variant={saved ? 'success' : 'primary'}
                                 onClick={handleSave}
                                 className={`min-w-[140px] shadow-lg transition-all duration-300 rounded-xl ${saved
-                                        ? 'bg-status-success hover:bg-status-success/90 text-white'
-                                        : 'bg-accent hover:bg-accent-hover text-white shadow-accent/20'
+                                    ? 'bg-status-success hover:bg-status-success/90 text-white'
+                                    : 'bg-accent hover:bg-accent-hover text-white shadow-accent/20'
                                     }`}
                             >
                                 {saved ? (
